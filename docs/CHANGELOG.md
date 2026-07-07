@@ -2,6 +2,25 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 10 — Inventory
+
+**The most architecturally important backend piece so far:** `inventory.repository.js`'s `recordMovement()` is the single function every future stock-affecting phase (Purchases, POS, Transfers, Returns) will call instead of writing their own `UPDATE inventory` logic. Getting its contract right now avoids four future phases each reinventing (and potentially getting slightly wrong) the same stock-mutation rules.
+
+**Backend**
+- `recordMovement(data, externalConnection?)`: locks the inventory row with `SELECT ... FOR UPDATE`, creates it on first touch, computes `newStock`, rejects negative results with a `422` (enforced at the data layer, not just in a form — every future caller inherits this for free), updates `inventory.quantity`, and inserts the `inventory_movements` row — all in one transaction. Accepts an optional external DB connection specifically so a future POS checkout (sale + payment + inventory decrement, all-or-nothing) can pass its own transaction connection through instead of this function managing a separate one; called standalone (as Adjustments do today), it manages its own transaction.
+- `inventory.service.js` is branch-scoped via Phase 5's `branchScope.js` throughout — list, summary, and movements all respect "Super Admin sees all, others see their branch(es)." Adjustment creation additionally checks the acting user actually has access to the target branch before recording anything.
+- **Deliberately not implemented:** the adjustment approval workflow. The schema already supports it (`requires_approval`/`approved_by`/`approved_at`), but `MASTER_PROMPT.md` never specified a concrete threshold for when approval should trigger, and guessing one felt worse than being explicit that adjustments are currently auto-approved. Documented as a known gap in `docs/TODO.md` rather than silently skipped.
+- Route-level permission split matches the Phase 0 seed data exactly: both `inventory.view` and `inventory.adjust` are required to create an adjustment, which correctly allows Store Keeper (has both) and blocks Manager (has `view` + `approve`, not `adjust`) — Manager's role is to approve, not adjust directly, per the spec's per-module permission tables.
+
+**Frontend**
+- `InventoryOverview`: summary KPI cards (reusing Phase 6's `KPICard`), branch/low-stock/out-of-stock filters, and a color-coded stock-level badge per row (green/amber/red) computed client-side from quantity vs. min-stock.
+- `StockMovements`: full audit trail with signed quantity display (green `+12` / red `-3`) and a movement-type badge per row.
+- Adjust Stock is a modal opened from the overview table (pre-filled with the product/branch context), not a separate page — consistent with how Categories/Brands/Roles handle small, single-purpose forms.
+
+**Verification**
+- Backend dry-run: `/inventory` and `/inventory/movements` correctly 401 pre-auth.
+- Frontend: Playwright with mocked API — summary cards, stock-level badges (in/low/out), the Adjust Stock modal with correct product context, and the movement history table all screenshotted. Zero console errors.
+
 ## Phase 9 — Products
 
 **Backend**

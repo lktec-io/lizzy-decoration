@@ -25,6 +25,8 @@ const CategoryList = lazy(() => import('../pages/categories/CategoryList'));
 const BrandList = lazy(() => import('../pages/brands/BrandList'));
 const ProductList = lazy(() => import('../pages/products/ProductList'));
 const ProductForm = lazy(() => import('../pages/products/ProductForm'));
+const InventoryOverview = lazy(() => import('../pages/inventory/InventoryOverview'));
+const StockMovements = lazy(() => import('../pages/inventory/StockMovements'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -64,6 +66,8 @@ function AppRouter() {
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/new" element={<ProductForm />} />
               <Route path="/products/:id/edit" element={<ProductForm />} />
+              <Route path="/inventory" element={<InventoryOverview />} />
+              <Route path="/inventory/movements" element={<StockMovements />} />
             </Route>
           </Route>
 

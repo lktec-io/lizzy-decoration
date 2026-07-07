@@ -158,16 +158,17 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `inventory`, `inventory_movements`, `inventory_adjustments` tables | Critical | Inventory | |
-| ☐ | Backend: inventory read model (current/reserved/available per branch) | Critical | Inventory | |
-| ☐ | Backend: movement recording service (single source of truth, reusable across Sales/Purchases/Transfers/Returns) | Critical | Inventory | |
-| ☐ | Backend: stock adjustment endpoint (reason, description, optional approval) | Critical | Inventory | |
-| ☐ | Backend: low-stock / out-of-stock detection | Critical | Inventory | |
-| ☐ | Frontend: Inventory overview page (current/reserved/available/low/out) | Critical | Inventory | |
-| ☐ | Frontend: Stock movement history table | High | Inventory | |
-| ☐ | Frontend: Stock adjustment form | High | Inventory | |
-| ☐ | Business rule: never allow negative stock | Critical | Inventory | |
-| ☐ | Quality Check | Critical | Inventory | |
+| ☑ | DB: `inventory`, `inventory_movements`, `inventory_adjustments` tables | Critical | Inventory | 2026-07-07 (Phase 0) |
+| ☑ | Backend: inventory read model (current/reserved/available per branch, branch-scoped via `branchScope.js`) | Critical | Inventory | 2026-07-08 |
+| ☑ | Backend: `recordMovement()` — **the** movement recording service, single source of truth. Accepts an optional external connection so Phases 14+ (Purchases/POS/Transfers/Returns) can compose it into their own larger transactions instead of duplicating stock-mutation logic | Critical | Inventory | 2026-07-08 |
+| ☑ | Backend: stock adjustment endpoint (reason, description) | Critical | Inventory | 2026-07-08 |
+| ☐ | Backend: adjustment **approval workflow** — schema supports it (`requires_approval`/`approved_by`/`approved_at` on `inventory_adjustments`) but not wired up; every adjustment is currently auto-approved. No clear threshold rule existed in the spec for *when* approval should trigger, so this was left as a deliberate simplification rather than guessed at — revisit if/when a concrete business rule is defined | Medium | Inventory | *(deferred)* |
+| ☑ | Backend: low-stock / out-of-stock detection (summary endpoint + per-row level badges) | Critical | Inventory | 2026-07-08 |
+| ☑ | Frontend: Inventory overview page (current/available/min-stock, summary KPI cards, branch + low/out-of-stock filters) | Critical | Inventory | 2026-07-08 |
+| ☑ | Frontend: Stock movement history table (filterable by branch/movement type, signed quantity display) | High | Inventory | 2026-07-08 |
+| ☑ | Frontend: Stock adjustment form (modal, opened from the overview table) | High | Inventory | 2026-07-08 |
+| ☑ | Business rule: never allow negative stock — enforced inside `recordMovement()` itself (`newStock < 0` throws `422`), not just at the UI layer, so every future caller (Purchases, POS, Transfers, Returns) inherits the guarantee automatically | Critical | Inventory | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass (zero chunk-size warnings); backend dry-run confirms auth-gating; frontend verified via Playwright with mocked API — summary cards, color-coded stock-level badges, the Adjust Stock modal, and the movement history table (signed +/- quantity change) all screenshotted, zero console errors | Critical | Inventory | 2026-07-08 |
 
 ## Phase 11 — QR Codes
 

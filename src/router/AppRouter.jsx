@@ -23,6 +23,8 @@ const BranchList = lazy(() => import('../pages/branches/BranchList'));
 const BranchForm = lazy(() => import('../pages/branches/BranchForm'));
 const CategoryList = lazy(() => import('../pages/categories/CategoryList'));
 const BrandList = lazy(() => import('../pages/brands/BrandList'));
+const ProductList = lazy(() => import('../pages/products/ProductList'));
+const ProductForm = lazy(() => import('../pages/products/ProductForm'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -59,6 +61,9 @@ function AppRouter() {
               <Route path="/branches/:id/edit" element={<BranchForm />} />
               <Route path="/categories" element={<CategoryList />} />
               <Route path="/brands" element={<BrandList />} />
+              <Route path="/products" element={<ProductList />} />
+              <Route path="/products/new" element={<ProductForm />} />
+              <Route path="/products/:id/edit" element={<ProductForm />} />
             </Route>
           </Route>
 

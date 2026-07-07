@@ -2,6 +2,26 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 9 — Products
+
+**Backend**
+- `sequence.repository.js`: the reusable numbering engine `document_sequences` was designed for back in Phase 0. Uses MySQL's `INSERT ... VALUES (..., LAST_INSERT_ID(1)) ON DUPLICATE KEY UPDATE last_number = LAST_INSERT_ID(last_number + 1)` idiom — atomic and race-condition-safe under concurrent product creation without needing an explicit transaction or row lock. The `LAST_INSERT_ID(1)` on the insert branch (not just the update branch) was a deliberate fix — without it, the very first code for a new category/year would return the row's raw auto-increment `id` instead of `1`, since `LAST_INSERT_ID()` only applies automatically to a plain `INSERT`'s primary key, not to a manually named counter column.
+- **Product codes are category-code-prefixed** (`CRT-2026-00001`, `WLD-2026-00001` — matches `MASTER_PROMPT.md`'s literal examples `SPR-2026-00001`/`DEC-2026-00001` exactly), reusing each category's existing unique `code` field from Phase 7 rather than inventing a separate prefix scheme. Each category gets its own counter (`document_type = PRODUCT_<categoryCode>`), so two categories' codes both correctly start at `00001`.
+- Buying-price > selling-price guard: returns `422` with a structured `PRICE_OVERRIDE_REQUIRED` error code (not a generic message) so the frontend can distinguish "needs confirmation" from "actually invalid" and re-submit with `confirmPriceOverride: true`.
+- `hasTransactionHistory(id)` checks `sale_items`/`purchase_items` before allowing delete — real queries against tables that exist since Phase 0, correctly permissive today and correctly protective once Purchases/POS ship.
+- Product images reuse Phase 2's `createUploader` factory (subfolder `products`, 3MB limit) — third consumer after company logos and user avatars, no new upload plumbing needed.
+
+**Frontend**
+- `ProductList`: adds row-selection checkboxes + bulk activate/deactivate on top of the standard `useTable`/`Table` pattern — the first list page needing multi-select, kept local to this page rather than generalized into `Table` since nothing else needs it yet.
+- `ProductForm`: image gallery (upload/remove/primary badge, edit-mode only — same reasoning as Phase 3's avatar upload, needs a product ID first) and the price-override confirmation flow (submit → catch `422` → inline warning banner with "Save Anyway" → resubmit with the confirmation flag, values preserved via React Hook Form's `getValues()`).
+- No dedicated Product **detail** page — folded into the edit form, consistent with every list module so far (Users, Branches, Categories, Brands). A future QR/stock-focused detail view naturally belongs to Phase 10 (Inventory) and Phase 11 (QR Codes) once there's real stock/QR data to show.
+
+**Explicitly deferred:** image compression/resizing. Multer validates type and a 3MB size cap but doesn't re-encode. Not a real problem yet at this scale — flagged to revisit (e.g. `sharp`) if upload sizes become an issue in practice, rather than adding a dependency preemptively.
+
+**Verification**
+- Backend dry-run: product endpoints correctly 401 pre-auth.
+- Frontend: Playwright with mocked API — product list (generated codes, category/brand filters, bulk-action reveal on selection) and the complete price-override flow (intentionally submitted buying price 50,000 > selling price 30,000, confirmed the `422`+warning-banner+resubmit round-trip works end-to-end) both screenshotted. Zero console errors (the single 422 in the network log is the test intentionally exercising the rejection path, not a bug).
+
 ## Phases 7-8 — Categories & Brands (Master Prompt Phase 2: Inventory Management Engine begins)
 
 Two small, near-identical catalog modules, built together. Both follow the exact CRUD-with-modal pattern established by `RoleList` (Phase 4) rather than a full separate form page — appropriate given each has only 3-4 fields.

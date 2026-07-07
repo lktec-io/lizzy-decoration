@@ -1,0 +1,121 @@
+import { pool } from '../config/db.js';
+
+const BASE_SELECT = `
+  SELECT p.*, c.name AS category_name, b.name AS brand_name
+  FROM products p
+  JOIN categories c ON c.id = p.category_id
+  JOIN brands b ON b.id = p.brand_id
+`;
+
+export async function findById(id) {
+  const [rows] = await pool.query(`${BASE_SELECT} WHERE p.id = ? AND p.deleted_at IS NULL LIMIT 1`, [id]);
+  if (!rows[0]) return null;
+
+  const [images] = await pool.query(
+    'SELECT id, image_path, is_primary, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order',
+    [id],
+  );
+  return { ...rows[0], images };
+}
+
+export async function findByCode(code) {
+  const [rows] = await pool.query('SELECT id, code FROM products WHERE code = ? AND deleted_at IS NULL LIMIT 1', [code]);
+  return rows[0] || null;
+}
+
+export async function findAll({ page = 1, limit = 20, search, categoryId, brandId, status }) {
+  const conditions = ['p.deleted_at IS NULL'];
+  const params = [];
+
+  if (search) {
+    conditions.push('(p.name LIKE ? OR p.code LIKE ?)');
+    const term = `%${search}%`;
+    params.push(term, term);
+  }
+  if (categoryId) {
+    conditions.push('p.category_id = ?');
+    params.push(categoryId);
+  }
+  if (brandId) {
+    conditions.push('p.brand_id = ?');
+    params.push(brandId);
+  }
+  if (status) {
+    conditions.push('p.status = ?');
+    params.push(status);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  const offset = (page - 1) * limit;
+
+  const [rows] = await pool.query(
+    `${BASE_SELECT} ${whereClause} ORDER BY p.created_at DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+  const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM products p ${whereClause}`, params);
+
+  return { rows, total: countRows[0].total };
+}
+
+export async function create(data) {
+  const [result] = await pool.query(
+    `INSERT INTO products (name, code, category_id, brand_id, description, buying_price, selling_price, min_stock, status, created_by, updated_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.name, data.code, data.categoryId, data.brandId, data.description || null,
+      data.buyingPrice, data.sellingPrice, data.minStock || 0, data.status || 'active',
+      data.userId, data.userId,
+    ],
+  );
+  return findById(result.insertId);
+}
+
+export async function update(id, data) {
+  await pool.query(
+    `UPDATE products SET name = ?, category_id = ?, brand_id = ?, description = ?,
+       buying_price = ?, selling_price = ?, min_stock = ?, status = ?, updated_by = ? WHERE id = ?`,
+    [
+      data.name, data.categoryId, data.brandId, data.description || null,
+      data.buyingPrice, data.sellingPrice, data.minStock || 0, data.status, data.userId, id,
+    ],
+  );
+  return findById(id);
+}
+
+export async function bulkUpdateStatus(ids, status, userId) {
+  await pool.query('UPDATE products SET status = ?, updated_by = ? WHERE id IN (?)', [status, userId, ids]);
+}
+
+export async function softDelete(id, userId) {
+  await pool.query('UPDATE products SET deleted_at = NOW(), updated_by = ? WHERE id = ?', [userId, id]);
+}
+
+export async function hasTransactionHistory(id) {
+  const [[saleItems]] = await pool.query('SELECT COUNT(*) AS total FROM sale_items WHERE product_id = ?', [id]);
+  const [[purchaseItems]] = await pool.query('SELECT COUNT(*) AS total FROM purchase_items WHERE product_id = ?', [id]);
+  return saleItems.total > 0 || purchaseItems.total > 0;
+}
+
+export async function addImage(productId, imagePath, isPrimary) {
+  if (isPrimary) {
+    await pool.query('UPDATE product_images SET is_primary = FALSE WHERE product_id = ?', [productId]);
+  }
+  const [[{ maxOrder }]] = await pool.query(
+    'SELECT COALESCE(MAX(sort_order), -1) + 1 AS maxOrder FROM product_images WHERE product_id = ?',
+    [productId],
+  );
+  const [result] = await pool.query(
+    'INSERT INTO product_images (product_id, image_path, is_primary, sort_order) VALUES (?, ?, ?, ?)',
+    [productId, imagePath, isPrimary, maxOrder],
+  );
+  return result.insertId;
+}
+
+export async function removeImage(imageId, productId) {
+  await pool.query('DELETE FROM product_images WHERE id = ? AND product_id = ?', [imageId, productId]);
+}
+
+export async function findImageById(imageId) {
+  const [rows] = await pool.query('SELECT * FROM product_images WHERE id = ? LIMIT 1', [imageId]);
+  return rows[0] || null;
+}

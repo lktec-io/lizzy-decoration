@@ -143,15 +143,16 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `products`, `product_images` tables | Critical | Products | |
-| ☐ | DB: `document_sequences` table (reusable numbering engine) | Critical | Products | |
-| ☐ | Backend: product code auto-generation (`SPR-2026-00001` style, category-prefixed, never reused) | Critical | Products | |
-| ☐ | Backend: Product CRUD, image upload + compression | Critical | Products | |
-| ☐ | Backend: buying-price > selling-price confirmation guard | Medium | Products | |
-| ☐ | Frontend: Product list (search/filter/bulk actions) | Critical | Products | |
-| ☐ | Frontend: Product create/edit form | Critical | Products | |
-| ☐ | Frontend: Product detail page (image, code, QR preview, stock, branch) | High | Products | |
-| ☐ | Quality Check | Critical | Products | |
+| ☑ | DB: `products`, `product_images` tables | Critical | Products | 2026-07-07 (Phase 0) |
+| ☑ | DB: `document_sequences` table (reusable numbering engine) | Critical | Products | 2026-07-07 (Phase 0) |
+| ☑ | Backend: product code auto-generation — category-code-prefixed (`CRT-2026-00001`), atomic via MySQL's `LAST_INSERT_ID(expr)` idiom (no explicit transaction/lock needed, safe under concurrent creates), never reused since it's a monotonic counter | Critical | Products | 2026-07-08 |
+| ☑ | Backend: Product CRUD, image upload | Critical | Products | 2026-07-08 |
+| ☐ | Backend: image **compression** — not implemented; Multer validates type/size (3MB max) but doesn't re-encode/resize. Flagged for a later pass (e.g. `sharp`) if upload sizes become a real problem in practice | Low | Products | *(deferred)* |
+| ☑ | Backend: buying-price > selling-price confirmation guard — `422` + `PRICE_OVERRIDE_REQUIRED` error code, frontend shows an inline warning with "Save Anyway" | Medium | Products | 2026-07-08 |
+| ☑ | Frontend: Product list (search/filter by category+brand/bulk activate-deactivate via row checkboxes) | Critical | Products | 2026-07-08 |
+| ☑ | Frontend: Product create/edit form (image gallery with primary/remove, price-override flow) | Critical | Products | 2026-07-08 |
+| ☐ | Frontend: dedicated Product detail page (image, code, QR preview, stock, branch) — **folded into the edit form** instead (matches the Users/Branches/Categories pattern of no separate read-only view); QR preview is Phase 11 scope (doesn't exist yet), stock/branch display is Phase 10 (Inventory) scope | High | Products | *(scope adjusted)* |
+| ☑ | Quality Check: build/lint pass (zero chunk-size warnings); backend dry-run confirms auth-gating; frontend verified via Playwright with mocked API — product list with generated codes, category/brand filters, bulk-action reveal on row selection, and the full price-override confirmation flow (submit → 422 → warning banner → confirmed resubmit) all screenshotted, zero console errors | Critical | Products | 2026-07-08 |
 
 ## Phase 10 — Inventory
 

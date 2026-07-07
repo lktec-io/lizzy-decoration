@@ -9,6 +9,7 @@ import dashboardRoutes from './dashboard.routes.js';
 import searchRoutes from './search.routes.js';
 import categoryRoutes from './category.routes.js';
 import brandRoutes from './brand.routes.js';
+import productRoutes from './product.routes.js';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/search', searchRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/brands', brandRoutes);
+router.use('/products', productRoutes);
 
 export default router;

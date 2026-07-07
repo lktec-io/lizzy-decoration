@@ -174,12 +174,14 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `qr_codes` table (history/audit) | High | QR | |
-| ☐ | Backend: reusable QR generation service (product ID, code, branch, name, price → PNG) | Critical | QR | |
-| ☐ | Backend: regenerate endpoint | Medium | QR | |
-| ☐ | Frontend: QR preview, download, print, regenerate UI | High | QR | |
-| ☐ | Frontend: `html5-qrcode` camera scan component (reusable, used later in POS) | Critical | QR | |
-| ☐ | Quality Check | Critical | QR | |
+| ☑ | DB: `qr_codes` table (history/audit) | High | QR | 2026-07-07 (Phase 0) |
+| ☑ | Backend: reusable QR generation service (product ID, code, name, price → PNG) — **branch intentionally omitted from the payload**, see below | Critical | QR | 2026-07-08 |
+| ☑ | Backend: regenerate endpoint (versioned filename per regeneration so the URL never serves a stale cached image; old file cleaned up) | Medium | QR | 2026-07-08 |
+| ☑ | Frontend: QR preview, download, print, regenerate UI (`QRCodeDisplay`, embedded in the Product edit page) | High | QR | 2026-07-08 |
+| ☑ | Frontend: `html5-qrcode` camera scan component (`QRScanner` — reusable, not consumed by any page yet so it's correctly tree-shaken out of the bundle; will be wired into POS in Phase 17) | Critical | QR | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass (verified `QRScanner` adds zero bundle weight while unused); backend dry-run confirms auth-gating; frontend verified via Playwright with a real PNG fixture — QR card renders inside the Product edit page with working Download/Print/Regenerate actions, zero console errors | Critical | QR | 2026-07-08 |
+
+**Spec deviation, deliberate:** `MASTER_PROMPT.md` says the QR should encode Branch ID alongside Product ID/Code/Name/Price. Our locked architecture (Phase 0 decision, `docs/PROJECT_PLAN.md` §2) makes Products a shared catalog with per-branch `inventory` rows — a product has no single branch to encode. Baking a branch into the QR would be actively wrong for any product stocked at more than one branch. Resolution: the QR identifies the *product only*; branch context comes from wherever it's scanned (the POS terminal's own logged-in session), not from the label itself.
 
 ## Phase 12 — Label Printing
 

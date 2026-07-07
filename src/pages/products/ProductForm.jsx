@@ -5,6 +5,7 @@ import { FiUpload, FiX } from 'react-icons/fi';
 import * as productService from '../../services/productService';
 import * as categoryService from '../../services/categoryService';
 import * as brandService from '../../services/brandService';
+import QRCodeDisplay from '../../components/products/QRCodeDisplay';
 import '../../styles/pages/ProductForm.css';
 
 function ProductForm() {
@@ -16,6 +17,7 @@ function ProductForm() {
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [images, setImages] = useState([]);
+  const [productMeta, setProductMeta] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [formError, setFormError] = useState('');
   const [priceConfirmRequired, setPriceConfirmRequired] = useState(false);
@@ -56,6 +58,7 @@ function ProductForm() {
         status: product.status,
       });
       setImages(product.images || []);
+      setProductMeta({ name: product.name, code: product.code });
       setLoading(false);
     });
 
@@ -176,6 +179,15 @@ function ProductForm() {
                 onChange={handleImageUpload}
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {isEdit && productMeta && (
+        <div className="card mb-5">
+          <div className="card-header"><span className="card-title">QR Code</span></div>
+          <div className="card-body">
+            <QRCodeDisplay productId={id} productName={productMeta.name} productCode={productMeta.code} />
           </div>
         </div>
       )}

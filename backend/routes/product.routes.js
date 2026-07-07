@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as productController from '../controllers/product.controller.js';
+import * as qrCodeController from '../controllers/qrCode.controller.js';
 import { authenticate } from '../middlewares/authenticate.js';
 import { authorize } from '../middlewares/authorize.js';
 import { validateRequest } from '../middlewares/validateRequest.js';
@@ -19,5 +20,7 @@ router.patch('/bulk-status', authorize('products.manage'), bulkStatusValidator, 
 router.delete('/:id', authorize('products.delete'), productController.remove);
 router.post('/:id/images', authorize('products.edit'), productImageUploader.single('image'), productController.uploadImage);
 router.delete('/:id/images/:imageId', authorize('products.edit'), productController.removeImage);
+router.get('/:id/qr', authorize('products.view'), qrCodeController.getForProduct);
+router.post('/:id/qr/regenerate', authorize('products.manage'), qrCodeController.regenerate);
 
 export default router;

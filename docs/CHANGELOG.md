@@ -2,6 +2,23 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 11 — QR Codes
+
+**Spec deviation, deliberate and documented:** `MASTER_PROMPT.md` says the QR payload should include Branch ID. Since Phase 0 locked in a shared-catalog architecture (one `products` row per SKU, stock tracked per branch in `inventory`), a product has no single branch to encode — baking one in would be wrong for anything stocked at multiple branches. Resolution: the QR encodes `{ productId, code, name, sellingPrice }` only; the scanning POS terminal supplies branch context from its own session at scan time, in Phase 17.
+
+**Backend**
+- `qrCode.service.js` generates via the `qrcode` package (installed since Phase 0), writing to `backend/uploads/qrcodes/`.
+- Filenames are **versioned per regeneration** (`product-{id}-v{n}.png`), not overwritten in place — a stable filename that changes content would risk browsers serving a cached stale image after "Regenerate." The old file is deleted after the new one is written (best-effort, non-fatal on failure, same pattern as company logo / avatar replacement from Phases 2-3).
+- `qr_codes` is treated as one row per product (upsert: update-in-place + increment `regenerated_count` if a row exists, insert otherwise) — matches the schema's audit-trail-via-counter design rather than keeping literal historical rows.
+
+**Frontend**
+- `QRCodeDisplay` (in `components/products/`): preview, Download (native `<a download>`), Print (opens a minimal print window with just the QR + product name/code — not the full page chrome), Regenerate. Embedded directly in the Product edit page rather than a separate route, consistent with every other module's "no dedicated detail page" pattern.
+- `QRScanner` (in `components/common/`, reusable): wraps `html5-qrcode`'s camera scanning lifecycle. Not consumed by any page yet — Phase 17 (POS) is its first real user — and confirmed via the production build that an unused component with a real dependency (`html5-qrcode`) correctly contributes zero bytes to the bundle (tree-shaken), rather than silently bloating it while sitting unused.
+
+**Verification**
+- Backend dry-run: `GET /products/:id/qr` correctly 401s pre-auth.
+- Frontend: Playwright with a real PNG fixture (not just a mocked JSON response) serving as the QR image, to confirm the `<img>` tag actually renders bytes rather than just a URL string — the QR card, product edit page layout, and all three action buttons screenshotted, zero console errors.
+
 ## Phase 10 — Inventory
 
 **The most architecturally important backend piece so far:** `inventory.repository.js`'s `recordMovement()` is the single function every future stock-affecting phase (Purchases, POS, Transfers, Returns) will call instead of writing their own `UPDATE inventory` logic. Getting its contract right now avoids four future phases each reinventing (and potentially getting slightly wrong) the same stock-mutation rules.

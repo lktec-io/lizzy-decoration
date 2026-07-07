@@ -1,0 +1,5 @@
+export const MAX_LOGIN_ATTEMPTS = 5;
+export const LOCKOUT_MINUTES = 15;
+export const PASSWORD_RESET_EXPIRY_MINUTES = 30;
+export const REFRESH_TOKEN_EXPIRES_IN_REMEMBER = '30d';
+export const REFRESH_TOKEN_EXPIRES_IN_DEFAULT = '1d';

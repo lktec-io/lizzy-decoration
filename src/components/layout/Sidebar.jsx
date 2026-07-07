@@ -1,10 +1,12 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   FiGrid, FiMapPin, FiUsers, FiUserCheck, FiTruck, FiTag, FiBookmark,
   FiBox, FiArchive, FiShoppingCart, FiRepeat, FiRotateCcw, FiDollarSign,
   FiDroplet, FiBarChart2, FiBell, FiSettings, FiUser, FiLogOut,
   FiChevronsLeft, FiChevronsRight,
 } from 'react-icons/fi';
+import { useAuth } from '../../hooks/useAuth';
+import { ROUTES } from '../../constants/routes';
 import '../../styles/components/Sidebar.css';
 
 const NAV_ITEMS = [
@@ -30,6 +32,14 @@ const NAV_ITEMS = [
 ];
 
 function Sidebar({ collapsed, onToggle }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate(ROUTES.LOGIN, { replace: true });
+  };
+
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-brand">
@@ -51,7 +61,7 @@ function Sidebar({ collapsed, onToggle }) {
       </nav>
 
       <div className="sidebar-footer">
-        <button type="button" className="sidebar-link sidebar-logout">
+        <button type="button" className="sidebar-link sidebar-logout" onClick={handleLogout}>
           <FiLogOut className="sidebar-link-icon" aria-hidden="true" />
           {!collapsed && <span className="sidebar-link-label">Logout</span>}
         </button>

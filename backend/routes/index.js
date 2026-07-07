@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { success } from '../utils/apiResponse.js';
+import authRoutes from './auth.routes.js';
 
 const router = Router();
 
@@ -9,5 +10,7 @@ const router = Router();
 router.get('/health', (req, res) => {
   return success(res, { message: 'JOZZY ERP API is running' });
 });
+
+router.use('/auth', authRoutes);
 
 export default router;

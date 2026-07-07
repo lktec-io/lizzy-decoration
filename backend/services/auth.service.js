@@ -1,0 +1,220 @@
+import bcrypt from 'bcrypt';
+import { env } from '../config/env.js';
+import { ApiError } from '../utils/apiError.js';
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  hashToken,
+  generateRandomToken,
+} from '../utils/tokenUtils.js';
+import {
+  MAX_LOGIN_ATTEMPTS,
+  LOCKOUT_MINUTES,
+  PASSWORD_RESET_EXPIRY_MINUTES,
+  REFRESH_TOKEN_EXPIRES_IN_REMEMBER,
+  REFRESH_TOKEN_EXPIRES_IN_DEFAULT,
+} from '../utils/constants.js';
+import * as userRepository from '../repositories/user.repository.js';
+import * as sessionRepository from '../repositories/session.repository.js';
+import * as refreshTokenRepository from '../repositories/refreshToken.repository.js';
+import * as passwordResetRepository from '../repositories/passwordReset.repository.js';
+import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import { sendMail, passwordResetEmail } from './email.service.js';
+
+const BCRYPT_ROUNDS = 12;
+
+function sanitizeUser(user) {
+  const { password_hash: _passwordHash, ...safe } = user;
+  return safe;
+}
+
+function expiresInToMs(expiresIn) {
+  const match = /^(\d+)([smhd])$/.exec(expiresIn);
+  if (!match) return 0;
+  const value = Number(match[1]);
+  const unit = { s: 1000, m: 60000, h: 3600000, d: 86400000 }[match[2]];
+  return value * unit;
+}
+
+async function issueTokensForUser(user, { rememberMe, ipAddress, userAgent, deviceLabel }) {
+  const refreshExpiresIn = rememberMe ? REFRESH_TOKEN_EXPIRES_IN_REMEMBER : REFRESH_TOKEN_EXPIRES_IN_DEFAULT;
+  const refreshExpiresAt = new Date(Date.now() + expiresInToMs(refreshExpiresIn));
+
+  // Placeholder hash first so the session row satisfies NOT NULL; replaced immediately below.
+  const sessionId = await sessionRepository.create({
+    userId: user.id,
+    refreshTokenHash: 'pending',
+    ipAddress,
+    userAgent,
+    deviceLabel,
+    expiresAt: refreshExpiresAt,
+  });
+
+  const refreshToken = signRefreshToken({ sub: user.id, sid: sessionId }, refreshExpiresIn);
+  const refreshTokenHash = hashToken(refreshToken);
+
+  await sessionRepository.updateRefreshTokenHash(sessionId, refreshTokenHash, refreshExpiresAt);
+  await refreshTokenRepository.create({
+    userId: user.id,
+    sessionId,
+    tokenHash: refreshTokenHash,
+    expiresAt: refreshExpiresAt,
+  });
+
+  const accessToken = signAccessToken({ sub: user.id, roleId: user.role_id, role: user.role_name, branchId: user.branch_id });
+
+  return { accessToken, refreshToken, refreshExpiresAt };
+}
+
+export async function login({ identifier, password, rememberMe, ipAddress, userAgent, deviceLabel }) {
+  const user = await userRepository.findByEmailOrUsername(identifier);
+  if (!user) {
+    throw new ApiError(401, 'Invalid credentials');
+  }
+
+  if (user.status !== 'active') {
+    throw new ApiError(403, 'This account is not active. Contact your administrator.');
+  }
+
+  if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    throw new ApiError(403, 'This account is temporarily locked due to repeated failed login attempts. Try again later.');
+  }
+
+  const passwordMatches = await bcrypt.compare(password, user.password_hash);
+  if (!passwordMatches) {
+    await userRepository.incrementFailedAttemptsAndMaybeLock(user.id, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES);
+    throw new ApiError(401, 'Invalid credentials');
+  }
+
+  await userRepository.resetFailedAttempts(user.id);
+  await userRepository.updateLastLogin(user.id);
+  await activityLogRepository.create({
+    userId: user.id,
+    branchId: user.branch_id,
+    description: `${user.first_name} ${user.last_name} logged in`,
+    referenceType: 'auth.login',
+    referenceId: user.id,
+  });
+
+  const tokens = await issueTokensForUser(user, { rememberMe, ipAddress, userAgent, deviceLabel });
+
+  return { ...tokens, user: sanitizeUser(user) };
+}
+
+export async function refresh({ refreshToken }) {
+  if (!refreshToken) {
+    throw new ApiError(401, 'Missing refresh token');
+  }
+
+  let payload;
+  try {
+    payload = verifyRefreshToken(refreshToken);
+  } catch {
+    throw new ApiError(401, 'Invalid or expired session. Please log in again.');
+  }
+
+  const tokenHash = hashToken(refreshToken);
+  const storedToken = await refreshTokenRepository.findValidByHash(tokenHash);
+  if (!storedToken || storedToken.user_id !== payload.sub) {
+    throw new ApiError(401, 'Invalid or expired session. Please log in again.');
+  }
+
+  const user = await userRepository.findById(payload.sub);
+  if (!user || user.status !== 'active') {
+    throw new ApiError(401, 'Invalid or expired session. Please log in again.');
+  }
+
+  // Rotate: revoke the presented refresh token, issue a new one on the same session.
+  await refreshTokenRepository.revoke(storedToken.id);
+
+  const refreshExpiresAt = new Date(Date.now() + expiresInToMs(REFRESH_TOKEN_EXPIRES_IN_DEFAULT));
+  const newRefreshToken = signRefreshToken({ sub: user.id, sid: payload.sid }, REFRESH_TOKEN_EXPIRES_IN_DEFAULT);
+  const newRefreshTokenHash = hashToken(newRefreshToken);
+
+  await sessionRepository.updateRefreshTokenHash(payload.sid, newRefreshTokenHash, refreshExpiresAt);
+  await refreshTokenRepository.create({
+    userId: user.id,
+    sessionId: payload.sid,
+    tokenHash: newRefreshTokenHash,
+    expiresAt: refreshExpiresAt,
+  });
+
+  const accessToken = signAccessToken({ sub: user.id, roleId: user.role_id, role: user.role_name, branchId: user.branch_id });
+
+  return { accessToken, refreshToken: newRefreshToken, user: sanitizeUser(user) };
+}
+
+export async function logout({ refreshToken }) {
+  if (!refreshToken) return;
+
+  try {
+    const payload = verifyRefreshToken(refreshToken);
+    await sessionRepository.revoke(payload.sid);
+    await refreshTokenRepository.revokeAllForSession(payload.sid);
+  } catch {
+    // Token already invalid/expired — nothing to revoke, treat logout as a no-op success.
+  }
+}
+
+export async function logoutAll(userId) {
+  await sessionRepository.revokeAllForUser(userId);
+  await refreshTokenRepository.revokeAllForUser(userId);
+}
+
+export async function getMe(userId) {
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  return sanitizeUser(user);
+}
+
+export async function listSessions(userId) {
+  return sessionRepository.findActiveByUser(userId);
+}
+
+export async function revokeSession(userId, sessionId) {
+  const session = await sessionRepository.findById(sessionId);
+  if (!session || session.user_id !== userId) {
+    throw new ApiError(404, 'Session not found');
+  }
+  await sessionRepository.revoke(sessionId);
+  await refreshTokenRepository.revokeAllForSession(sessionId);
+}
+
+// Always resolves successfully regardless of whether the email exists, to avoid user enumeration.
+export async function forgotPassword({ email, frontendUrl = env.frontendUrl }) {
+  const user = await userRepository.findByEmailOrUsername(email);
+  if (!user) return;
+
+  const rawToken = generateRandomToken();
+  const tokenHash = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MINUTES * 60000);
+
+  await passwordResetRepository.create({ userId: user.id, tokenHash, expiresAt });
+
+  const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
+  const { subject, html, template } = passwordResetEmail(resetUrl);
+  await sendMail({ to: user.email, subject, html, template });
+}
+
+export async function resetPassword({ token, newPassword }) {
+  const tokenHash = hashToken(token);
+  const resetRecord = await passwordResetRepository.findValidByHash(tokenHash);
+  if (!resetRecord) {
+    throw new ApiError(400, 'This reset link is invalid or has expired');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  await userRepository.updatePasswordHash(resetRecord.user_id, passwordHash);
+  await passwordResetRepository.markUsed(resetRecord.id);
+
+  // Force re-login everywhere after a password reset.
+  await sessionRepository.revokeAllForUser(resetRecord.user_id);
+  await refreshTokenRepository.revokeAllForUser(resetRecord.user_id);
+}
+
+export async function hashPassword(password) {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}

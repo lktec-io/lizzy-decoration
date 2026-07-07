@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FiMenu, FiSearch, FiBell, FiChevronDown } from 'react-icons/fi';
+import { useAuth } from '../../hooks/useAuth';
 import '../../styles/components/Navbar.css';
 
 function useClock() {
@@ -15,8 +16,12 @@ function useClock() {
 
 function Navbar({ onMenuClick }) {
   const now = useClock();
+  const { user } = useAuth();
   const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const timeLabel = now.toLocaleTimeString('en-TZ', { hour: '2-digit', minute: '2-digit' });
+  const displayName = user ? `${user.first_name} ${user.last_name}` : 'User';
+  const initial = user ? user.first_name.charAt(0).toUpperCase() : 'U';
+  const branchLabel = user?.branch_name || 'All Branches';
 
   return (
     <header className="navbar">
@@ -26,7 +31,7 @@ function Navbar({ onMenuClick }) {
 
       <div className="navbar-branch">
         <span className="navbar-branch-label">Branch</span>
-        <span className="navbar-branch-value">All Branches</span>
+        <span className="navbar-branch-value">{branchLabel}</span>
       </div>
 
       <div className="navbar-search">
@@ -49,8 +54,8 @@ function Navbar({ onMenuClick }) {
         </button>
 
         <button type="button" className="navbar-user">
-          <span className="navbar-user-avatar">U</span>
-          <span className="navbar-user-name">User</span>
+          <span className="navbar-user-avatar">{initial}</span>
+          <span className="navbar-user-name">{displayName}</span>
           <FiChevronDown className="navbar-user-caret" />
         </button>
       </div>

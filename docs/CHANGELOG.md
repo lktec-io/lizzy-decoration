@@ -2,6 +2,31 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 1 — Authentication
+
+**Backend**
+- Built the full auth stack following the layered architecture: `repositories/` (user, role, session, refreshToken, passwordReset, activityLog — pure SQL, no logic) → `services/auth.service.js` (all business rules) → `controllers/auth.controller.js` (thin, cookie handling only) → `routes/auth.routes.js`.
+- JWT design: short-lived access token (15m, in-memory on the client) + long-lived refresh token (JWT signed with a separate secret, 30d with "remember me" / 1d without), stored **stateful** — hashed (SHA-256) and persisted in `refresh_tokens`/`sessions` so it can be revoked, combining stateless verification with DB-backed revocation and device tracking.
+- Refresh token delivered as an **httpOnly, `sameSite=lax` cookie** scoped to `/api/v1/auth`; `secure` flag tied to `NODE_ENV=production`. Refresh rotation on every use (old token revoked, new one issued on the same session).
+- Account lockout: 5 failed attempts within 15 minutes → 15-minute lock, via a single atomic `UPDATE ... IF(...)` to avoid a race between concurrent failed attempts.
+- Forgot/reset password: random 32-byte token (hashed before storage, 30-minute expiry), always returns a generic success message regardless of whether the email exists (prevents user enumeration), and revokes all of the user's sessions on a successful reset (forces re-login everywhere).
+- `email.service.js` never throws — if SMTP isn't configured (no `SMTP_HOST`), it logs to `email_logs` with a clear reason and the request still succeeds, so the auth flow works end-to-end even before production email is configured.
+- Centralized `authenticate` middleware (JWT verify only); the DB-driven permission-check middleware is deliberately deferred to Phase 4 (Roles & Permissions) per `docs/TODO.md` — Phase 1's endpoints only need "authenticated or not," not granular permission codes.
+- **`npm run seed:admin`** (`backend/database/seeders/create-admin.js`): interactive (or env-var-driven) CLI to create the first Super Administrator. No credentials are hardcoded anywhere — this solves the bootstrap problem left open in Phase 0 (no default admin was seeded in SQL, by design).
+
+**Frontend**
+- `src/services/apiClient.js`: Axios instance with an automatic-refresh interceptor (401 → single in-flight `/auth/refresh` call, shared across concurrent failed requests → retry once → on failure, clear state and redirect to Session Expired).
+- `vite.config.js` now proxies `/api` to `http://localhost:4000` in dev, and `VITE_API_URL` defaults to the relative `/api/v1` — keeps frontend and backend same-origin (dev proxy, prod via Nginx) so the httpOnly cookie works without needing `SameSite=None`+HTTPS in local dev.
+- `AuthContext` (provider in `AuthContext.jsx`, context object split into `authContextInstance.js` to satisfy React Fast Refresh's one-export-per-file rule) attempts a silent `/auth/refresh` on mount to restore a session across page reloads.
+- `ProtectedRoute` gates the authenticated app shell; unauthenticated visitors are redirected to `/login` with the originally-requested path preserved for post-login redirect.
+- Built `Login`, `ForgotPassword`, `ResetPassword` (reads `?token=`, client-side password-policy validation mirroring the backend), and `SessionExpired` pages — all using React Hook Form, the shared `forms.css`/`buttons.css` design system, loading-disabled submit buttons, and inline field + form-level error handling.
+- Wired the real `logout()` into the Sidebar's Logout button and real user name/initials/branch into the Navbar (previously static placeholders from Phase 0).
+
+**Verification**
+- Backend verified without a live database: syntax-checked, dry-imported, then a persistent DB-less instance was booted to confirm the health check, express-validator error shapes, and the `authenticate` middleware's 401 responses (structured JSON, no stack trace leaked — confirmed via Winston log vs. HTTP response comparison).
+- Frontend verified in a real browser (headless Edge via Playwright) against that same DB-less backend: unauthenticated root correctly redirects to `/login`; client-side validation fires; a login attempt correctly surfaces a safe generic error when the backend's DB call fails; Forgot Password, Reset-Password-without-token, and Session Expired pages all render and navigate correctly; zero uncaught JS errors (only expected 401/500 network log entries from the deliberately DB-less backend).
+- **Not verified**: a full live login round-trip against a real MySQL instance, since production DB credentials are intentionally out of this session's scope (owner-managed). The project owner should run `npm run seed:admin` after applying the schema and do a first real login as a final smoke test.
+
 ## Phase 0 — Project Setup
 
 **Planning**

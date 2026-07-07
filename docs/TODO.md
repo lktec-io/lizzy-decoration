@@ -90,12 +90,14 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `branches`, `user_branches` tables | Critical | Branches | |
-| ☐ | Backend: Branch CRUD, deactivate, assign manager/users | Critical | Branches | |
-| ☐ | Backend: branch-scoping middleware (filters queries by user's branch access) | Critical | Branches | |
-| ☐ | Frontend: Branch list/create/edit/detail pages | Critical | Branches | |
-| ☐ | Business rule: Super Admin sees all, Manager sees assigned branches, Cashier sees assigned branch only | Critical | Branches | |
-| ☐ | Quality Check | Critical | Branches | |
+| ☑ | DB: `branches`, `user_branches` tables | Critical | Branches | 2026-07-07 (Phase 0) |
+| ☑ | Backend: Branch CRUD, deactivate (blocked while users still assigned), assign manager | Critical | Branches | 2026-07-08 |
+| ☑ | Backend: `utils/branchScope.js` — `getAccessibleBranchIds(user)` helper (Super Admin → `null`/unrestricted, others → their branch + `user_branches`). Built now as reusable infra; real enforcement begins once branch-owned data exists (Sales, Purchases, Inventory, Expenses in later phases) | Critical | Branches | 2026-07-08 |
+| ☑ | Frontend: Branch list/create/edit pages (detail page folded into edit — matches the Users/Roles pattern, no separate read-only view built) | Critical | Branches | 2026-07-08 |
+| ☑ | Business rule: Super Admin sees all, Manager sees assigned branches, Cashier sees assigned branch only — encoded in `branchScope.js`, consumed starting Phase 14+ | Critical | Branches | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass both apps (fixed on first pass — the `useTable`/`Table` pattern from Phase 3 is now well-established); backend dry-run confirms `/branches` and `/branches/active` 401 pre-auth; frontend verified via Playwright with mocked API — BranchList (active/inactive badges, resolved manager names) and BranchForm (manager dropdown) screenshotted, zero console errors | Critical | Branches | 2026-07-08 |
+
+**Bonus (not originally scoped to this phase, done opportunistically):** converted all route-level page imports in `AppRouter.jsx` to `React.lazy()` + `Suspense` after `vite build` started warning about a >500kB chunk. Every future page follows this pattern automatically. Largest chunk dropped from 507kB to 307kB with the rest split into small per-page chunks.
 
 ## Phase 6 — Dashboard
 

@@ -2,6 +2,24 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 5 — Branches
+
+**Backend**
+- Full Branch CRUD. Deactivation is blocked while any user is still assigned to the branch (same pattern as Phase 4's role-deletion guard) — reassign staff first, then deactivate.
+- `utils/branchScope.js`: `getAccessibleBranchIds(user)` returns `null` for Super Administrator (unrestricted) or the concrete list of accessible branch IDs (primary `branch_id` + `user_branches`) otherwise. This is infrastructure only for now — nothing branch-owned exists yet to scope (Sales, Purchases, Inventory, Expenses all come later) — but it's built once here so every later phase's service layer just calls it instead of reinventing branch-visibility logic.
+- Split the branches endpoint in two: `GET /branches/active` (lightweight name+code lookup for dropdowns, any authenticated user — used by Phase 3's User form) vs. `GET /branches` (full paginated/searchable listing, requires `branches.view`). Existing frontend dropdown consumer updated to match.
+
+**Frontend**
+- `BranchList`/`BranchForm` follow the exact `useTable`/`Table`/`Pagination` pattern established in Phase 3 — lint passed clean on the first try this time, confirming the pattern is now genuinely reusable rather than one-off.
+- Manager assignment dropdown pulls from the Users list (`userService.listUsers`).
+
+**Performance (opportunistic, not originally scoped here)**
+- `vite build` started warning about a >500kB chunk once Branches pushed the bundle over the threshold. Converted every route-level page import in `AppRouter.jsx` to `React.lazy()` wrapped in a single `Suspense`, using the same spinner as `ProtectedRoute`'s loading state. Largest chunk dropped from 507kB to 307kB, with every page now its own small on-demand chunk. This is the pattern all future phases' routes should follow — established now while there are only ~13 routes, rather than retrofitting it across 40+ later.
+
+**Verification**
+- Backend dry-run: both branch endpoints correctly 401 pre-auth.
+- Frontend: Playwright with mocked API — BranchList shows resolved manager names and active/inactive badges, BranchForm's manager dropdown populates correctly, lazy-loaded chunks load without errors. Zero console errors.
+
 ## Phase 4 — Roles & Permissions (Role CRUD + Permission Matrix)
 
 Completes the RBAC module — the permission-check middleware and `usePermission` hook already shipped in Phase 2 when Company Settings needed them first.

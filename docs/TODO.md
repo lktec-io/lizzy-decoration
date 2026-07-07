@@ -197,10 +197,10 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `suppliers` table | Critical | Suppliers | |
-| ☐ | Backend: Supplier CRUD, deactivate, purchase history view | Critical | Suppliers | |
-| ☐ | Frontend: Supplier list/create/edit/detail | Critical | Suppliers | |
-| ☐ | Quality Check | Critical | Suppliers | |
+| ☑ | DB: `suppliers` table | Critical | Suppliers | 2026-07-07 (Phase 0) |
+| ☑ | Backend: Supplier CRUD, deactivate, purchase history view + outstanding balance (real queries against `purchase_orders`/`supplier_payments` — correctly empty/zero until Phase 14 ships) | Critical | Suppliers | 2026-07-08 |
+| ☑ | Frontend: Supplier list (modal create/edit, matches Categories/Brands/Roles pattern) + detail page (KPI balance cards + purchase history table) | Critical | Suppliers | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass (zero chunk-size warnings); backend dry-run confirms auth-gating; frontend verified via Playwright with mocked API — list and detail (correctly empty balance/history state) screenshotted, zero console errors | Critical | Suppliers | 2026-07-08 |
 
 ## Phase 14 — Purchases
 

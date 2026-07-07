@@ -2,6 +2,19 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 13 — Suppliers
+
+**Backend**
+- Standard CRUD following the Categories/Brands/Branches pattern, plus two real queries that only Phase 14 (Purchases) will start populating: `findPurchaseHistory` (paginated `purchase_orders` for a supplier) and `getBalance` (`SUM(purchase_orders.total_amount) - SUM(supplier_payments.amount)`). Both correctly return empty/zero today rather than being stubbed — same "real query against an existing-but-unpopulated table" pattern used for Dashboard KPIs (Phase 6) and Category/Brand product-counts (Phases 7-8).
+
+**Frontend**
+- `SupplierList`: modal create/edit (matches Roles/Categories/Brands), row-level Activate/Deactivate toggle.
+- `SupplierDetail` (new page shape for this phase): KPI balance cards (Total Purchased / Total Paid / Outstanding Balance, reusing Phase 6's `KPICard`) above a paginated purchase history table — the first "detail page with real sub-data" in the app, since Categories/Brands/Roles never needed one.
+
+**Verification**
+- Backend dry-run: supplier endpoints correctly 401 pre-auth.
+- Frontend: Playwright with mocked API — list and detail page (explicitly showing the correctly-empty "No purchases recorded yet" state and zero balances) both screenshotted, zero console errors.
+
 ## Phase 12 — Label Printing
 
 **Backend**

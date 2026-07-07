@@ -2,6 +2,24 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 12 — Label Printing
+
+**Backend**
+- `label.service.js` generates a real multi-label PDF with `pdfkit`: given a list of product IDs and a size key (`small`/`medium`/`large`, each with real mm dimensions converted to PDF points), it computes how many labels fit per row/column on an A4 page and auto-paginates — not a fixed "N per page" constant, so the small/medium/large sizes actually fit meaningfully different label counts per sheet.
+- Branch is accepted as a **print-time query/body parameter only** (resolved to a name and printed as informational text), not stored or baked into the QR — consistent with Phase 11's resolution that products don't have a single owning branch.
+- Reuses `qrCodeService.getForProduct()` (auto-generates a QR on first request if one doesn't exist yet) rather than requiring the QR to have been generated separately first.
+- Added `backend/utils/formatCurrency.js` — a backend-side twin of the frontend's currency formatter (Node and the browser bundle are separate module graphs, so the frontend util isn't reachable from backend code; duplicating this one small pure function was simpler and more honest than trying to share code across the client/server boundary for a single formatter).
+
+**Frontend**
+- `QRCodeDisplay`'s "Print Label" button now calls the real backend PDF endpoint instead of Phase 11's placeholder `window.print()` on a manually-constructed HTML string — same visual entry point, properly formatted output.
+- `ProductList` gains a "Print Labels (N)" bulk action, appearing alongside the existing Activate/Deactivate buttons once rows are selected — reuses Phase 9's row-selection state, no new selection mechanism.
+- `labelService.js`: fetches the PDF as a blob (`responseType: 'blob'`) and opens it in a new tab via an object URL, revoked after 30s — lets the browser's native PDF viewer handle preview/print/save rather than building a custom in-app PDF viewer.
+
+**Verification**
+- Backend: a **functional** pdfkit smoke test (not just `node --check`) replicated the exact `rect`/`image`/`text` drawing sequence used in `label.service.js` against a real fixture PNG and confirmed valid PDF bytes are produced — catches pdfkit API misuse that a syntax check alone would miss.
+- Backend dry-run: both label endpoints correctly 401 pre-auth.
+- Frontend: Playwright confirmed the trickiest part of this feature — fetch → blob → new-tab — actually works, by asserting the popup window's URL starts with `blob:` after clicking "Print Labels". Zero console errors.
+
 ## Phase 11 — QR Codes
 
 **Spec deviation, deliberate and documented:** `MASTER_PROMPT.md` says the QR payload should include Branch ID. Since Phase 0 locked in a shared-catalog architecture (one `products` row per SKU, stock tracked per branch in `inventory`), a product has no single branch to encode — baking one in would be wrong for anything stocked at multiple branches. Resolution: the QR encodes `{ productId, code, name, sellingPrice }` only; the scanning POS terminal supplies branch context from its own session at scan time, in Phase 17.

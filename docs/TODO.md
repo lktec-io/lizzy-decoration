@@ -187,11 +187,11 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | Backend: label PDF generation (pdfkit) — QR, name, code, price, branch | High | Labels | |
-| ☐ | Frontend: single label print | High | Labels | |
-| ☐ | Frontend: bulk label print (multi-select from product list) | Medium | Labels | |
-| ☐ | Support multiple paper/sticker sizes | Medium | Labels | |
-| ☐ | Quality Check | High | Labels | |
+| ☑ | Backend: label PDF generation (pdfkit) — QR, name, code, price, optional branch (informational only, print-time param — not baked into the QR itself, per Phase 11's shared-catalog resolution). Auto-grid-packs labels onto A4 pages based on the chosen size | High | Labels | 2026-07-08 |
+| ☑ | Frontend: single label print — replaced Phase 11's ad-hoc `window.print()` in `QRCodeDisplay` with the real backend-generated PDF, opened in a new tab via blob URL | High | Labels | 2026-07-08 |
+| ☑ | Frontend: bulk label print (multi-select from product list, reusing `ProductList`'s existing row-selection state from Phase 9) | Medium | Labels | 2026-07-08 |
+| ☑ | Support multiple paper/sticker sizes — `small`/`medium`/`large` (40×25mm / 60×35mm / 90×50mm), column/row count computed per size rather than hardcoded | Medium | Labels | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass; backend dry-run confirms auth-gating on both endpoints; **functional pdfkit smoke test** (not just syntax-check) replicating the exact rect/image/text drawing calls confirmed real PDF bytes generate correctly; frontend verified via Playwright — confirmed the tricky part (fetch PDF as blob → open in new browser tab) actually works by asserting the popup's URL starts with `blob:`, zero console errors | High | Labels | 2026-07-08 |
 
 ## Phase 13 — Suppliers
 

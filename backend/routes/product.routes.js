@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import * as productController from '../controllers/product.controller.js';
 import * as qrCodeController from '../controllers/qrCode.controller.js';
+import * as labelController from '../controllers/label.controller.js';
 import { authenticate } from '../middlewares/authenticate.js';
 import { authorize } from '../middlewares/authorize.js';
 import { validateRequest } from '../middlewares/validateRequest.js';
 import { createUploader } from '../middlewares/upload.js';
 import { productValidator, bulkStatusValidator } from '../validators/product.validator.js';
+import { bulkLabelValidator } from '../validators/label.validator.js';
 
 const router = Router();
 const productImageUploader = createUploader({ subfolder: 'products', maxSizeMb: 3 });
@@ -22,5 +24,7 @@ router.post('/:id/images', authorize('products.edit'), productImageUploader.sing
 router.delete('/:id/images/:imageId', authorize('products.edit'), productController.removeImage);
 router.get('/:id/qr', authorize('products.view'), qrCodeController.getForProduct);
 router.post('/:id/qr/regenerate', authorize('products.manage'), qrCodeController.regenerate);
+router.post('/labels', authorize('products.print'), bulkLabelValidator, validateRequest, labelController.bulk);
+router.get('/:id/label', authorize('products.print'), labelController.single);
 
 export default router;

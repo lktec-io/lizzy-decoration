@@ -187,7 +187,7 @@ function ProductForm() {
         <div className="card mb-5">
           <div className="card-header"><span className="card-title">QR Code</span></div>
           <div className="card-body">
-            <QRCodeDisplay productId={id} productName={productMeta.name} productCode={productMeta.code} />
+            <QRCodeDisplay productId={id} productName={productMeta.name} />
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiPackage } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiPackage, FiPrinter } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
@@ -10,6 +10,7 @@ import { usePermission } from '../../hooks/usePermission';
 import * as productService from '../../services/productService';
 import * as categoryService from '../../services/categoryService';
 import * as brandService from '../../services/brandService';
+import * as labelService from '../../services/labelService';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 function ProductList() {
@@ -18,12 +19,14 @@ function ProductList() {
   const canEdit = usePermission('products.edit');
   const canDelete = usePermission('products.delete');
   const canManage = usePermission('products.manage');
+  const canPrint = usePermission('products.print');
 
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [selected, setSelected] = useState(new Set());
   const [pendingDelete, setPendingDelete] = useState(null);
   const [actionError, setActionError] = useState('');
+  const [printing, setPrinting] = useState(false);
 
   const fetchProducts = useCallback((params) => productService.listProducts(params), []);
   const { items, meta, loading, page, setPage, search, setSearch, filters, setFilters, refetch } = useTable(fetchProducts);
@@ -56,6 +59,18 @@ function ProductList() {
   const handleDelete = async () => {
     await productService.deleteProduct(pendingDelete.id);
     refetch();
+  };
+
+  const handleBulkPrint = async () => {
+    setActionError('');
+    setPrinting(true);
+    try {
+      await labelService.printBulkLabels(Array.from(selected), { size: 'medium' });
+    } catch {
+      setActionError('Failed to generate labels PDF.');
+    } finally {
+      setPrinting(false);
+    }
   };
 
   const columns = [
@@ -150,6 +165,11 @@ function ProductList() {
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleBulkStatus('active')}>Activate ({selected.size})</button>
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleBulkStatus('inactive')}>Deactivate ({selected.size})</button>
               </>
+            )}
+            {canPrint && selected.size > 0 && (
+              <button type="button" className={`btn btn-secondary btn-sm ${printing ? 'btn-loading' : ''}`} onClick={handleBulkPrint} disabled={printing}>
+                <FiPrinter aria-hidden="true" /> Print Labels ({selected.size})
+              </button>
             )}
           </div>
         </div>

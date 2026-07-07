@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { FiDownload, FiPrinter, FiRefreshCw } from 'react-icons/fi';
 import * as qrCodeService from '../../services/qrCodeService';
+import * as labelService from '../../services/labelService';
 import '../../styles/components/QRCodeDisplay.css';
 
-function QRCodeDisplay({ productId, productName, productCode }) {
+function QRCodeDisplay({ productId, productName }) {
   const [qr, setQr] = useState(null);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -31,21 +33,16 @@ function QRCodeDisplay({ productId, productName, productCode }) {
     }
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank', 'width=400,height=500');
-    printWindow.document.write(`
-      <html>
-        <head><title>${productName} — Label</title></head>
-        <body style="text-align:center; font-family: sans-serif; padding: 24px;">
-          <img src="${qr.qr_path}" alt="QR" style="width:220px;height:220px;" />
-          <p style="font-weight:600; margin-top:12px;">${productName}</p>
-          <p style="color:#555;">${productCode}</p>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+  const handlePrint = async () => {
+    setPrinting(true);
+    setError('');
+    try {
+      await labelService.printSingleLabel(productId, { size: 'medium' });
+    } catch {
+      setError('Failed to generate label PDF.');
+    } finally {
+      setPrinting(false);
+    }
   };
 
   if (loading) {
@@ -67,9 +64,9 @@ function QRCodeDisplay({ productId, productName, productCode }) {
         )}
         <div className="flex flex-col gap-2">
           <a href={qr?.qr_path} download className="btn btn-secondary btn-sm">
-            <FiDownload aria-hidden="true" /> Download
+            <FiDownload aria-hidden="true" /> Download QR
           </a>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={handlePrint}>
+          <button type="button" className={`btn btn-secondary btn-sm ${printing ? 'btn-loading' : ''}`} onClick={handlePrint} disabled={printing}>
             <FiPrinter aria-hidden="true" /> Print Label
           </button>
           <button

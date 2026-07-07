@@ -21,6 +21,8 @@ const RoleList = lazy(() => import('../pages/roles/RoleList'));
 const PermissionMatrix = lazy(() => import('../pages/roles/PermissionMatrix'));
 const BranchList = lazy(() => import('../pages/branches/BranchList'));
 const BranchForm = lazy(() => import('../pages/branches/BranchForm'));
+const CategoryList = lazy(() => import('../pages/categories/CategoryList'));
+const BrandList = lazy(() => import('../pages/brands/BrandList'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -55,6 +57,8 @@ function AppRouter() {
               <Route path="/branches" element={<BranchList />} />
               <Route path="/branches/new" element={<BranchForm />} />
               <Route path="/branches/:id/edit" element={<BranchForm />} />
+              <Route path="/categories" element={<CategoryList />} />
+              <Route path="/brands" element={<BrandList />} />
             </Route>
           </Route>
 

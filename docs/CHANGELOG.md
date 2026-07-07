@@ -2,6 +2,22 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phases 7-8 — Categories & Brands (Master Prompt Phase 2: Inventory Management Engine begins)
+
+Two small, near-identical catalog modules, built together. Both follow the exact CRUD-with-modal pattern established by `RoleList` (Phase 4) rather than a full separate form page — appropriate given each has only 3-4 fields.
+
+**Backend**
+- `category.repository.js`/`brand.repository.js`: standard CRUD plus `countProducts(id)` — a real query against the `products` table (which exists since Phase 0) that correctly returns 0 today and starts blocking deletion the moment Phase 9 ships products referencing a category/brand. No stubbing, same pattern as Phase 6's dashboard KPIs.
+- Both enforce uniqueness on name *and* code (spec only mentioned name; code uniqueness is an obvious necessary addition since codes are meant to be short stable identifiers, e.g. for future product-code prefixing).
+- `/active` lookup endpoints added preemptively for Phase 9's Product form dropdowns, mirroring the Branches pattern from Phase 5.
+
+**Frontend**
+- `CategoryList`/`BrandList`: `useTable` + `Table` + `Pagination` + `SearchInput` for the list, `Modal` + React Hook Form for create/edit, `ConfirmDialog` for delete. Zero new reusable infrastructure needed — this is the payoff of Phase 3's investment in shared components.
+
+**Verification**
+- Backend dry-run: both list endpoints correctly 401 pre-auth.
+- Frontend: Playwright with mocked API — category list, the New Category modal, and the brand list (country column, active/inactive badges) all screenshotted, zero console errors.
+
 ## Phase 6 — Dashboard (completes Master Prompt Phase 1: Core ERP Foundation)
 
 **The architectural payoff of Phase 0's complete-schema-upfront decision:** every KPI and chart the spec asks for (Sales, Purchases, Inventory, Customers, Suppliers, Car Wash, Transfers — none of which have their own CRUD/business-logic modules yet) can be queried for real right now, because all 42 tables already exist from Phase 0. No stub data, no hardcoded zeros, no TODO placeholders — genuine `SELECT`/`SUM`/`GROUP BY` queries against real tables that simply return 0/empty until Phases 7-21 start writing rows, then light up automatically with zero further backend work.

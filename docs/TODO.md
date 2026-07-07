@@ -123,21 +123,21 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `categories` table | Critical | Categories | |
-| ☐ | Backend: CRUD + soft delete blocked if products exist | Critical | Categories | |
-| ☐ | Frontend: Category list/create/edit | Critical | Categories | |
-| ☐ | Validation: unique category name | Critical | Categories | |
-| ☐ | Quality Check | Critical | Categories | |
+| ☑ | DB: `categories` table | Critical | Categories | 2026-07-07 (Phase 0) |
+| ☑ | Backend: CRUD + soft delete blocked if products exist (real `COUNT(*) FROM products WHERE category_id = ?` check — correctly 0 until Phase 9 ships) | Critical | Categories | 2026-07-08 |
+| ☑ | Frontend: Category list/create/edit (modal pattern, matches `RoleList`) | Critical | Categories | 2026-07-08 |
+| ☑ | Validation: unique category name and code | Critical | Categories | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass, backend dry-run confirms auth-gating, frontend verified via Playwright with mocked API, zero console errors | Critical | Categories | 2026-07-08 |
 
 ## Phase 8 — Brands
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `brands` table | Critical | Brands | |
-| ☐ | Backend: CRUD + soft delete blocked if products exist | Critical | Brands | |
-| ☐ | Frontend: Brand list/create/edit | Critical | Brands | |
-| ☐ | Validation: unique brand name | Critical | Brands | |
-| ☐ | Quality Check | Critical | Brands | |
+| ☑ | DB: `brands` table | Critical | Brands | 2026-07-07 (Phase 0) |
+| ☑ | Backend: CRUD + soft delete blocked if products exist | Critical | Brands | 2026-07-08 |
+| ☑ | Frontend: Brand list/create/edit | Critical | Brands | 2026-07-08 |
+| ☑ | Validation: unique brand name and code | Critical | Brands | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass, backend dry-run confirms auth-gating, frontend verified via Playwright with mocked API (country column, active/inactive badges), zero console errors | Critical | Brands | 2026-07-08 |
 
 ## Phase 9 — Products
 

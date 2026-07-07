@@ -12,6 +12,19 @@ dist
 dist-ssr
 *.local
 
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Runtime uploads (backend)
+backend/uploads/**
+!backend/uploads/**/.gitkeep
+
+# Runtime logs (backend)
+backend/logs/**
+!backend/logs/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

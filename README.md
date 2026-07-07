@@ -1,16 +1,42 @@
-# React + Vite
+# JOZZY ERP
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Business Management System for **JOZZY Decoration & Accessories** — a production ERP covering authentication, inventory, POS, purchases, transfers, expenses, car wash, and reporting across multiple branches.
 
-Currently, two official plugins are available:
+Production URL: `https://jozzy.clixworks.co.tz`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Documentation
 
-## React Compiler
+Start here before touching any code:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [`prompt/MASTER_PROMPT.md`](prompt/MASTER_PROMPT.md) — the full product/engineering specification
+- [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — architecture decisions, phase plan, health scorecard
+- [`docs/TODO.md`](docs/TODO.md) — the live task list, updated after every change
+- [`docs/DATABASE_PLAN.md`](docs/DATABASE_PLAN.md) — schema plan
+- [`docs/API_PLAN.md`](docs/API_PLAN.md) — REST API contract
+- [`docs/FOLDER_STRUCTURE.md`](docs/FOLDER_STRUCTURE.md) — full frontend/backend directory layout
+- [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — record of every implemented change
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Frontend:** React + Vite, React Router DOM, Axios, React Hook Form, Framer Motion, React Icons, Chart.js + react-chartjs-2, html5-qrcode, pure CSS (no UI framework).
+
+**Backend:** Node.js + Express, MySQL (mysql2), JWT auth, express-validator, Helmet, Multer, node-cron, Nodemailer, pdfkit, exceljs.
+
+## Getting Started
+
+### Frontend
+
+```bash
+npm install
+npm run dev
+```
+
+### Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+See `docs/DEPLOYMENT.md` (added in Phase 25) for production setup on the Contabo VPS.

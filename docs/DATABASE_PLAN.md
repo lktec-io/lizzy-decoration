@@ -1,6 +1,6 @@
 ﻿# JOZZY ERP — Database Plan
 
-Database-first planning document. This is a schema **plan**, not runnable DDL — migrations are written during Phase 1+ implementation, not before approval. Engine: **MySQL 8**, InnoDB, `utf8mb4`.
+Database-first planning document and schema reference. The runnable DDL now exists as numbered migrations in [`backend/database/migrations/`](../backend/database/migrations/) (10 files, 42 tables, statically verified for FK-ordering correctness) plus seed data in [`backend/database/seeders/`](../backend/database/seeders/) and a combined [`backend/database/schema.sql`](../backend/database/schema.sql) — see [`backend/database/README.md`](../backend/database/README.md) for apply instructions and the reasoning behind the `branches`↔`users` circular-FK resolution and the deliberate omission of a seeded admin account. Engine: **MySQL 8**, InnoDB, `utf8mb4`.
 
 ---
 
@@ -44,6 +44,7 @@ Below, each table lists only its **domain-specific** columns; the global standar
 - `branch_id` → `branches.id`
 - Composite unique (`user_id`,`branch_id`)
 - Purpose: many-to-many assignment for Managers who oversee multiple branches; Cashiers/Store Keepers typically rely on `users.branch_id` alone
+- Pure join table: only `id`, the two FKs, and `created_at` — no `updated_by`/`updated_at`/`deleted_at` (rows are inserted/deleted, never updated)
 
 ### `roles`
 - `name` VARCHAR(50) UNIQUE — seeded: Super Administrator, Manager, Cashier, Store Keeper; custom roles supported
@@ -60,6 +61,7 @@ Below, each table lists only its **domain-specific** columns; the global standar
 - `role_id` → `roles.id`
 - `permission_id` → `permissions.id`
 - Composite unique (`role_id`,`permission_id`)
+- Pure join table: only `id`, the two FKs, and `created_at` — same reasoning as `user_branches`
 
 ### `sessions`
 - `user_id` → `users.id`

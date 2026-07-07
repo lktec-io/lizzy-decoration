@@ -1,0 +1,35 @@
+.error-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-6);
+  background-color: var(--color-background);
+}
+
+.error-code {
+  font-size: 4rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gold);
+  line-height: 1;
+}
+
+.error-title {
+  margin-top: var(--space-3);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.error-message {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  max-width: 420px;
+}
+
+.error-action {
+  margin-top: var(--space-6);
+}

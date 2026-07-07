@@ -10,18 +10,22 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | Install frontend deps: react-router-dom, axios, react-hook-form, framer-motion, react-icons, chart.js, react-chartjs-2, html5-qrcode | Critical | Setup | |
-| ☐ | Replace default `App.jsx`/`App.css`/`README.md` Vite scaffold content | Critical | Setup | |
-| ☐ | Create `src/` subfolders per `FOLDER_STRUCTURE.md` | Critical | Setup | |
-| ☐ | Scaffold `backend/` (Express app, `package.json`, folder tree) | Critical | Setup | |
-| ☐ | Install backend deps: express, mysql2, jsonwebtoken, bcrypt, express-validator, helmet, express-rate-limit, cors, multer, qrcode, pdfkit, exceljs, json2csv, node-cron, nodemailer, dotenv, winston | Critical | Setup | |
-| ☐ | Create `.env.example` (frontend + backend) — never commit real secrets | Critical | Setup | |
-| ☐ | Set up MySQL connection pool + config | Critical | Setup | |
-| ☐ | Set up base Express app: Helmet, CORS, rate limiter, JSON body parser, centralized error handler | Critical | Setup | |
-| ☐ | Set up React Router skeleton + `AuthLayout`/`MainLayout` shells | Critical | Setup | |
-| ☐ | Configure ESLint for backend (mirror frontend strictness) | High | Setup | |
-| ☐ | Verify `npm run build` and `npm run lint` pass on frontend | Critical | Setup | |
-| ☐ | Initialize git repository, initial commit | High | Setup | |
+| ☑ | Install frontend deps: react-router-dom, axios, react-hook-form, framer-motion, react-icons, chart.js, react-chartjs-2, html5-qrcode | Critical | Setup | 2026-07-07 |
+| ☑ | Replace default `App.jsx`/`App.css`/`README.md` Vite scaffold content | Critical | Setup | 2026-07-07 |
+| ☑ | Create `src/` subfolders per `FOLDER_STRUCTURE.md` | Critical | Setup | 2026-07-07 |
+| ☑ | Scaffold `backend/` (Express app, `package.json`, folder tree) | Critical | Setup | 2026-07-07 |
+| ☑ | Install backend deps: express, mysql2, jsonwebtoken, bcrypt, express-validator, helmet, express-rate-limit, cors, cookie-parser, multer, qrcode, pdfkit, exceljs, json2csv, node-cron, nodemailer, dotenv, winston | Critical | Setup | 2026-07-07 |
+| ☑ | Create `.env.example` (frontend + backend) — pure placeholders, no real secrets | Critical | Setup | 2026-07-07 |
+| ☑ | Set up MySQL connection pool + config (reads exclusively from env vars, no hardcoded fallback credentials) | Critical | Setup | 2026-07-07 |
+| ☑ | Set up base Express app: Helmet, CORS, rate limiter, JSON body parser, centralized error handler | Critical | Setup | 2026-07-07 |
+| ☑ | Set up React Router skeleton + `AuthLayout`/`MainLayout` shells | Critical | Setup | 2026-07-07 |
+| ☑ | Configure ESLint for backend (mirror frontend strictness) | High | Setup | 2026-07-07 |
+| ☑ | Write complete database schema: 10 migrations, 42 tables, FK-order statically verified + seeders (roles/permissions/expense categories/carwash services) + `schema.sql` | Critical | Setup | 2026-07-07 |
+| ☑ | Verify `npm run build` and `npm run lint` pass on frontend | Critical | Setup | 2026-07-07 |
+| ☑ | Verify backend structure without a live DB: syntax check every file, dry-import `app.js`, live health-check request on an ephemeral port | Critical | Setup | 2026-07-07 |
+| ☑ | Initialize git repository, initial commit | High | Setup | 2026-07-07 |
+
+**Note:** production database provisioning (creating the DB/user, writing the real `backend/.env`, running the migrations, final connection test) is being handled directly by the project owner on their Contabo MySQL server — not part of this repo's automated setup.
 
 ## Phase 1 — Authentication
 

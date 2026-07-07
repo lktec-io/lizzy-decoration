@@ -1,0 +1,38 @@
+/* Design tokens: radius, shadow, transition, z-index, layout dimensions. Colors live in colors.css, spacing in spacing.css. */
+:root {
+  /* Border radius (spec: 8px standard rounded corners) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows — soft, per spec */
+  --shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.06);
+  --shadow-md: 0 2px 8px rgba(17, 17, 17, 0.08);
+  --shadow-lg: 0 8px 24px rgba(17, 17, 17, 0.12);
+
+  /* Transitions — subtle, professional */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 320ms ease;
+
+  /* Z-index scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sidebar: 300;
+  --z-navbar: 400;
+  --z-modal-backdrop: 500;
+  --z-modal: 510;
+  --z-toast: 600;
+
+  /* App shell dimensions */
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 76px;
+  --navbar-height: 64px;
+
+  /* Breakpoints (reference only — media queries need literal values, kept here for JS/doc parity) */
+  --breakpoint-mobile: 480px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-laptop: 1024px;
+  --breakpoint-desktop: 1280px;
+}

@@ -1,0 +1,38 @@
+{
+  "name": "jozzy-erp-backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "JOZZY ERP API - Express backend",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.2.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "mysql2": "^3.22.6",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^9.0.3",
+    "pdfkit": "^0.19.1",
+    "qrcode": "^1.5.4",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0",
+    "nodemon": "^3.1.14"
+  }
+}

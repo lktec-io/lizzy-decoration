@@ -1,0 +1,67 @@
+/* Desktop-first: base styles above target desktop, then step down through laptop -> tablet -> mobile. No horizontal scrolling on the page body — only .table-wrapper may scroll. */
+
+@media (max-width: 1024px) {
+  .app-main {
+    padding: var(--page-padding-tablet);
+  }
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'navbar'
+      'main';
+  }
+
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+  }
+
+  .app-sidebar-open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .app-main {
+    padding: var(--page-padding-mobile);
+  }
+
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: var(--space-6);
+  }
+
+  .card-body {
+    padding: var(--space-4);
+  }
+
+  .table-toolbar,
+  .table-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

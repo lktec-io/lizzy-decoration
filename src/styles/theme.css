@@ -1,0 +1,13 @@
+/* Single entry point for the design system. Import order matters: tokens first, then base/layout, then component/utility layers. */
+@import './variables.css';
+@import './colors.css';
+@import './typography.css';
+@import './spacing.css';
+@import './layout.css';
+@import './buttons.css';
+@import './forms.css';
+@import './tables.css';
+@import './cards.css';
+@import './animations.css';
+@import './responsive.css';
+@import './utilities.css';

@@ -2,6 +2,28 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 6 — Dashboard (completes Master Prompt Phase 1: Core ERP Foundation)
+
+**The architectural payoff of Phase 0's complete-schema-upfront decision:** every KPI and chart the spec asks for (Sales, Purchases, Inventory, Customers, Suppliers, Car Wash, Transfers — none of which have their own CRUD/business-logic modules yet) can be queried for real right now, because all 42 tables already exist from Phase 0. No stub data, no hardcoded zeros, no TODO placeholders — genuine `SELECT`/`SUM`/`GROUP BY` queries against real tables that simply return 0/empty until Phases 7-21 start writing rows, then light up automatically with zero further backend work.
+
+**Backend**
+- `dashboard.repository.js`: all 14 KPIs (today/monthly sales & profit, customers, suppliers, products, inventory value, low-stock count, today/monthly expenses, car wash revenue, pending transfers/purchases) and all 8 chart types (sales/revenue/expense/profit trend, top products, branch performance, inventory summary, car wash summary). Profit is computed as `line_total - (quantity × buying_price)` per sale item, not stored redundantly.
+- First real consumer of Phase 5's `branchScope.js`: every KPI/chart query is branch-scoped (`getAccessibleBranchIds`), so Super Admin sees everything and Managers/Cashiers see only their branch(es) — exactly the business rule that utility was built for, now proven end-to-end.
+- Caught and fixed a fragile pattern while writing this: initially used `.replace('branch_id', 'i.branch_id')` string substitution to adapt a filter clause for a different table alias. Replaced with building the filter with the correct alias from the start — string-editing generated SQL fragments is a real correctness risk (silent wrong replacements) that isn't worth the shortcut.
+- `GET /search`: global search, **users-only for now** — the only entity that exists. Response is `{ users: [...] }`, shaped to add `products`/`customers`/`suppliers`/etc. keys without a breaking change as later phases ship.
+
+**Frontend**
+- `components/charts/`: `LineChart`, `BarChart`, `DoughnutChart` — thin `react-chartjs-2` wrappers themed to the gold/black brand palette (`chartTheme.js` duplicates the CSS custom properties as hex constants, since Chart.js can't read CSS vars directly).
+- `components/dashboard/`: `KPICard`, `ChartCard` (loading/empty states), `ActivityTimeline`, `QuickActions`.
+- **Quick Actions are visibly disabled**, not hidden and not linking to dead pages — all 8 spec'd actions (New Sale, New Product, etc.) target routes that don't exist until Phases 8-21. This matches the master prompt's own Implementation Order (Dashboard is step 7, those pages are steps 8-21), so building working links now was never possible; each action flips to enabled the moment its owning phase adds the route.
+- Navbar's search input (static since Phase 0) is now functionally wired: debounced query, dropdown results, click-outside-to-close, navigates to the matched user's edit page.
+- `utils/formatCurrency.js`: `formatCurrency`/`formatNumber` via `Intl.NumberFormat`, currency defaults to TZS.
+
+**Verification**
+- Backend dry-run: all dashboard and search endpoints correctly 401 before authentication.
+- Frontend: Playwright with mocked KPI/chart/activity/search responses — confirmed all 14 KPI cards, all 8 charts (rendering real Chart.js canvases, not placeholders), the activity timeline, the quick actions grid, and the wired search dropdown, all in one full-page screenshot. Zero console errors on what is by far the most complex page built so far.
+- `vite build`: Dashboard is its own 198KB lazy chunk (Chart.js is heavy but only loads when the Dashboard route is visited) — the code-splitting work from Phase 5 paid off immediately.
+
 ## Phase 5 — Branches
 
 **Backend**

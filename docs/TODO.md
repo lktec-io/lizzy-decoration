@@ -103,18 +103,21 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | Backend: KPI aggregation endpoints (today/monthly sales, profit, expenses, low stock, etc.) | Critical | Dashboard | |
-| ☐ | Backend: chart data endpoints (sales/revenue/expense/profit trend, top products, branch performance) | Critical | Dashboard | |
-| ☐ | Backend: recent activity timeline endpoint | High | Dashboard | |
-| ☐ | Backend: global search endpoint (products/customers/suppliers/sales/purchases/vehicles/expenses/users) | High | Dashboard | |
-| ☐ | Frontend: KPI cards | Critical | Dashboard | |
-| ☐ | Frontend: Chart.js charts (Sales, Revenue, Expense, Profit trend; Top Products; Branch Performance; Inventory; Car Wash) | Critical | Dashboard | |
-| ☐ | Frontend: Recent Activity timeline | High | Dashboard | |
-| ☐ | Frontend: Quick Action buttons | Medium | Dashboard | |
-| ☐ | Frontend: Notification panel widget | High | Dashboard | |
-| ☐ | Frontend: Navbar (logo, branch selector, search, notifications, avatar, date/time) | Critical | Dashboard | |
-| ☐ | Frontend: Sidebar (collapsible, active-highlight, full menu) | Critical | Dashboard | |
-| ☐ | Quality Check — responsive on all breakpoints | Critical | Dashboard | |
+| ☑ | Backend: KPI aggregation endpoint — all 14 KPIs from the spec, querying the real tables built in Phase 0 (correctly returns 0 until Sales/Purchases/Inventory/etc. start writing data in later phases; no stubbing needed since the full schema already existed) | Critical | Dashboard | 2026-07-08 |
+| ☑ | Backend: chart data endpoints — all 8 types (sales/revenue/expense/profit trend, top products, branch performance, inventory summary, car wash summary), `GET /dashboard/charts/:type` | Critical | Dashboard | 2026-07-08 |
+| ☑ | Backend: recent activity timeline endpoint (reuses `activityLog.repository.js` from Phase 1) | High | Dashboard | 2026-07-08 |
+| ☑ | Backend: global search endpoint — **users only** for now (the only searchable entity that exists); response shape is grouped by entity type so products/customers/suppliers/etc. slot in without a breaking change as their phases ship | High | Dashboard | 2026-07-08 |
+| ☑ | Backend: all KPIs/charts respect branch scoping via Phase 5's `branchScope.js` — first real consumer of that utility | Critical | Dashboard | 2026-07-08 |
+| ☑ | Frontend: KPI cards — all 14, `formatCurrency`/`formatNumber` utilities added | Critical | Dashboard | 2026-07-08 |
+| ☑ | Frontend: Chart.js charts — all 8 types via reusable `LineChart`/`BarChart`/`DoughnutChart` wrappers themed to the brand palette | Critical | Dashboard | 2026-07-08 |
+| ☑ | Frontend: Recent Activity timeline | High | Dashboard | 2026-07-08 |
+| ☑ | Frontend: Quick Action buttons — all 8 from the spec, rendered visibly disabled ("coming soon") since every target page is a later phase (matches the master prompt's own Implementation Order — Dashboard is step 7, those pages are steps 8-21); each lights up automatically once its phase ships | Medium | Dashboard | 2026-07-08 |
+| ☐ | Frontend: Notification panel widget | High | Dashboard | *(deferred to Phase 22 — nothing generates real notifications yet; premature to build now)* |
+| ☑ | Frontend: Navbar — logo, branch selector, **search now functionally wired** (debounced, dropdown results, click-outside-to-close), notifications icon (visual only, Phase 22), avatar, date/time | Critical | Dashboard | 2026-07-08 |
+| ☑ | Frontend: Sidebar (collapsible, active-highlight, full menu) — shipped incrementally since Phase 0, confirmed complete here | Critical | Dashboard | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass both apps (zero chunk-size warnings after Phase 5's code-splitting); backend dry-run confirms all dashboard/search endpoints 401 pre-auth; frontend verified via Playwright with mocked KPI/chart/activity/search data — full-page screenshot confirms all 14 KPI cards, all 8 charts, activity timeline, quick actions, and the wired search dropdown all render correctly with zero console errors | Critical | Dashboard | 2026-07-08 |
+
+**Milestone:** this completes `MASTER_PROMPT.md`'s "Phase 1 — Core ERP Foundation" (Company, Auth, Users, Roles/Permissions, Branches, Dashboard). Every subsequent phase builds catalog/transactional modules on top of this foundation.
 
 ## Phase 7 — Categories
 

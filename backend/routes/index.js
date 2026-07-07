@@ -5,6 +5,8 @@ import companyRoutes from './company.routes.js';
 import userRoutes from './user.routes.js';
 import branchRoutes from './branch.routes.js';
 import roleRoutes from './role.routes.js';
+import dashboardRoutes from './dashboard.routes.js';
+import searchRoutes from './search.routes.js';
 
 const router = Router();
 
@@ -20,5 +22,7 @@ router.use('/company', companyRoutes);
 router.use('/users', userRoutes);
 router.use('/branches', branchRoutes);
 router.use('/roles', roleRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/search', searchRoutes);
 
 export default router;

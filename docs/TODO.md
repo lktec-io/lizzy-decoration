@@ -81,10 +81,10 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 | ☑ | Seed default roles: Super Administrator, Manager, Cashier, Store Keeper | Critical | RBAC | 2026-07-07 (Phase 0) |
 | ☑ | Seed permission catalog (view/create/edit/delete/approve/export/print + module-manage permissions) | Critical | RBAC | 2026-07-07 (Phase 0) |
 | ☑ | Backend: permission-check middleware (DB-driven, no hardcoding) — pulled forward to Phase 2, `middlewares/authorize.js` + `repositories/permission.repository.js` | Critical | RBAC | 2026-07-07 (Phase 2) |
-| ☐ | Backend: role CRUD (support future custom roles) | High | RBAC | |
-| ☐ | Frontend: Role management + permission matrix UI | High | RBAC | |
+| ☑ | Backend: role CRUD (support future custom roles; system roles' names locked, deletion blocked if in use) | High | RBAC | 2026-07-08 |
+| ☑ | Frontend: Role management + permission matrix UI (module-grouped grid, per-role diffing so only changed roles are saved, Super Administrator locked to full access) | High | RBAC | 2026-07-08 |
 | ☑ | Frontend: `usePermission` hook + permission-gated UI elements — pulled forward to Phase 2, used by `CompanySettings.jsx` | Critical | RBAC | 2026-07-07 (Phase 2) |
-| ☐ | Quality Check *(remaining scope: Role CRUD + Permission Matrix UI only — middleware/hook already shipped and verified in Phase 2)* | Critical | RBAC | |
+| ☑ | Quality Check: build/lint pass both apps; backend dry-run confirms role/permission-catalog endpoints 401 pre-auth; frontend verified via Playwright with mocked API — RoleList (System/Custom badges, delete hidden for system roles), New Role modal, and PermissionMatrix (grouped checkboxes, locked Super Admin column) all screenshotted with zero console errors | Critical | RBAC | 2026-07-08 |
 
 ## Phase 5 — Branches
 

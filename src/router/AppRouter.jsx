@@ -11,6 +11,8 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import CompanySettings from '../pages/company/CompanySettings';
 import UserList from '../pages/users/UserList';
 import UserForm from '../pages/users/UserForm';
+import RoleList from '../pages/roles/RoleList';
+import PermissionMatrix from '../pages/roles/PermissionMatrix';
 import NotFound404 from '../pages/errors/NotFound404';
 import { ROUTES } from '../constants/routes';
 
@@ -32,6 +34,8 @@ function AppRouter() {
             <Route path="/users" element={<UserList />} />
             <Route path="/users/new" element={<UserForm />} />
             <Route path="/users/:id/edit" element={<UserForm />} />
+            <Route path="/roles" element={<RoleList />} />
+            <Route path="/roles/:id/permissions" element={<PermissionMatrix />} />
           </Route>
         </Route>
 

@@ -2,6 +2,25 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 4 — Roles & Permissions (Role CRUD + Permission Matrix)
+
+Completes the RBAC module — the permission-check middleware and `usePermission` hook already shipped in Phase 2 when Company Settings needed them first.
+
+**Backend**
+- `role.repository.js`: full CRUD plus `countUsersWithRole` (blocks deletion while any user still holds the role). `permission.repository.js`: `replaceForRole` wraps the delete+bulk-insert in a real transaction (rollback on failure) rather than two unguarded statements.
+- Business rules in `role.service.js`: system roles (`is_system=true`) cannot be renamed or deleted regardless of caller permissions — this is a code-level guarantee, not just a missing DELETE button; role name uniqueness checked on both create and update.
+- `middlewares/authorize.js`'s permission cache is invalidated (`invalidatePermissionCache(roleId)`) whenever a role's permission set changes, so updates take effect immediately instead of waiting out the 60-second cache window.
+- Routes: `GET /roles` stays public-to-any-authenticated-user (unchanged from Phase 3, used by dropdowns elsewhere); everything else (`POST/PUT/DELETE /roles`, `GET/PUT /roles/:id/permissions`, `GET /roles/permissions/catalog`) requires the matching `roles.*` permission.
+
+**Frontend**
+- `RoleList.jsx`: table + create/edit modal (2 fields — name, description); delete action hidden entirely for system roles rather than shown-then-rejected.
+- `PermissionMatrix.jsx`: a genuine matrix — permissions grouped by module as rows, roles as columns, checkbox per cell. Fetches every role's current permission set in parallel on load, tracks edits locally, and on Save diffs against the original per role so only roles that actually changed get a `PUT` call (not all of them). The Super Administrator column is rendered checked-and-disabled — editable Super Admin permissions risk locking out the only admin account with no recovery path, so it's structurally prevented rather than just discouraged.
+- Added "Roles" to the Sidebar between Users and Customers (the spec's sidebar list doesn't itemize it separately, but it needs a way in — nested/grouped sidebar sections aren't built yet, so it's a flat top-level entry for now, matching how Settings was handled in Phase 2).
+
+**Verification**
+- Backend dry-run: role + permission-catalog endpoints correctly 401 before authentication.
+- Frontend: Playwright with mocked API responses (same technique as Phase 3, still no live DB in this session) — confirmed RoleList's System/Custom badges and conditional delete button, the New Role modal, and the full PermissionMatrix grid rendering grouped checkboxes with the locked Super Admin column. Zero console errors.
+
 ## Phase 3 — User Management
 
 **Backend**

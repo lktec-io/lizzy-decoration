@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  FiGrid, FiMapPin, FiUsers, FiUserCheck, FiTruck, FiTag, FiBookmark,
+  FiGrid, FiMapPin, FiUsers, FiShield, FiUserCheck, FiTruck, FiTag, FiBookmark,
   FiBox, FiArchive, FiShoppingCart, FiRepeat, FiRotateCcw, FiDollarSign,
   FiDroplet, FiBarChart2, FiBell, FiSettings, FiUser, FiLogOut,
   FiChevronsLeft, FiChevronsRight,
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: FiGrid, end: true },
   { to: '/branches', label: 'Branches', icon: FiMapPin },
   { to: '/users', label: 'Users', icon: FiUsers },
+  { to: '/roles', label: 'Roles', icon: FiShield },
   { to: '/customers', label: 'Customers', icon: FiUserCheck },
   { to: '/suppliers', label: 'Suppliers', icon: FiTruck },
   { to: '/categories', label: 'Categories', icon: FiBookmark },

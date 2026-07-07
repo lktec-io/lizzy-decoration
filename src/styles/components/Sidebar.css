@@ -24,6 +24,16 @@
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
   color: var(--color-gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sidebar-brand-logo {
+  max-height: 36px;
+  max-width: 85%;
+  object-fit: contain;
 }
 
 .sidebar-nav {

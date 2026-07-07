@@ -57,6 +57,11 @@ function AuthProvider({ children }) {
 
   const acknowledgeSessionExpired = useCallback(() => setSessionExpired(false), []);
 
+  const hasPermission = useCallback(
+    (code) => Boolean(user?.permissions?.includes(code)),
+    [user],
+  );
+
   const value = useMemo(
     () => ({
       user,
@@ -66,8 +71,9 @@ function AuthProvider({ children }) {
       login,
       logout,
       acknowledgeSessionExpired,
+      hasPermission,
     }),
-    [user, initializing, sessionExpired, login, logout, acknowledgeSessionExpired],
+    [user, initializing, sessionExpired, login, logout, acknowledgeSessionExpired, hasPermission],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

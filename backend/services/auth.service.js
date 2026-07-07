@@ -20,6 +20,7 @@ import * as sessionRepository from '../repositories/session.repository.js';
 import * as refreshTokenRepository from '../repositories/refreshToken.repository.js';
 import * as passwordResetRepository from '../repositories/passwordReset.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import * as permissionRepository from '../repositories/permission.repository.js';
 import { sendMail, passwordResetEmail } from './email.service.js';
 
 const BCRYPT_ROUNDS = 12;
@@ -27,6 +28,11 @@ const BCRYPT_ROUNDS = 12;
 function sanitizeUser(user) {
   const { password_hash: _passwordHash, ...safe } = user;
   return safe;
+}
+
+async function withPermissions(user) {
+  const permissions = await permissionRepository.getCodesForRole(user.role_id);
+  return { ...sanitizeUser(user), permissions };
 }
 
 function expiresInToMs(expiresIn) {
@@ -99,7 +105,7 @@ export async function login({ identifier, password, rememberMe, ipAddress, userA
 
   const tokens = await issueTokensForUser(user, { rememberMe, ipAddress, userAgent, deviceLabel });
 
-  return { ...tokens, user: sanitizeUser(user) };
+  return { ...tokens, user: await withPermissions(user) };
 }
 
 export async function refresh({ refreshToken }) {
@@ -142,7 +148,7 @@ export async function refresh({ refreshToken }) {
 
   const accessToken = signAccessToken({ sub: user.id, roleId: user.role_id, role: user.role_name, branchId: user.branch_id });
 
-  return { accessToken, refreshToken: newRefreshToken, user: sanitizeUser(user) };
+  return { accessToken, refreshToken: newRefreshToken, user: await withPermissions(user) };
 }
 
 export async function logout({ refreshToken }) {
@@ -167,7 +173,7 @@ export async function getMe(userId) {
   if (!user) {
     throw new ApiError(404, 'User not found');
   }
-  return sanitizeUser(user);
+  return withPermissions(user);
 }
 
 export async function listSessions(userId) {

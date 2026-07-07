@@ -2,6 +2,30 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 2 — Company Settings
+
+**RBAC pulled forward from Phase 4** (only the piece Company Settings actually needed):
+- `repositories/permission.repository.js` + `middlewares/authorize(permissionCode)`: DB-driven permission check with a 60-second in-memory per-role cache (avoids a query on every request while staying correct within a short staleness window). `invalidatePermissionCache()` exported for Phase 4's Role Management UI to call when permissions change.
+- `/auth/login`, `/auth/refresh`, `/auth/me` now all return `permissions: string[]` for the current user's role (previously just the sanitized user row).
+- Frontend: `AuthContext.hasPermission(code)` + a thin `usePermission(code)` hook.
+- Explicitly **not** pulled forward: Role CRUD endpoints/UI and the Permission Matrix editor — those remain Phase 4 scope. `docs/TODO.md` updated to show Phase 4's remaining scope accurately rather than re-listing already-shipped items.
+
+**Backend**
+- `company_settings` is a single-row table — `company.service.js` does get-or-insert-then-update (no seed row, since a fresh business's profile shouldn't be pre-filled with placeholder data).
+- `middlewares/upload.js`: a reusable Multer factory (`createUploader({ subfolder, allowedMimeTypes, maxSizeMb })`) — the logo endpoint is the first consumer; product images, avatars and receipts will reuse it in later phases instead of duplicating Multer config.
+- Logo upload validates MIME type + 2MB limit, stores under `backend/uploads/logo/`, deletes the previous logo file on replace (non-fatal if already gone), and is served via `express.static('/uploads')`.
+- **`GET /company` is deliberately public** (no `authenticate`) — the Login page needs the name/logo before a session exists. Safe here because this is a single-tenant system (one company's own public-facing profile, not another tenant's private data); `PUT`/`POST /company/logo` still require `authenticate` + `authorize('company.manage')`.
+
+**Frontend**
+- New `CompanyContext`/`useCompany()` (mirrors the `AuthContext` pattern) fetches the company profile once at the app root and is consumed by `AuthLayout` (login page brand), `Sidebar` (logo replaces the "JOZZY" text mark when set), and `Navbar` (a small logo shown only ≤768px, since the sidebar already carries the brand on desktop — added specifically for when the sidebar is off-screen on mobile).
+- `CompanySettings.jsx`: full form matching every field in `MASTER_PROMPT.md`'s Module 1, immediate-upload logo picker with preview, and a read-only mode (all fields disabled, no save/upload controls) for users without `company.manage` — the frontend gate is UX only, the backend still enforces it independently per the spec's "never rely only on frontend hiding buttons" rule.
+- Routed at `/settings/company`; Sidebar's "Settings" link now points there (temporary — Phase 23 will turn `/settings` into a hub with Company as one tab among several).
+
+**Verification**
+- Backend dry-run (still no live DB): confirmed `GET /company` is reachable pre-auth and fails safely (generic 500, DB unreachable) rather than 404/leaking a DB error; confirmed `PUT /company` correctly returns 401 before authentication is checked.
+- Caught and fixed a real bug during dry-run testing: a stale backend process from earlier manual testing survived a `pkill -f` (unreliable against Windows-spawned node processes from Git Bash) and was silently serving pre-Phase-2 routes, producing misleading 404s. Resolved by enumerating and force-stopping node processes via PowerShell `Get-CimInstance`/`Stop-Process` instead of `pkill`, then re-verified cleanly.
+- Frontend verified in-browser: Login page renders correctly with `CompanyProvider` added (falls back to the "JOZZY" text mark when no company row exists yet, exactly as designed), zero uncaught JS errors.
+
 ## Phase 1 — Authentication
 
 **Backend**

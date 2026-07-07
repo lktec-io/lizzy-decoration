@@ -8,6 +8,7 @@ import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
 import SessionExpired from '../pages/auth/SessionExpired';
 import Dashboard from '../pages/dashboard/Dashboard';
+import CompanySettings from '../pages/company/CompanySettings';
 import NotFound404 from '../pages/errors/NotFound404';
 import { ROUTES } from '../constants/routes';
 
@@ -25,6 +26,7 @@ function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
             <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+            <Route path={ROUTES.SETTINGS_COMPANY} element={<CompanySettings />} />
           </Route>
         </Route>
 

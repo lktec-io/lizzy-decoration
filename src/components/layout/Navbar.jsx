@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FiMenu, FiSearch, FiBell, FiChevronDown } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
+import { useCompany } from '../../hooks/useCompany';
 import '../../styles/components/Navbar.css';
 
 function useClock() {
@@ -17,6 +18,7 @@ function useClock() {
 function Navbar({ onMenuClick }) {
   const now = useClock();
   const { user } = useAuth();
+  const { company } = useCompany();
   const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const timeLabel = now.toLocaleTimeString('en-TZ', { hour: '2-digit', minute: '2-digit' });
   const displayName = user ? `${user.first_name} ${user.last_name}` : 'User';
@@ -28,6 +30,10 @@ function Navbar({ onMenuClick }) {
       <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label="Toggle sidebar">
         <FiMenu />
       </button>
+
+      {company?.logo_path && (
+        <img src={company.logo_path} alt={company.company_name} className="navbar-logo" />
+      )}
 
       <div className="navbar-branch">
         <span className="navbar-branch-label">Branch</span>

@@ -6,6 +6,7 @@ import {
   FiChevronsLeft, FiChevronsRight,
 } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
+import { useCompany } from '../../hooks/useCompany';
 import { ROUTES } from '../../constants/routes';
 import '../../styles/components/Sidebar.css';
 
@@ -27,13 +28,15 @@ const NAV_ITEMS = [
   { to: '/carwash', label: 'Car Wash', icon: FiDroplet },
   { to: '/reports', label: 'Reports', icon: FiBarChart2 },
   { to: '/notifications', label: 'Notifications', icon: FiBell },
-  { to: '/settings', label: 'Settings', icon: FiSettings },
+  { to: '/settings/company', label: 'Settings', icon: FiSettings },
   { to: '/profile', label: 'Profile', icon: FiUser },
 ];
 
 function Sidebar({ collapsed, onToggle }) {
   const { logout } = useAuth();
+  const { company } = useCompany();
   const navigate = useNavigate();
+  const companyName = company?.company_name || 'JOZZY';
 
   const handleLogout = async () => {
     await logout();
@@ -43,7 +46,11 @@ function Sidebar({ collapsed, onToggle }) {
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-brand">
-        <span className="sidebar-brand-mark">{collapsed ? 'J' : 'JOZZY'}</span>
+        {company?.logo_path ? (
+          <img src={company.logo_path} alt={companyName} className="sidebar-brand-logo" />
+        ) : (
+          <span className="sidebar-brand-mark">{collapsed ? companyName.charAt(0) : companyName}</span>
+        )}
       </div>
 
       <nav className="sidebar-nav">

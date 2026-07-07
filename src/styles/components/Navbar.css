@@ -18,6 +18,15 @@
   border-radius: var(--radius-md);
 }
 
+/* Sidebar already carries the brand on desktop; the navbar logo exists for
+   when the sidebar is off-screen on mobile. */
+.navbar-logo {
+  display: none;
+  max-height: 32px;
+  max-width: 120px;
+  object-fit: contain;
+}
+
 .navbar-menu-btn:hover {
   background-color: var(--color-gray-light);
 }
@@ -140,6 +149,7 @@
 
 @media (max-width: 768px) {
   .navbar-menu-btn { display: inline-flex; }
+  .navbar-logo { display: block; }
   .navbar-branch { display: none; }
   .navbar-datetime { display: none; }
   .navbar-search { display: none; }

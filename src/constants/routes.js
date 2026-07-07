@@ -5,6 +5,7 @@ export const ROUTES = {
   SESSION_EXPIRED: '/session-expired',
 
   DASHBOARD: '/',
+  SETTINGS_COMPANY: '/settings/company',
 
   UNAUTHORIZED: '/401',
   FORBIDDEN: '/403',

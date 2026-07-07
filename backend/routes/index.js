@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { success } from '../utils/apiResponse.js';
 import authRoutes from './auth.routes.js';
+import companyRoutes from './company.routes.js';
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/auth', authRoutes);
+router.use('/company', companyRoutes);
 
 export default router;

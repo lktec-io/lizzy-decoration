@@ -51,12 +51,13 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `company_settings` table (single-row) | Critical | Company | |
-| ☐ | Backend: get/update company profile (Super Admin only) | Critical | Company | |
-| ☐ | Backend: logo upload (Multer, type/size validation) | Critical | Company | |
-| ☐ | Frontend: Company Settings page (all fields per spec) | Critical | Company | |
-| ☐ | Wire company logo into: Sidebar, Navbar, Login page (placeholder until built later) | High | Company | |
-| ☐ | Quality Check | Critical | Company | |
+| ☑ | DB: `company_settings` table (single-row) | Critical | Company | 2026-07-07 (Phase 0) |
+| ☑ | Backend: get/update company profile (Super Admin only, via `authorize('company.manage')`) | Critical | Company | 2026-07-07 |
+| ☑ | Backend: logo upload (Multer, type/size validation, static `/uploads` serving, old file cleanup on replace) | Critical | Company | 2026-07-07 |
+| ☑ | Frontend: Company Settings page (all fields per spec, read-only for non-Super-Admins) | Critical | Company | 2026-07-07 |
+| ☑ | Wire company logo into: Sidebar, Navbar (mobile), Login page, via a shared `CompanyContext` | High | Company | 2026-07-07 |
+| ☑ | *(Pulled forward from Phase 4, needed for "Super Admin only")*: DB-driven `authorize(permissionCode)` middleware, `permission.repository.js`, `/auth/me` now returns `permissions[]`, frontend `usePermission` hook | Critical | RBAC | 2026-07-07 |
+| ☑ | Quality Check: build/lint pass on both apps; backend dry-run confirms public `GET /company` reaches the DB layer (safe 500, DB-less) and `PUT /company` is correctly blocked pre-auth; frontend verified in-browser (Login page unaffected by the new `CompanyProvider`, graceful fallback to text brand mark when no company row exists yet) | Critical | Company | 2026-07-07 |
 
 ## Phase 3 — User Management
 
@@ -75,14 +76,14 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `roles`, `permissions`, `role_permissions` tables | Critical | RBAC | |
-| ☐ | Seed default roles: Super Administrator, Manager, Cashier, Store Keeper | Critical | RBAC | |
-| ☐ | Seed permission catalog (view/create/edit/delete/approve/export/print + module-manage permissions) | Critical | RBAC | |
-| ☐ | Backend: permission-check middleware (DB-driven, no hardcoding) | Critical | RBAC | |
+| ☑ | DB: `roles`, `permissions`, `role_permissions` tables | Critical | RBAC | 2026-07-07 (Phase 0) |
+| ☑ | Seed default roles: Super Administrator, Manager, Cashier, Store Keeper | Critical | RBAC | 2026-07-07 (Phase 0) |
+| ☑ | Seed permission catalog (view/create/edit/delete/approve/export/print + module-manage permissions) | Critical | RBAC | 2026-07-07 (Phase 0) |
+| ☑ | Backend: permission-check middleware (DB-driven, no hardcoding) — pulled forward to Phase 2, `middlewares/authorize.js` + `repositories/permission.repository.js` | Critical | RBAC | 2026-07-07 (Phase 2) |
 | ☐ | Backend: role CRUD (support future custom roles) | High | RBAC | |
 | ☐ | Frontend: Role management + permission matrix UI | High | RBAC | |
-| ☐ | Frontend: `usePermission` hook + permission-gated UI elements | Critical | RBAC | |
-| ☐ | Quality Check | Critical | RBAC | |
+| ☑ | Frontend: `usePermission` hook + permission-gated UI elements — pulled forward to Phase 2, used by `CompanySettings.jsx` | Critical | RBAC | 2026-07-07 (Phase 2) |
+| ☐ | Quality Check *(remaining scope: Role CRUD + Permission Matrix UI only — middleware/hook already shipped and verified in Phase 2)* | Critical | RBAC | |
 
 ## Phase 5 — Branches
 

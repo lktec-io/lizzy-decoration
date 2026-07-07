@@ -2,6 +2,23 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 3 — User Management
+
+**Backend**
+- Extended `user.repository.js` (previously auth-only) with `findAll` (paginated, searchable across name/email/username/phone, filterable by role/branch/status), `findConflict` (uniqueness check across email/username/phone in one query, excludes self on edit), `update`, `updateStatus`, `updateAvatarPath`, `softDelete`, and `getBranchIds`/`setBranches` for the `user_branches` many-to-many.
+- `user.service.js` enforces two self-protection rules not in the spec but necessary given there's exactly one Super Admin at bootstrap: you cannot change your own status or delete your own account via this endpoint (prevents accidental self-lockout with no other admin to recover).
+- List endpoints now return `data: { items, meta }` (`meta` = `{ page, limit, total, totalPages }`) — establishes the pagination envelope convention every future list endpoint follows.
+- Minimal read-only pull-forwards (list-only, no create/edit): `GET /branches` and `GET /roles`, needed for the User form's dropdowns. Full Branch CRUD (Phase 5) and Role CRUD/Permission Matrix (Phase 4) are unaffected — these are just lookups.
+
+**Frontend — new reusable infrastructure** (every future list page reuses this instead of duplicating table logic):
+- `useTable(fetchFn)`: pagination + debounced search + filters + sort state, wired to any `fetchFn(params) -> { items, meta }`. Hit React 19's stricter `react-hooks/set-state-in-effect` lint rule on two textbook-standard patterns (fetching data in an effect, resetting to page 1 when search/filters change); resolved with targeted, documented disables rather than contorting the code, after confirming both patterns are the React docs' own recommended approach.
+- `components/common/`: `Table` (sortable headers, loading/empty states), `Pagination`, `SearchInput` (debounced), `Modal` (Framer Motion enter/exit, portal-rendered, Escape/backdrop close), `ConfirmDialog` (built on `Modal`, loading-aware confirm button).
+- `usePermission`-gated row actions (edit/suspend/delete) — hidden client-side for UX, independently enforced server-side per-route.
+
+**Verification**
+- Backend dry-run: `/users`, `/branches`, `/roles` all correctly return 401 before authentication, without touching the DB layer.
+- Frontend: since no live database is available in this session, used Playwright's request interception to mock `/auth/refresh`, `/company`, `/users`, `/roles`, `/branches` with realistic JSON matching the real API contract — this renders the *actual* React components (real `MainLayout`, real `Table`, real form validation) against fake data rather than testing nothing. Confirmed: UserList table with status badges and pagination, UserForm create with populated role/branch dropdowns, UserForm edit with correctly pre-filled fields and multi-select branch state. Zero uncaught JS errors.
+
 ## Phase 2 — Company Settings
 
 **RBAC pulled forward from Phase 4** (only the piece Company Settings actually needed):

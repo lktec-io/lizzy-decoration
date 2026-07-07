@@ -1,6 +1,6 @@
 ﻿# JOZZY ERP — API Plan
 
-Contract-level plan for the REST API. No route handlers are implemented yet — this defines the surface every controller/service/repository will be built against. Base path: `/api/v1`.
+Contract-level plan for the REST API, updated as each phase ships real route handlers (see `docs/CHANGELOG.md` for what's actually implemented vs. still planned below). Base path: `/api/v1`.
 
 ---
 
@@ -18,6 +18,7 @@ Contract-level plan for the REST API. No route handlers are implemented yet — 
 - `sort` (e.g. `sort=-created_at` for descending)
 - `search` (matches the resource's designated searchable columns)
 - Resource-specific filters (documented per module below)
+- Response shape: `data` is `{ items: [...], meta: { page, limit, total, totalPages } }` — established in Phase 3's Users endpoint, followed by every list endpoint since.
 
 **Auth header:** `Authorization: Bearer <access_token>` on every protected route. Refresh token travels as an httpOnly cookie, never in the body/header.
 

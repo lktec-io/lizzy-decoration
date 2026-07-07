@@ -9,6 +9,8 @@ import ResetPassword from '../pages/auth/ResetPassword';
 import SessionExpired from '../pages/auth/SessionExpired';
 import Dashboard from '../pages/dashboard/Dashboard';
 import CompanySettings from '../pages/company/CompanySettings';
+import UserList from '../pages/users/UserList';
+import UserForm from '../pages/users/UserForm';
 import NotFound404 from '../pages/errors/NotFound404';
 import { ROUTES } from '../constants/routes';
 
@@ -27,6 +29,9 @@ function AppRouter() {
           <Route element={<MainLayout />}>
             <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
             <Route path={ROUTES.SETTINGS_COMPANY} element={<CompanySettings />} />
+            <Route path="/users" element={<UserList />} />
+            <Route path="/users/new" element={<UserForm />} />
+            <Route path="/users/:id/edit" element={<UserForm />} />
           </Route>
         </Route>
 

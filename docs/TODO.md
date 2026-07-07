@@ -63,14 +63,15 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | Backend: Users CRUD (create/edit/soft-delete) | Critical | Users | |
-| ☐ | Backend: activate/suspend/lock user | Critical | Users | |
-| ☐ | Backend: admin-triggered password reset | High | Users | |
-| ☐ | Backend: assign role + branch(es) to user | Critical | Users | |
-| ☐ | Frontend: User list (search, filter, paginate) | Critical | Users | |
-| ☐ | Frontend: User create/edit form + avatar upload | Critical | Users | |
-| ☐ | Validation: unique username, unique email, phone format | Critical | Users | |
-| ☐ | Quality Check | Critical | Users | |
+| ☑ | Backend: Users CRUD (create/edit/soft-delete) | Critical | Users | 2026-07-08 |
+| ☑ | Backend: activate/suspend/lock user (self-modification blocked) | Critical | Users | 2026-07-08 |
+| ☑ | Backend: admin-triggered password reset | High | Users | 2026-07-08 |
+| ☑ | Backend: assign role + branch(es) to user (`user_branches` for multi-branch managers) | Critical | Users | 2026-07-08 |
+| ☑ | Frontend: User list (search, filter, paginate) — built on new reusable `Table`/`Pagination`/`SearchInput`/`useTable` infra, reused by every list page from here on | Critical | Users | 2026-07-08 |
+| ☑ | Frontend: User create/edit form + avatar upload | Critical | Users | 2026-07-08 |
+| ☑ | Validation: unique username, unique email, phone format (backend `findConflict`, express-validator) | Critical | Users | 2026-07-08 |
+| ☑ | *(Minimal pull-forward, read-only lookups only)*: `GET /branches` and `GET /roles` for dropdowns — full CRUD stays Phase 5/Phase 4 scope | Critical | Users | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass both apps; backend dry-run confirms `/users`, `/branches`, `/roles` all correctly 401 pre-auth; frontend verified via Playwright with mocked API responses (real components + real MainLayout shell rendering realistic data) since a live DB isn't available in this session — UserList table/badges/pagination, UserForm create, and UserForm edit (pre-filled) all screenshotted and confirmed | Critical | Users | 2026-07-08 |
 
 ## Phase 4 — Roles & Permissions
 

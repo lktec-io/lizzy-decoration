@@ -55,3 +55,86 @@ export async function updateLastLogin(id) {
 export async function updatePasswordHash(id, passwordHash) {
   await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
 }
+
+export async function findConflict({ email, username, phone }, excludeId = null) {
+  const [rows] = await pool.query(
+    `SELECT id, email, username, phone FROM users
+     WHERE deleted_at IS NULL AND (email = ? OR username = ? OR phone = ?) ${excludeId ? 'AND id <> ?' : ''}
+     LIMIT 1`,
+    excludeId ? [email, username, phone, excludeId] : [email, username, phone],
+  );
+  return rows[0] || null;
+}
+
+export async function findAll({ page = 1, limit = 20, search, roleId, branchId, status }) {
+  const conditions = ['u.deleted_at IS NULL'];
+  const params = [];
+
+  if (search) {
+    conditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR u.username LIKE ? OR u.phone LIKE ?)');
+    const term = `%${search}%`;
+    params.push(term, term, term, term, term);
+  }
+  if (roleId) {
+    conditions.push('u.role_id = ?');
+    params.push(roleId);
+  }
+  if (branchId) {
+    conditions.push('u.branch_id = ?');
+    params.push(branchId);
+  }
+  if (status) {
+    conditions.push('u.status = ?');
+    params.push(status);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const offset = (page - 1) * limit;
+
+  const [rows] = await pool.query(
+    `${BASE_SELECT} ${whereClause} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+  const [countRows] = await pool.query(
+    `SELECT COUNT(*) AS total FROM users u ${whereClause}`,
+    params,
+  );
+
+  return { rows, total: countRows[0].total };
+}
+
+export async function update(id, { firstName, lastName, gender, phone, email, username, roleId, branchId, userId }) {
+  await pool.query(
+    `UPDATE users SET first_name = ?, last_name = ?, gender = ?, phone = ?, email = ?, username = ?,
+       role_id = ?, branch_id = ?, updated_by = ? WHERE id = ?`,
+    [firstName, lastName, gender || null, phone, email, username, roleId, branchId || null, userId, id],
+  );
+  return findById(id);
+}
+
+export async function updateStatus(id, status, userId) {
+  await pool.query('UPDATE users SET status = ?, updated_by = ? WHERE id = ?', [status, userId, id]);
+  return findById(id);
+}
+
+export async function updateAvatarPath(id, avatarPath) {
+  await pool.query('UPDATE users SET avatar_path = ? WHERE id = ?', [avatarPath, id]);
+  return findById(id);
+}
+
+export async function softDelete(id, userId) {
+  await pool.query('UPDATE users SET deleted_at = NOW(), updated_by = ? WHERE id = ?', [userId, id]);
+}
+
+export async function getBranchIds(userId) {
+  const [rows] = await pool.query('SELECT branch_id FROM user_branches WHERE user_id = ?', [userId]);
+  return rows.map((row) => row.branch_id);
+}
+
+export async function setBranches(userId, branchIds) {
+  await pool.query('DELETE FROM user_branches WHERE user_id = ?', [userId]);
+  if (!branchIds || branchIds.length === 0) return;
+
+  const values = branchIds.map((branchId) => [userId, branchId]);
+  await pool.query('INSERT INTO user_branches (user_id, branch_id) VALUES ?', [values]);
+}

@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { success } from '../utils/apiResponse.js';
 import authRoutes from './auth.routes.js';
 import companyRoutes from './company.routes.js';
+import userRoutes from './user.routes.js';
+import branchRoutes from './branch.routes.js';
+import roleRoutes from './role.routes.js';
 
 const router = Router();
 
@@ -14,5 +17,8 @@ router.get('/health', (req, res) => {
 
 router.use('/auth', authRoutes);
 router.use('/company', companyRoutes);
+router.use('/users', userRoutes);
+router.use('/branches', branchRoutes);
+router.use('/roles', roleRoutes);
 
 export default router;

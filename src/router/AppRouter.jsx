@@ -29,6 +29,9 @@ const InventoryOverview = lazy(() => import('../pages/inventory/InventoryOvervie
 const StockMovements = lazy(() => import('../pages/inventory/StockMovements'));
 const SupplierList = lazy(() => import('../pages/suppliers/SupplierList'));
 const SupplierDetail = lazy(() => import('../pages/suppliers/SupplierDetail'));
+const PurchaseList = lazy(() => import('../pages/purchases/PurchaseList'));
+const PurchaseForm = lazy(() => import('../pages/purchases/PurchaseForm'));
+const PurchaseDetail = lazy(() => import('../pages/purchases/PurchaseDetail'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -72,6 +75,9 @@ function AppRouter() {
               <Route path="/inventory/movements" element={<StockMovements />} />
               <Route path="/suppliers" element={<SupplierList />} />
               <Route path="/suppliers/:id" element={<SupplierDetail />} />
+              <Route path="/purchases" element={<PurchaseList />} />
+              <Route path="/purchases/new" element={<PurchaseForm />} />
+              <Route path="/purchases/:id" element={<PurchaseDetail />} />
             </Route>
           </Route>
 

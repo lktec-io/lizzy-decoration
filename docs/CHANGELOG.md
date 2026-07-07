@@ -2,6 +2,27 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 14 — Purchases
+
+**The first real multi-step financial transaction in the app**, and the first real consumer of Phase 10's `recordMovement(data, connection?)` composable design — validating that architectural bet.
+
+**Backend**
+- `purchase.service.createPurchase`: one connection, one transaction, from order header through every line item's inventory movement. Validates supplier/branch/every product exist *before* opening the transaction (fail fast on bad input without ever touching a connection), then inside the transaction: insert `purchase_orders`, insert each `purchase_items` row, call `recordMovement()` per line passing the **same connection** so stock increments are part of the same atomic unit as the order itself. Any failure at any point rolls back everything — no partial purchase, no partial stock increment, matching the spec's explicit rule.
+- Purchase numbers (`PUR-2026-000001`) reuse Phase 9's `document_sequences` engine with 6-digit padding (vs. products' 5-digit).
+- `POST /purchases/payments` records supplier payments independently of a specific purchase order (a payment can apply against a supplier's running balance generally), feeding Phase 13's `getBalance` calculation.
+
+**Frontend**
+- `PurchaseForm`: the first multi-line dynamic form in the app, using React Hook Form's `useFieldArray` for add/remove line items, with live per-line and grand-total calculation as quantities/prices are typed.
+- `PurchaseList` + `PurchaseDetail` follow the established list/detail pattern; outstanding balance display isn't duplicated here since it already lives on the Supplier detail page from Phase 13.
+
+**Verification — the most rigorous of any phase so far**
+- No live database exists in this session, but transaction-safety is exactly the property that matters most here, so a live DB alone wouldn't even be sufficient — what's needed is proof the *control flow* is correct under failure. Built a simulated `PoolConnection` (mock `query`/`beginTransaction`/`commit`/`rollback`/`release`) and called the **real, unmodified** `createPurchase` service function against it twice:
+  - **Success path**: asserted the exact call sequence — `BEGIN → INSERT purchase_orders → INSERT purchase_items → SELECT inventory FOR UPDATE → UPDATE inventory → INSERT inventory_movements → COMMIT → RELEASE` — confirming `recordMovement()` really does participate in the outer transaction rather than opening its own.
+  - **Failure path**: simulated a DB error on the `UPDATE inventory` step (after the order and item rows had already been inserted within the same uncommitted transaction) and asserted `ROLLBACK` fires, `COMMIT` never does, the connection is still released, and the error propagates to the caller.
+  - Caught a real bug in the test harness itself along the way (an ambiguous SQL-substring match caused a mock to return the wrong shape for `recordMovement`'s `SELECT ... FOR UPDATE`) — a good reminder that mock-based verification needs the same care as the code it's verifying.
+- Backend dry-run: `/purchases` correctly 401s pre-auth.
+- Frontend: Playwright confirmed the multi-line form's live total calculation and "Add Line" behavior, zero console errors.
+
 ## Phase 13 — Suppliers
 
 **Backend**

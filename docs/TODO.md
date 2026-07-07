@@ -206,13 +206,13 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `purchase_orders`, `purchase_items`, `supplier_payments` tables | Critical | Purchases | |
-| ☐ | Backend: purchase number generation (`PUR-2026-000001`) | Critical | Purchases | |
-| ☐ | Backend: create purchase → transaction: insert order+items, increment inventory, create movement | Critical | Purchases | |
-| ☐ | Backend: supplier balance tracking (purchases − payments) | High | Purchases | |
-| ☐ | Frontend: Purchase create flow (supplier, products, quantity, price) | Critical | Purchases | |
-| ☐ | Frontend: Purchase history + outstanding balance view | High | Purchases | |
-| ☐ | Quality Check — purchases increase stock correctly | Critical | Purchases | |
+| ☑ | DB: `purchase_orders`, `purchase_items`, `supplier_payments` tables | Critical | Purchases | 2026-07-07 (Phase 0) |
+| ☑ | Backend: purchase number generation (`PUR-2026-000001`, 6-digit padding via the Phase 9 sequence engine) | Critical | Purchases | 2026-07-08 |
+| ☑ | Backend: create purchase → **one all-or-nothing transaction**: insert order + every line item + `inventoryRepository.recordMovement()` per line, all sharing the same connection. First real consumer of Phase 10's connection-composable design | Critical | Purchases | 2026-07-08 |
+| ☑ | Backend: supplier balance tracking (purchases − payments) — `POST /purchases/payments` endpoint added, reuses Phase 13's `getBalance` for display | High | Purchases | 2026-07-08 |
+| ☑ | Frontend: Purchase create flow (supplier, branch, dynamic multi-line item entry via `useFieldArray`, live line/grand totals) | Critical | Purchases | 2026-07-08 |
+| ☑ | Frontend: Purchase list + detail view (outstanding balance already surfaced on Supplier detail from Phase 13, not duplicated here) | High | Purchases | 2026-07-08 |
+| ☑ | Quality Check — purchases increase stock correctly: **verified with a simulated `PoolConnection`** (no live DB) exercising the real `createPurchase` service function end-to-end for both the success path (asserted exact call order: `BEGIN → insert order → insert item → SELECT...FOR UPDATE → UPDATE inventory → insert movement → COMMIT → RELEASE`) and the failure path (simulated a mid-transaction DB error, asserted `ROLLBACK` fires and `COMMIT` never does, with the connection still released). This is real verification of the transaction-safety property, not just a syntax check | Critical | Purchases | 2026-07-08 |
 
 ## Phase 15 — Stock Transfers
 

@@ -43,6 +43,7 @@ const SaleDetail = lazy(() => import('../pages/pos/SaleDetail'));
 const ReturnList = lazy(() => import('../pages/returns/ReturnList'));
 const ReturnForm = lazy(() => import('../pages/returns/ReturnForm'));
 const ReturnDetail = lazy(() => import('../pages/returns/ReturnDetail'));
+const ExpenseList = lazy(() => import('../pages/expenses/ExpenseList'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -100,6 +101,7 @@ function AppRouter() {
               <Route path="/returns" element={<ReturnList />} />
               <Route path="/returns/new" element={<ReturnForm />} />
               <Route path="/returns/:id" element={<ReturnDetail />} />
+              <Route path="/expenses" element={<ExpenseList />} />
             </Route>
           </Route>
 

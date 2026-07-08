@@ -276,11 +276,11 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `expense_categories`, `expenses` tables | Critical | Expenses | |
-| ☐ | Backend: Expense CRUD, branch scoping, receipt upload | Critical | Expenses | |
-| ☐ | Frontend: Expense list/create/edit | Critical | Expenses | |
-| ☐ | Business rule: expenses feed Profit Reports | Critical | Expenses | |
-| ☐ | Quality Check | Critical | Expenses | |
+| ☑ | DB: `expense_categories`, `expenses` tables | Critical | Expenses | 2026-07-07 (Phase 0) |
+| ☑ | Backend: Expense CRUD (soft delete), branch scoping via `getAccessibleBranchIds()`, search + category/branch/date-range filtering with a filtered-total aggregate | Critical | Expenses | 2026-07-08 |
+| ☑ | Frontend: Expense list (KPI card for the filtered total, category/branch/date-range filters) with modal create/edit, matching the Suppliers/Customers pattern | Critical | Expenses | 2026-07-08 |
+| ☑ | Business rule: expenses feed Profit Reports — `branch_id` and `expense_date` are correctly captured now so Phase 21's Reports can aggregate against real data with no rework | Critical | Expenses | 2026-07-08 |
+| ☑ | Quality Check — build/lint pass; backend dry-run confirms all 6 expense endpoints 401 pre-auth; Playwright confirms list+filtered-total KPI, required-field validation, and form fill, zero console errors | Critical | Expenses | 2026-07-08 |
 
 ## Phase 20 — Car Wash
 

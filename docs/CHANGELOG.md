@@ -2,6 +2,24 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 19 — Expenses
+
+**The simplest phase since Customers** — a straightforward branch-scoped CRUD module, deliberately so: the spec calls it "simple expense management" and lists only Create/Edit/Delete/Search/Filter, no workflow or approval step.
+
+**Backend**
+- `expense.repository`/`expense.service`: standard soft-delete CRUD, branch-scoped via the same `getAccessibleBranchIds()` every other branch-owned module uses (Inventory, Transfers, Sales, Returns). `findAll()` also returns a `totalAmount` aggregate for whatever filters are currently applied, so the frontend can show a live "total for these results" figure without a second request.
+- Filtering covers category, branch, and date range (`dateFrom`/`dateTo`) plus free-text search on description — together these cover the spec's "Daily Expenses / Monthly Expenses / Category Summary / Branch Expenses" report shapes as filter combinations on one list, rather than four separate report pages (Phase 21 Reports is where dedicated report pages belong).
+- `expense_categories` stays read-only this phase (`GET /expenses/categories`, no create/edit/delete). The spec's feature list for Expenses doesn't include managing categories — only picking from the fixed set seeded in Phase 0 (Rent, Electricity, Water, Fuel, Salary, Maintenance, Transport, Office Supplies, Other) — so no category-management UI or endpoints were built, keeping the module exactly as "simple" as specified.
+- The `expenses.status` column (`pending`/`approved`) always writes `'approved'` — there's no `expenses.approve` permission in the seeded role matrix and the spec describes no approval workflow, so exposing an unreachable `pending` state in the UI would be a dead end. The column stays available for a future workflow without any rework needed here.
+
+**Frontend**
+- `ExpenseList`: modal create/edit (Suppliers/Customers pattern), a KPICard showing the filtered total, and toolbar filters for category/branch/date range alongside search.
+
+**Verification**
+- Backend dry-run: all 6 expense endpoints return 401 pre-auth.
+- Frontend: Playwright with mocked API confirmed the list renders with the correct filtered-total KPI, required-field validation blocks an empty submit, and the form fills correctly — zero console errors.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; only the pre-existing `watch()` warnings on other RHF forms).
+
 ## Phase 18 — Returns
 
 **The mirror image of Purchases**: where Purchases increases stock on receipt, Returns increases stock on approval — reusing `recordMovement()` a fourth time (movement type `return`, positive quantity), and reusing the exact pending→approve/reject shape Transfers established in Phase 15. Every return points back to a specific `sale_items` row rather than a bare product, which is what makes "cannot return more than sold quantity" and refund-amount calculation both exact.

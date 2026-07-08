@@ -17,6 +17,7 @@ import transferRoutes from './transfer.routes.js';
 import customerRoutes from './customer.routes.js';
 import saleRoutes from './sale.routes.js';
 import returnRoutes from './return.routes.js';
+import expenseRoutes from './expense.routes.js';
 
 const router = Router();
 
@@ -44,5 +45,6 @@ router.use('/transfers', transferRoutes);
 router.use('/customers', customerRoutes);
 router.use('/sales', saleRoutes);
 router.use('/returns', returnRoutes);
+router.use('/expenses', expenseRoutes);
 
 export default router;

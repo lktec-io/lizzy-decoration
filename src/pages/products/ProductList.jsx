@@ -151,7 +151,7 @@ function ProductList() {
       <div className="card">
         <div className="table-toolbar">
           <SearchInput value={search} onChange={setSearch} placeholder="Search by name or code..." />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <select className="form-control" value={filters.categoryId || ''} onChange={(e) => setFilters((prev) => ({ ...prev, categoryId: e.target.value || undefined }))}>
               <option value="">All Categories</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}

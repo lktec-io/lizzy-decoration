@@ -2,6 +2,33 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 24 — Final Testing
+
+**The QA pass across all 23 feature phases** — no new features, but real findings and real fixes, not a rubber stamp.
+
+**Security pass**
+- Confirmed Helmet, CORS (locked to a single configured origin with credentials), and rate limiting (300/15min general, 10/15min on auth endpoints) are all correctly wired in `app.js`.
+- Repo-wide sweep for SQL injection: zero matches for raw-value string interpolation in any SQL template literal across every repository file — every query is parameterized, confirmed rather than assumed.
+- Confirmed zero uses of `dangerouslySetInnerHTML` anywhere in the frontend — React's default JSX escaping is the XSS defense for this SPA, and nothing bypasses it.
+- **Real finding, real fix**: JWT signing/verification relied on `jsonwebtoken`'s default algorithm rather than pinning one explicitly. Hardened both `signAccessToken`/`signRefreshToken` and `verifyAccessToken`/`verifyRefreshToken` (`backend/utils/tokenUtils.js`) to `HS256` explicitly — defense in depth against algorithm-confusion attacks. Verified with a real sign → verify round-trip plus a cross-secret rejection test (an access-secret-signed token correctly fails verification against the refresh secret).
+- Documented the CSRF posture in the new `SECURITY.md`: the `Authorization` header (not a cookie) carries the access token for every state-changing call, and the one cookie-authenticated endpoint (`/auth/refresh`) is protected by `sameSite=lax` plus the strict single-origin CORS policy.
+
+**Responsive QA — two real gaps found and fixed**
+- POS's `.pos-page` layout (fixed-width cart beside a flexible catalog) had no responsive breakpoint at all — below tablet-landscape width it would have overflowed horizontally. Added breakpoints: stacks vertically below 1024px (each panel independently height-bounded and scrollable), tightens further below 768px (toolbar stacks, product grid tiles shrink).
+- Five list pages' inline filter rows (Products, Inventory, Stock Movements, Expenses, Car Wash) used a bare `flex` container for 3-4 filter selects/date inputs with no wrap — on a narrow viewport these would overflow rather than wrap onto a new line, unlike the outer `.table-toolbar` (which already had `flex-wrap`). Added the existing `.flex-wrap` utility class to all five.
+
+**Dependency cleanup**
+- Removed `exceljs` and `json2csv` from `backend/package.json` — both installed since Phase 0's initial scaffold in anticipation of Reports' export feature, but never imported anywhere once Phase 21 shipped CSV export as a generic client-side utility instead (a deliberate, documented choice at the time). Confirmed zero references before removing.
+- Closed the `node-cron` deferral from Phase 23: the dependency was already installed, so wiring up the daily scheduled backup (`backend/jobs/backupJob.js`, registered in `server.js` after the HTTP server starts listening) was a small, contained addition. `backup.service.createBackup()` now takes a `triggerType` parameter (`'manual'` default for the HTTP-triggered path, `'scheduled'` for the cron job) so Settings → Backups can distinguish the two in its history table.
+
+**Documentation**
+- Wrote six new as-built reference docs from scratch: `ARCHITECTURE.md` (layering, the four core reusable patterns — `recordMovement`, `generateCode`, `branchScope`, permission caching — transaction safety, module dependency graph), `DATABASE.md` (all 42 tables by domain, conventions, the inventory ledger design, two-step approval workflow shape), `API.md` (every endpoint across all 22 route groups with its permission requirement), `SECURITY.md` (everything in this phase's security pass, plus honest known-limitations for production hardening), `TESTING.md` (the verification methodology used throughout — static checks, dry-run auth-gating, the simulated-`PoolConnection` transaction verification technique, Playwright — since no automated test suite or live database existed during this build), `CODING-STANDARDS.md` (the conventions every phase actually followed, for whoever touches this code next). `README.md` updated to link all six and correct a tech-stack list that had drifted from what's actually installed.
+
+**Verification**
+- Full regression: fresh `npm run lint` + `npm run build` (frontend) and `npm run lint` + a syntax-check sweep of every backend file, both clean.
+- A final backend dry-run hit one representative endpoint from all 21 protected route groups plus `/health` — 21/21 correctly return 401 pre-auth, `/health` correctly returns 200.
+- The JWT hardening was verified with a genuine sign/verify/cross-secret-rejection test, not just a syntax check.
+
 ## Phase 23 — Settings
 
 **The last new-feature phase** — everything after this is testing and deployment prep. Deliberately scoped to *only* what Phase 2 (Company Settings) didn't already cover, plus two genuinely-missing pieces the whole system needed: a self-service Profile/Password flow, and a real (not decorative) database backup trigger.

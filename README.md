@@ -9,18 +9,22 @@ Production URL: `https://jozzy.clixworks.co.tz`
 Start here before touching any code:
 
 - [`prompt/MASTER_PROMPT.md`](prompt/MASTER_PROMPT.md) — the full product/engineering specification
-- [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — architecture decisions, phase plan, health scorecard
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — as-built architecture, core reusable patterns, module dependency graph
+- [`docs/DATABASE.md`](docs/DATABASE.md) — as-built schema reference
+- [`docs/API.md`](docs/API.md) — as-built REST API reference
+- [`docs/SECURITY.md`](docs/SECURITY.md) — security measures implemented and known limitations
+- [`docs/TESTING.md`](docs/TESTING.md) — verification methodology (no live DB existed during development)
+- [`docs/CODING-STANDARDS.md`](docs/CODING-STANDARDS.md) — conventions to follow for any future change
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Contabo VPS production setup
+- [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — original architecture decisions and phase plan
 - [`docs/TODO.md`](docs/TODO.md) — the live task list, updated after every change
-- [`docs/DATABASE_PLAN.md`](docs/DATABASE_PLAN.md) — schema plan
-- [`docs/API_PLAN.md`](docs/API_PLAN.md) — REST API contract
-- [`docs/FOLDER_STRUCTURE.md`](docs/FOLDER_STRUCTURE.md) — full frontend/backend directory layout
-- [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — record of every implemented change
+- [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — record of every implemented change, phase by phase
 
 ## Tech Stack
 
-**Frontend:** React + Vite, React Router DOM, Axios, React Hook Form, Framer Motion, React Icons, Chart.js + react-chartjs-2, html5-qrcode, pure CSS (no UI framework).
+**Frontend:** React 19 + Vite, React Router DOM 7, Axios, React Hook Form, Framer Motion, React Icons, Chart.js + react-chartjs-2, html5-qrcode, pure CSS (no UI framework).
 
-**Backend:** Node.js + Express, MySQL (mysql2), JWT auth, express-validator, Helmet, Multer, node-cron, Nodemailer, pdfkit, exceljs.
+**Backend:** Node.js + Express 5, MySQL (mysql2), JWT auth, express-validator, Helmet, express-rate-limit, Multer, node-cron, Nodemailer, pdfkit, qrcode, Winston.
 
 ## Getting Started
 
@@ -39,4 +43,4 @@ npm install
 npm run dev
 ```
 
-See `docs/DEPLOYMENT.md` (added in Phase 25) for production setup on the Contabo VPS.
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for production setup on the Contabo VPS.

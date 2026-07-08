@@ -121,7 +121,7 @@ function InventoryOverview() {
       <div className="card">
         <div className="table-toolbar">
           <SearchInput value={search} onChange={setSearch} placeholder="Search by product name or code..." />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <select className="form-control" value={filters.branchId || ''} onChange={(e) => setFilters((prev) => ({ ...prev, branchId: e.target.value || undefined }))}>
               <option value="">All Branches</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}

@@ -243,3 +243,43 @@
   padding: var(--space-6) 0;
   font-size: var(--font-size-sm);
 }
+
+/* Below tablet-landscape, a 380px fixed-width cart alongside the catalog
+   no longer fits without horizontal overflow — stack instead, each panel
+   scrolling independently at a bounded height rather than sharing one
+   viewport-height row. */
+@media (max-width: 1024px) {
+  .pos-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+  }
+
+  .pos-catalog {
+    flex: none;
+  }
+
+  .pos-product-grid {
+    max-height: 60vh;
+  }
+
+  .pos-cart {
+    flex: none;
+    max-height: 80vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .pos-catalog-toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pos-branch-select {
+    max-width: none;
+  }
+
+  .pos-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}

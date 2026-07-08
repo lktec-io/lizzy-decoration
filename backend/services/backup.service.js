@@ -41,7 +41,7 @@ export async function listBackups(query) {
   return { items: rows, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 }
 
-export async function createBackup(actorId) {
+export async function createBackup(actorId, triggerType = 'manual') {
   await fsPromises.mkdir(BACKUPS_DIR, { recursive: true });
   const filename = `backup-${env.db.database}-${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
   const filePath = path.join(BACKUPS_DIR, filename);
@@ -50,12 +50,12 @@ export async function createBackup(actorId) {
     await runMysqldump(filePath);
     const stats = await fsPromises.stat(filePath);
     const id = await backupRepository.create({
-      filePath: filename, sizeBytes: stats.size, triggerType: 'manual', status: 'success', triggeredBy: actorId,
+      filePath: filename, sizeBytes: stats.size, triggerType, status: 'success', triggeredBy: actorId,
     });
     return backupRepository.findById(id);
   } catch {
     await backupRepository.create({
-      filePath: filename, sizeBytes: null, triggerType: 'manual', status: 'failed', triggeredBy: actorId,
+      filePath: filename, sizeBytes: null, triggerType, status: 'failed', triggeredBy: actorId,
     });
     throw new ApiError(
       500,

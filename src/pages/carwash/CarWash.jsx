@@ -121,7 +121,7 @@ function CarWash() {
       <div className="card">
         <div className="table-toolbar">
           <SearchInput value={search} onChange={setSearch} placeholder="Search by plate number, customer, phone..." />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <select
               className="form-control"
               value={filters.serviceId || ''}

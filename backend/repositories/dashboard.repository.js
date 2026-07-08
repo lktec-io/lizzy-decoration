@@ -224,7 +224,7 @@ export async function getCarwashSummary(branchIds) {
      FROM carwash_services cs
      LEFT JOIN carwash_transactions ct ON ct.service_id = cs.id
        AND YEAR(ct.created_at) = YEAR(CURDATE()) AND MONTH(ct.created_at) = MONTH(CURDATE()) ${filter.clause}
-     WHERE cs.deleted_at IS NULL
+     WHERE cs.status = 'active'
      GROUP BY cs.id, cs.name ORDER BY value DESC`,
     filter.params,
   );

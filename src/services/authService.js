@@ -41,3 +41,22 @@ export async function getSessions() {
 export async function revokeSession(id) {
   await apiClient.delete(`/auth/sessions/${id}`);
 }
+
+export async function updateProfile(payload) {
+  const { data } = await apiClient.put('/auth/profile', payload);
+  return data.data;
+}
+
+export async function uploadProfileAvatar(file) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  const { data } = await apiClient.post('/auth/profile/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.data;
+}
+
+export async function changePassword({ currentPassword, newPassword }) {
+  const { data } = await apiClient.patch('/auth/change-password', { currentPassword, newPassword });
+  return data.message;
+}

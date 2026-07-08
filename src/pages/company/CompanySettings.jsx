@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FiUpload } from 'react-icons/fi';
 import { usePermission } from '../../hooks/usePermission';
+import SettingsTabs from '../../components/common/SettingsTabs';
 import * as companyService from '../../services/companyService';
 import '../../styles/pages/CompanySettings.css';
+import '../../styles/pages/Notifications.css';
 
 const EMPTY_FORM = {
   companyName: '',
@@ -127,10 +129,12 @@ function CompanySettings() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Company Settings</h1>
+          <h1 className="page-title">Settings</h1>
           <p className="page-subtitle">Business profile used across receipts, reports and the login page</p>
         </div>
       </div>
+
+      <SettingsTabs />
 
       {!canManage && (
         <div className="alert alert-info mb-4" role="status">

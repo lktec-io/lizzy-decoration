@@ -25,6 +25,10 @@ backend/uploads/**
 backend/logs/**
 !backend/logs/.gitkeep
 
+# Database backups (backend) — full DB dumps must never be committed
+backend/backups/**
+!backend/backups/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

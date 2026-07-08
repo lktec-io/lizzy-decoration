@@ -47,6 +47,9 @@ const ExpenseList = lazy(() => import('../pages/expenses/ExpenseList'));
 const CarWash = lazy(() => import('../pages/carwash/CarWash'));
 const ReportsCenter = lazy(() => import('../pages/reports/ReportsCenter'));
 const NotificationsPage = lazy(() => import('../pages/notifications/NotificationsPage'));
+const SystemSettings = lazy(() => import('../pages/settings/SystemSettings'));
+const BackupSettings = lazy(() => import('../pages/settings/BackupSettings'));
+const Profile = lazy(() => import('../pages/profile/Profile'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -73,6 +76,9 @@ function AppRouter() {
             <Route element={<MainLayout />}>
               <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
               <Route path={ROUTES.SETTINGS_COMPANY} element={<CompanySettings />} />
+              <Route path="/settings/system" element={<SystemSettings />} />
+              <Route path="/settings/backups" element={<BackupSettings />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/users" element={<UserList />} />
               <Route path="/users/new" element={<UserForm />} />
               <Route path="/users/:id/edit" element={<UserForm />} />

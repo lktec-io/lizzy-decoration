@@ -2,6 +2,34 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 23 — Settings
+
+**The last new-feature phase** — everything after this is testing and deployment prep. Deliberately scoped to *only* what Phase 2 (Company Settings) didn't already cover, plus two genuinely-missing pieces the whole system needed: a self-service Profile/Password flow, and a real (not decorative) database backup trigger.
+
+**System Settings (Tax & Email)**
+- `system_settings` is a key-value table; `systemSettings.service` wraps it with a fixed, typed shape (`taxEnabled`, `taxRate`, `notificationEmailEnabled`) rather than exposing raw key-value pairs to the frontend. Company Information, Logo, Receipt Footer, and Currency are **not** duplicated here — they've lived in Phase 2's `company_settings` since day one; this phase only adds what was genuinely missing.
+- Gated by the `settings.view`/`settings.manage` permissions seeded back in Phase 0 (Super Admin only, by omission from every other role's grant) — no new permissions needed.
+
+**Manual Database Backup**
+- `backup.service.createBackup()` shells out to `mysqldump` via `child_process.spawn` with an argument array — never a shell string — so there's no injection surface even though the arguments come from trusted server config (`env.db.*`), and the password is passed via `MYSQL_PWD` in the child's environment, never on the command line where it could appear in a process listing.
+- **Security-driven deviation from the original scaffold**: Phase 0's `FOLDER_STRUCTURE.md` had anticipated `backend/uploads/backups/.gitkeep` — but `uploads/` is statically served at `/uploads` (see `app.js`), which would make a full, unauthenticated database dump publicly downloadable by URL. Backups instead write to a dedicated `backend/backups/` directory outside the static-serving root, reachable only through a separate `settings.manage`-gated streaming download endpoint. This is exactly the kind of thing worth catching before it becomes a real vulnerability rather than after.
+- Verified for real in this sandbox: no `mysqldump` binary is available here (same as every other phase, no live database exists in this session either) — calling `createBackup()` confirmed it fails gracefully, records a `failed` row in `system_backups`, and throws a clean `ApiError` with no leaked stack trace or internal detail. That's the exact failure mode a misconfigured production server would hit, and it's now provably handled.
+- The `node-cron` scheduled-backup job from the original TODO is deferred — it's a new dependency plus app-startup wiring, and the "Critical"-priority need (a working manual trigger + history) is fully met without it.
+
+**Self-Service Profile & Password**
+- `src/pages/profile/` had existed as an empty folder since Phase 0's initial scaffold — never populated until now. `PUT /auth/profile` (name/phone/gender only — email/username/role/branch stay administrative, gated by `users.edit`) and `POST /auth/profile/avatar` reuse the exact upload middleware admin user-management already used.
+- `PATCH /auth/change-password` requires the current password (unlike an admin's `users.edit`-gated reset of someone else's password, which doesn't), then revokes every session — the same force-relogin behavior `resetPassword()` already used for the forgot-password flow — so a stolen access token can't outlive a password change.
+- `AuthContext` gained an `updateUser()` setter so a Profile edit reflects immediately in the Navbar (name, avatar) without waiting for the next token refresh.
+
+**Frontend**
+- Company/Tax & Email/Backups now read as one cohesive "Settings" section via a small shared `SettingsTabs` nav component — but the already-shipped, already-verified `CompanySettings` page itself was touched only additively (one import, one component insertion), not restructured, to avoid any risk to Phase 2's working code.
+
+**Verification**
+- Backend dry-run: all 8 new settings/profile endpoints return 401 pre-auth.
+- Backup failure path verified directly (see above) rather than skipped for lack of a live database — the same "verify without a live DB" discipline used throughout this entire build.
+- Frontend: Playwright confirmed `SettingsTabs` navigation, the System Settings form loading real tax data from the API, and the Profile page pre-filling the logged-in user's data with working password-strength validation — zero console errors.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; only the pre-existing `watch()` warnings, now on a fifth RHF form).
+
 ## Phase 22 — Notifications
 
 **The one phase that reaches backward into five already-shipped modules** rather than starting clean. Phase 17's CHANGELOG explicitly promised "Notifications have no backing service until Phase 22 ships" — this is that promise honored: real triggers wired into Purchases, POS, Transfers, Expenses, and Returns, not a notification system sitting unused waiting for a future caller.

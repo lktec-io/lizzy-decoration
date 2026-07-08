@@ -1,7 +1,9 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { success } from '../utils/apiResponse.js';
+import { ApiError } from '../utils/apiError.js';
 import { env } from '../config/env.js';
 import * as authService from '../services/auth.service.js';
+import * as userService from '../services/user.service.js';
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
@@ -80,4 +82,26 @@ export const sessions = asyncHandler(async (req, res) => {
 export const revokeSession = asyncHandler(async (req, res) => {
   await authService.revokeSession(req.user.id, Number(req.params.id));
   return success(res, { message: 'Session revoked' });
+});
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const user = await authService.updateOwnProfile(req.user.id, req.body);
+  return success(res, { message: 'Profile updated', data: user });
+});
+
+export const uploadProfileAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new ApiError(400, 'No avatar file uploaded');
+  }
+  const user = await userService.updateAvatar(req.user.id, req.file);
+  return success(res, { message: 'Avatar updated', data: user });
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+  await authService.changeOwnPassword(req.user.id, {
+    currentPassword: req.body.currentPassword,
+    newPassword: req.body.newPassword,
+  });
+  clearRefreshCookie(res);
+  return success(res, { message: 'Password changed. Please log in again.' });
 });

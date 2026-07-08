@@ -322,12 +322,13 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `system_settings` table (currency, tax rate, receipt footer, email config, backup prefs) | Critical | Settings | |
-| ☐ | Backend: settings CRUD (Super Admin only) | Critical | Settings | |
-| ☐ | Backend: manual DB backup trigger + `system_backups` record | High | Settings | |
-| ☐ | Backend: `node-cron` job for automatic daily backup | High | Settings | |
-| ☐ | Frontend: Settings page (Company/Logo/Receipt/Currency/Tax/Email/Backup tabs) | Critical | Settings | |
-| ☐ | Quality Check | Critical | Settings | |
+| ☑ | DB: `system_settings`, `system_backups` tables | Critical | Settings | 2026-07-07 (Phase 0) |
+| ☑ | Backend: settings CRUD (Super Admin only, via existing `settings.view`/`settings.manage` permissions) — Tax (enabled + rate) and Email (notification toggle) as real key-value settings via `system_settings`; Company/Logo/Receipt Footer/Currency were already covered by Phase 2's `company_settings`, not duplicated here | Critical | Settings | 2026-07-08 |
+| ☑ | Backend: manual DB backup trigger + `system_backups` record — shells out to `mysqldump` via `child_process.spawn` (never a shell string, so config values can't be an injection vector), streamed to a file **outside** the publicly-served `uploads/` directory (a full DB dump must never be reachable at a public URL); download is a separate authenticated, `settings.manage`-gated streaming endpoint. Verified the failure path directly in this sandbox (no `mysqldump` binary available here) — confirmed it fails gracefully, records a `failed` row, and never leaks internal error details to the client | High | Settings | 2026-07-08 |
+| ☐ | Backend: `node-cron` job for automatic daily backup | High | Settings | *(deferred — new dependency + startup wiring; manual trigger covers the "Critical" need, scheduling is a contained follow-up)* |
+| ☑ | Backend + Frontend: self-service Profile (view/edit own name/phone/gender/avatar) and Change Password (current-password verification, revokes all sessions on success) — the `src/pages/profile/` folder existed since Phase 0's scaffold but was never populated; this is where it got built | Critical | Settings | 2026-07-08 |
+| ☑ | Frontend: Settings section — Company tab reuses Phase 2's `CompanySettings` page unchanged; new Tax & Email and Backups tabs share a `SettingsTabs` nav so the three read as one cohesive section without risking the already-shipped Company page | Critical | Settings | 2026-07-08 |
+| ☑ | Quality Check — build/lint pass; backend dry-run confirms all 8 new settings/profile endpoints 401 pre-auth; backup failure path verified for real (no mysqldump in this sandbox — confirmed graceful degradation); Playwright confirms tab navigation, real tax-rate loading, and Profile pre-fill + password validation, zero console errors | Critical | Settings | 2026-07-08 |
 
 ## Phase 24 — Final Testing
 

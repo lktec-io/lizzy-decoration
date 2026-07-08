@@ -117,6 +117,17 @@ export async function updateStatus(id, status, userId) {
   return findById(id);
 }
 
+// Self-service profile edit — deliberately narrower than update(): a user
+// changes their own name/phone, never their own email/username/role/branch
+// (those stay administrative, gated by users.edit).
+export async function updateOwnProfile(id, { firstName, lastName, gender, phone }) {
+  await pool.query(
+    'UPDATE users SET first_name = ?, last_name = ?, gender = ?, phone = ? WHERE id = ?',
+    [firstName, lastName, gender || null, phone, id],
+  );
+  return findById(id);
+}
+
 export async function updateAvatarPath(id, avatarPath) {
   await pool.query('UPDATE users SET avatar_path = ? WHERE id = ?', [avatarPath, id]);
   return findById(id);

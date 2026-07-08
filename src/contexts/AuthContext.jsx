@@ -57,6 +57,10 @@ function AuthProvider({ children }) {
 
   const acknowledgeSessionExpired = useCallback(() => setSessionExpired(false), []);
 
+  // Lets Profile updates (name, avatar) reflect immediately in the Navbar
+  // and anywhere else `user` is read, without a full session refresh.
+  const updateUser = useCallback((updatedUser) => setUser(updatedUser), []);
+
   const hasPermission = useCallback(
     (code) => Boolean(user?.permissions?.includes(code)),
     [user],
@@ -72,8 +76,9 @@ function AuthProvider({ children }) {
       logout,
       acknowledgeSessionExpired,
       hasPermission,
+      updateUser,
     }),
-    [user, initializing, sessionExpired, login, logout, acknowledgeSessionExpired, hasPermission],
+    [user, initializing, sessionExpired, login, logout, acknowledgeSessionExpired, hasPermission, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

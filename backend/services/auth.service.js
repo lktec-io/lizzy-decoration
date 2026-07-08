@@ -224,3 +224,27 @@ export async function resetPassword({ token, newPassword }) {
 export async function hashPassword(password) {
   return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
+
+export async function updateOwnProfile(userId, data) {
+  const user = await userRepository.updateOwnProfile(userId, data);
+  return withPermissions(user);
+}
+
+// Unlike an admin resetting someone else's password (no current-password
+// check, gated by users.edit), changing your own password requires proving
+// you know the old one. Revokes every session afterward — the same
+// force-relogin behavior resetPassword() already uses — so a stolen access
+// token can't outlive a password change.
+export async function changeOwnPassword(userId, { currentPassword, newPassword }) {
+  const user = await userRepository.findById(userId);
+  if (!user) throw new ApiError(404, 'User not found');
+
+  const matches = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!matches) throw new ApiError(401, 'Current password is incorrect');
+
+  const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  await userRepository.updatePasswordHash(userId, passwordHash);
+
+  await sessionRepository.revokeAllForUser(userId);
+  await refreshTokenRepository.revokeAllForUser(userId);
+}

@@ -17,3 +17,17 @@ export const resetPasswordValidator = [
     .custom((value) => isStrongPassword(value))
     .withMessage(PASSWORD_POLICY_MESSAGE),
 ];
+
+export const updateProfileValidator = [
+  body('firstName').trim().notEmpty().withMessage('First name is required').isLength({ max: 100 }),
+  body('lastName').trim().notEmpty().withMessage('Last name is required').isLength({ max: 100 }),
+  body('gender').optional({ values: 'falsy' }).isIn(['male', 'female', 'other']),
+  body('phone').trim().notEmpty().withMessage('Phone number is required').isLength({ max: 20 }),
+];
+
+export const changePasswordValidator = [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword')
+    .custom((value) => isStrongPassword(value))
+    .withMessage(PASSWORD_POLICY_MESSAGE),
+];

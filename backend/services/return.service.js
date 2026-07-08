@@ -6,6 +6,7 @@ import * as returnRepository from '../repositories/return.repository.js';
 import * as saleRepository from '../repositories/sale.repository.js';
 import * as inventoryRepository from '../repositories/inventory.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import * as notificationRepository from '../repositories/notification.repository.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 
 async function assertBranchAccess(user, branchId) {
@@ -150,6 +151,15 @@ export async function approveReturn(id, actorId, user) {
       userId: actorId,
       branchId: returnRecord.branch_id,
       description: `Return "${returnRecord.return_number}" approved: stock restored, refund of ${formatCurrency(returnRecord.refund_amount)} issued`,
+      referenceType: 'return',
+      referenceId: id,
+    });
+
+    await notificationRepository.notifyBranchManagement(returnRecord.branch_id, {
+      type: 'info',
+      category: 'return_processed',
+      title: 'Return processed',
+      message: `Return "${returnRecord.return_number}" approved against sale "${returnRecord.sale_number}" — refund of ${formatCurrency(returnRecord.refund_amount)} issued`,
       referenceType: 'return',
       referenceId: id,
     });

@@ -8,6 +8,8 @@ import * as supplierRepository from '../repositories/supplier.repository.js';
 import * as branchRepository from '../repositories/branch.repository.js';
 import * as productRepository from '../repositories/product.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import * as notificationRepository from '../repositories/notification.repository.js';
+import { formatCurrency } from '../utils/formatCurrency.js';
 
 export async function listPurchases(query, user) {
   const page = Number(query.page) || 1;
@@ -90,6 +92,15 @@ export async function createPurchase(data, actorId) {
       userId: actorId,
       branchId: data.branchId,
       description: `Purchase "${purchaseNumber}" received from "${supplier.name}"`,
+      referenceType: 'purchase_order',
+      referenceId: orderId,
+    });
+
+    await notificationRepository.notifyBranchManagement(data.branchId, {
+      type: 'success',
+      category: 'purchase_completed',
+      title: 'Purchase received',
+      message: `Purchase "${purchaseNumber}" (${formatCurrency(totalAmount)}) received from "${supplier.name}" at "${branch.name}"`,
       referenceType: 'purchase_order',
       referenceId: orderId,
     });

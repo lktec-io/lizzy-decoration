@@ -112,8 +112,8 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 | ☑ | Frontend: Chart.js charts — all 8 types via reusable `LineChart`/`BarChart`/`DoughnutChart` wrappers themed to the brand palette | Critical | Dashboard | 2026-07-08 |
 | ☑ | Frontend: Recent Activity timeline | High | Dashboard | 2026-07-08 |
 | ☑ | Frontend: Quick Action buttons — all 8 from the spec, rendered visibly disabled ("coming soon") since every target page is a later phase (matches the master prompt's own Implementation Order — Dashboard is step 7, those pages are steps 8-21); each lights up automatically once its phase ships | Medium | Dashboard | 2026-07-08 |
-| ☐ | Frontend: Notification panel widget | High | Dashboard | *(deferred to Phase 22 — nothing generates real notifications yet; premature to build now)* |
-| ☑ | Frontend: Navbar — logo, branch selector, **search now functionally wired** (debounced, dropdown results, click-outside-to-close), notifications icon (visual only, Phase 22), avatar, date/time | Critical | Dashboard | 2026-07-08 |
+| ☑ | Frontend: Notification panel widget | High | Dashboard | 2026-07-08 (Phase 22 — the Navbar bell dropdown; built once real notification triggers existed) |
+| ☑ | Frontend: Navbar — logo, branch selector, **search now functionally wired** (debounced, dropdown results, click-outside-to-close), **notifications bell now functionally wired** (unread badge, dropdown, mark-read — Phase 22), avatar, date/time | Critical | Dashboard | 2026-07-08 |
 | ☑ | Frontend: Sidebar (collapsible, active-highlight, full menu) — shipped incrementally since Phase 0, confirmed complete here | Critical | Dashboard | 2026-07-08 |
 | ☑ | Quality Check: build/lint pass both apps (zero chunk-size warnings after Phase 5's code-splitting); backend dry-run confirms all dashboard/search endpoints 401 pre-auth; frontend verified via Playwright with mocked KPI/chart/activity/search data — full-page screenshot confirms all 14 KPI cards, all 8 charts, activity timeline, quick actions, and the wired search dropdown all render correctly with zero console errors | Critical | Dashboard | 2026-07-08 |
 
@@ -309,11 +309,14 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `notifications` table | Critical | Notifications | |
-| ☐ | Backend: notification creation hooks on key events (low stock, purchase received, transfer approved, expense submitted/approved, sale completed, return processed, system error) | Critical | Notifications | |
-| ☐ | Backend: read/unread, mark-all-read, delete endpoints | Critical | Notifications | |
-| ☐ | Frontend: Notifications page + panel (polling refresh) | Critical | Notifications | |
-| ☐ | Quality Check | Critical | Notifications | |
+| ☑ | DB: `notifications` table | Critical | Notifications | 2026-07-07 (Phase 0) |
+| ☑ | Backend: fan-out-on-write design — every notification row belongs to exactly one user (never a shared NULL-user broadcast row), so "mark as read" is always unambiguous; `notifyBranchManagement(branchId, ...)` targets Super Admins + the relevant branch's Manager(s) in one INSERT...SELECT | Critical | Notifications | 2026-07-08 |
+| ☑ | Backend: notification creation hooks wired into the 5 already-built transactional services — purchase received (`purchase.service`), sale completed (`sale.service`), transfer completed (`transfer.service`), expense recorded (`expense.service`), return processed (`return.service`) — every hook fires strictly after that operation's own `COMMIT`, verified with a simulated connection so a notification can never describe a change that got rolled back | Critical | Notifications | 2026-07-08 |
+| ☑ | Backend: low stock — `inventory.repository.recordMovement()` (the single source of truth for all stock changes) now returns `crossedIntoLowStock`, computed from the same previous/new stock values already being written; wired into Sale checkout and Transfer approval's source-branch leg (the two flows that actually deplete stock), firing once per crossing rather than on every subsequent sale of an already-low item | Critical | Notifications | 2026-07-08 |
+| ☑ | Backend: read/unread list, unread count, mark-one-read, mark-all-read endpoints — no dedicated permission gate, every authenticated user manages their own inbox | Critical | Notifications | 2026-07-08 |
+| ☑ | Frontend: Navbar bell — unread badge (60s poll), dropdown with recent notifications, mark-read/mark-all-read; full `/notifications` page with Read/Unread/All tabs and pagination | Critical | Notifications | 2026-07-08 |
+| ☐ | System Alerts category — **not generated this phase**; no scheduled job/health-check infrastructure exists yet to originate one. The category is supported end-to-end (schema, list rendering) for whenever that infrastructure exists | Low | Notifications | |
+| ☑ | Quality Check — build/lint pass; backend dry-run confirms all 4 notification endpoints 401 pre-auth; re-verified the updated `recordMovement()` query and post-commit notification firing with a simulated connection (sale checkout: JOIN'd SELECT works, low-stock crossing detected correctly, both notifications fire strictly after COMMIT); Playwright confirms the bell badge count, dropdown, and full page (including mark-read) all work, zero console errors | Critical | Notifications | 2026-07-08 |
 
 ## Phase 23 — Settings
 

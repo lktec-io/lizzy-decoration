@@ -9,6 +9,7 @@ import * as productRepository from '../repositories/product.repository.js';
 import * as customerRepository from '../repositories/customer.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as permissionRepository from '../repositories/permission.repository.js';
+import * as notificationRepository from '../repositories/notification.repository.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 
 // Cashiers (sales.create only) may discount up to this fraction of a line
@@ -107,6 +108,7 @@ export async function checkout(data, actorId, user) {
     itemDiscountTotal += discountAmount;
     preparedItems.push({
       productId: item.productId,
+      productName: product.name,
       quantity: item.quantity,
       unitPrice,
       discountAmount,
@@ -149,6 +151,8 @@ export async function checkout(data, actorId, user) {
       connection,
     );
 
+    const lowStockCrossings = [];
+
     for (const item of preparedItems) {
       await saleRepository.createItem(
         {
@@ -162,7 +166,7 @@ export async function checkout(data, actorId, user) {
         connection,
       );
 
-      await inventoryRepository.recordMovement(
+      const movement = await inventoryRepository.recordMovement(
         {
           productId: item.productId,
           branchId,
@@ -174,6 +178,12 @@ export async function checkout(data, actorId, user) {
         },
         connection,
       );
+
+      if (movement.crossedIntoLowStock) {
+        lowStockCrossings.push({
+          productId: item.productId, productName: item.productName, newStock: movement.newStock, minStock: movement.minStock,
+        });
+      }
     }
 
     for (const payment of data.payments) {
@@ -192,6 +202,29 @@ export async function checkout(data, actorId, user) {
       referenceType: 'sale',
       referenceId: saleId,
     });
+
+    await notificationRepository.notifyBranchManagement(branchId, {
+      type: 'success',
+      category: 'sale_completed',
+      title: 'Sale completed',
+      message: `Sale "${saleNumber}" completed at "${branch.name}" (${formatCurrency(totalAmount)})`,
+      referenceType: 'sale',
+      referenceId: saleId,
+    });
+
+    // Fired only after the sale itself is committed, using the exact
+    // previous/new stock recordMovement() observed inside that same
+    // transaction — never notifies about a stock dip that ended up rolled back.
+    for (const crossing of lowStockCrossings) {
+      await notificationRepository.notifyBranchManagement(branchId, {
+        type: 'warning',
+        category: 'low_stock',
+        title: 'Low stock alert',
+        message: `"${crossing.productName}" at "${branch.name}" has dropped to ${crossing.newStock} units (threshold: ${crossing.minStock})`,
+        referenceType: 'product',
+        referenceId: crossing.productId,
+      });
+    }
 
     return saleRepository.findById(saleId);
   } catch (err) {

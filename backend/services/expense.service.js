@@ -4,6 +4,8 @@ import * as expenseRepository from '../repositories/expense.repository.js';
 import * as expenseCategoryRepository from '../repositories/expenseCategory.repository.js';
 import * as branchRepository from '../repositories/branch.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import * as notificationRepository from '../repositories/notification.repository.js';
+import { formatCurrency } from '../utils/formatCurrency.js';
 
 async function assertBranchAccess(user, branchId) {
   const branchIds = await getAccessibleBranchIds(user);
@@ -59,6 +61,15 @@ export async function createExpense(data, actorId, user) {
     userId: actorId,
     branchId,
     description: `Expense of ${category.name} (${data.amount}) recorded at "${branch.name}"`,
+    referenceType: 'expense',
+    referenceId: expense.id,
+  });
+
+  await notificationRepository.notifyBranchManagement(branchId, {
+    type: 'info',
+    category: 'expense_submitted',
+    title: 'Expense recorded',
+    message: `${category.name} expense of ${formatCurrency(data.amount)} recorded at "${branch.name}"`,
     referenceType: 'expense',
     referenceId: expense.id,
   });

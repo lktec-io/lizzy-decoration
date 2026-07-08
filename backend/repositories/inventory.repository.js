@@ -14,25 +14,25 @@ export async function recordMovement(data, externalConnection = null) {
   try {
     if (managesOwnTransaction) await connection.beginTransaction();
 
-    let [rows] = await connection.query(
-      'SELECT * FROM inventory WHERE product_id = ? AND branch_id = ? FOR UPDATE',
-      [data.productId, data.branchId],
-    );
+    const selectForUpdate = `
+      SELECT i.*, COALESCE(i.min_stock, p.min_stock) AS effective_min_stock
+      FROM inventory i JOIN products p ON p.id = i.product_id
+      WHERE i.product_id = ? AND i.branch_id = ? FOR UPDATE
+    `;
+    let [rows] = await connection.query(selectForUpdate, [data.productId, data.branchId]);
 
     if (!rows[0]) {
       await connection.query('INSERT INTO inventory (product_id, branch_id, quantity) VALUES (?, ?, 0)', [
         data.productId,
         data.branchId,
       ]);
-      [rows] = await connection.query(
-        'SELECT * FROM inventory WHERE product_id = ? AND branch_id = ? FOR UPDATE',
-        [data.productId, data.branchId],
-      );
+      [rows] = await connection.query(selectForUpdate, [data.productId, data.branchId]);
     }
 
     const inventoryRow = rows[0];
     const previousStock = inventoryRow.quantity;
     const newStock = previousStock + data.quantityChange;
+    const minStock = Number(inventoryRow.effective_min_stock) || 0;
 
     if (newStock < 0) {
       throw new ApiError(422, 'This movement would result in negative stock, which is not allowed');
@@ -51,7 +51,17 @@ export async function recordMovement(data, externalConnection = null) {
     );
 
     if (managesOwnTransaction) await connection.commit();
-    return { movementId: movementResult.insertId, previousStock, newStock };
+    // crossedIntoLowStock: true only on the movement that pushes stock from
+    // above the threshold to at-or-below it — callers use this to fire a
+    // low-stock notification exactly once per dip, not on every subsequent
+    // sale of an already-low product.
+    return {
+      movementId: movementResult.insertId,
+      previousStock,
+      newStock,
+      minStock,
+      crossedIntoLowStock: previousStock > minStock && newStock <= minStock,
+    };
   } catch (err) {
     if (managesOwnTransaction) await connection.rollback();
     throw err;

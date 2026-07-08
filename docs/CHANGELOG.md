@@ -2,6 +2,29 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 22 — Notifications
+
+**The one phase that reaches backward into five already-shipped modules** rather than starting clean. Phase 17's CHANGELOG explicitly promised "Notifications have no backing service until Phase 22 ships" — this is that promise honored: real triggers wired into Purchases, POS, Transfers, Expenses, and Returns, not a notification system sitting unused waiting for a future caller.
+
+**Backend**
+- `notification.repository.notifyBranchManagement(branchId, ...)`: the core design decision this phase. The `notifications` table's `user_id` column is nullable (schema anticipated broadcast notifications), but a single shared row can't have independent per-user read-state — one user marking a broadcast "read" would hide it for everyone. Instead, every notification is fanned out on write: one row per recipient, targeted at Super Admins plus the relevant branch's Manager(s) via one `INSERT ... SELECT`. Read-state is always unambiguous because no row is ever shared.
+- Five triggers wired into existing services, each firing *after* that operation's own `COMMIT` (matching the same after-commit placement already used for `activityLogRepository.create()` in every one of these services): `purchase_completed` (`purchase.service`), `sale_completed` (`sale.service`), `transfer_completed` (`transfer.service`), `expense_submitted` (`expense.service`), `return_processed` (`return.service`).
+- **Low stock** required extending `inventory.repository.recordMovement()` — the single source of truth for every stock change — to also fetch `COALESCE(inventory.min_stock, products.min_stock)` in the same locked `SELECT ... FOR UPDATE` it already runs, and return `crossedIntoLowStock: previousStock > minStock && newStock <= minStock`. This computes the crossing from data already being read/written in that transaction, so it's exact and free of extra queries. Callers (Sale checkout, Transfer approval's source-branch leg — the two flows that actually deplete stock; Purchases and Returns only add stock, so they can't newly cross into low-stock) check this flag after their own commit and notify only on the crossing, not on every subsequent sale of an already-low item.
+- No permission gate on the notification routes — every authenticated user manages their own inbox, the same way everyone has their own Profile.
+
+**Frontend**
+- Navbar's notification bell (previously a static icon with no handler, added in Phase 5) is now fully wired: an unread-count badge polling every 60 seconds, a dropdown with the most recent notifications, per-item and mark-all-read actions.
+- `/notifications`: the full inbox with All/Unread/Read tabs and pagination, reusing the same dot-color-by-type styling as the dropdown.
+
+**Documented scope decision**
+- **System Alerts are not generated this phase.** The category exists end-to-end (schema ENUM, dropdown rendering, list rendering) but nothing manufactures one — there's no scheduled job or health-check infrastructure yet to originate a system-level alert. Building a fake trigger just to populate the category would violate the standing no-placeholder rule; this is left ready for whenever that infrastructure exists.
+
+**Verification**
+- Because this phase modified `recordMovement()` — the function every prior transactional phase (Purchases, POS, Transfers, Returns) depends on and had already transaction-verified — it was re-verified with a fresh simulated `PoolConnection` test against the real, updated `sale.service.checkout`: confirmed the new JOIN'd `SELECT ... FOR UPDATE` query works, the low-stock crossing computes correctly (6→4 units against a threshold of 5), and both the `sale_completed` and `low_stock` notifications fire strictly after `COMMIT` — never during the transaction, where a later failure could still roll back the very stock change being described.
+- Backend dry-run: all 4 notification endpoints return 401 pre-auth.
+- Frontend: Playwright confirmed the Navbar badge shows the correct unread count, the dropdown lists recent notifications, and the full page's per-item mark-read works — zero console errors.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; only the pre-existing `watch()` warnings on RHF forms elsewhere).
+
 ## Phase 21 — Reports (Centralized Reports Center)
 
 **Where every prior phase's data comes together.** 20 phases of building `sales`, `sale_items`, `purchase_orders`, `expenses`, `carwash_transactions`, `returns`, `stock_transfer_requests`, and the rest pays off here: all 12 reports are genuine aggregate SQL against those tables — the spec's "Reports must be generated from live database data, no hardcoded values" rule was true by construction, not something to retrofit.

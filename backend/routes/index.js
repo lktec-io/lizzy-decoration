@@ -20,6 +20,7 @@ import returnRoutes from './return.routes.js';
 import expenseRoutes from './expense.routes.js';
 import carwashRoutes from './carwash.routes.js';
 import reportRoutes from './report.routes.js';
+import notificationRoutes from './notification.routes.js';
 
 const router = Router();
 
@@ -50,5 +51,6 @@ router.use('/returns', returnRoutes);
 router.use('/expenses', expenseRoutes);
 router.use('/carwash', carwashRoutes);
 router.use('/reports', reportRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

@@ -7,6 +7,7 @@ import * as inventoryRepository from '../repositories/inventory.repository.js';
 import * as branchRepository from '../repositories/branch.repository.js';
 import * as productRepository from '../repositories/product.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import * as notificationRepository from '../repositories/notification.repository.js';
 
 async function assertBranchAccess(user, branchId) {
   const branchIds = await getAccessibleBranchIds(user);
@@ -126,8 +127,10 @@ export async function approveTransfer(id, actorId, user) {
   try {
     await connection.beginTransaction();
 
+    const lowStockCrossings = [];
+
     for (const item of transfer.items) {
-      await inventoryRepository.recordMovement(
+      const outMovement = await inventoryRepository.recordMovement(
         {
           productId: item.product_id,
           branchId: transfer.source_branch_id,
@@ -139,6 +142,12 @@ export async function approveTransfer(id, actorId, user) {
         },
         connection,
       );
+
+      if (outMovement.crossedIntoLowStock) {
+        lowStockCrossings.push({
+          productId: item.product_id, productName: item.product_name, newStock: outMovement.newStock, minStock: outMovement.minStock,
+        });
+      }
 
       await inventoryRepository.recordMovement(
         {
@@ -166,6 +175,26 @@ export async function approveTransfer(id, actorId, user) {
       referenceType: 'stock_transfer_request',
       referenceId: id,
     });
+
+    await notificationRepository.notifyBranchManagement(transfer.destination_branch_id, {
+      type: 'success',
+      category: 'transfer_completed',
+      title: 'Transfer completed',
+      message: `Transfer "${transfer.transfer_number}" completed: stock moved from "${transfer.source_branch_name}" to "${transfer.destination_branch_name}"`,
+      referenceType: 'stock_transfer_request',
+      referenceId: id,
+    });
+
+    for (const crossing of lowStockCrossings) {
+      await notificationRepository.notifyBranchManagement(transfer.source_branch_id, {
+        type: 'warning',
+        category: 'low_stock',
+        title: 'Low stock alert',
+        message: `"${crossing.productName}" at "${transfer.source_branch_name}" has dropped to ${crossing.newStock} units (threshold: ${crossing.minStock})`,
+        referenceType: 'product',
+        referenceId: crossing.productId,
+      });
+    }
 
     return transferRepository.findById(id);
   } catch (err) {

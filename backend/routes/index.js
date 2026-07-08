@@ -19,6 +19,7 @@ import saleRoutes from './sale.routes.js';
 import returnRoutes from './return.routes.js';
 import expenseRoutes from './expense.routes.js';
 import carwashRoutes from './carwash.routes.js';
+import reportRoutes from './report.routes.js';
 
 const router = Router();
 
@@ -48,5 +49,6 @@ router.use('/sales', saleRoutes);
 router.use('/returns', returnRoutes);
 router.use('/expenses', expenseRoutes);
 router.use('/carwash', carwashRoutes);
+router.use('/reports', reportRoutes);
 
 export default router;

@@ -1,0 +1,44 @@
+.reports-type-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.reports-type-pill {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-white);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.reports-type-pill:hover {
+  border-color: var(--color-gold);
+}
+
+.reports-type-pill-active {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-white);
+}
+
+.reports-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.reports-filter-bar .form-group {
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+@media print {
+  .sidebar, .navbar, .page-actions, .reports-type-pills, .reports-filter-bar {
+    display: none !important;
+  }
+}

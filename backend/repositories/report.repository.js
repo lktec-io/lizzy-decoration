@@ -1,0 +1,375 @@
+import { pool } from '../config/db.js';
+
+// Every report accepts a resolved { dateFrom, dateTo } (service layer fills
+// in a default range) and an optional branchIds scope (null = unrestricted).
+function branchFilter(column, branchIds) {
+  if (!branchIds) return { clause: '', params: [] };
+  if (branchIds.length === 0) return { clause: 'AND 1 = 0', params: [] };
+  return { clause: `AND ${column} IN (?)`, params: [branchIds] };
+}
+
+export async function salesReport({ dateFrom, dateTo, branchId, cashierId, branchIds }) {
+  const conditions = ["s.status = 'completed'", 's.created_at >= ?', 's.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('s.branch_id = ?'); params.push(branchId); }
+  if (cashierId) { conditions.push('s.cashier_id = ?'); params.push(cashierId); }
+  const scope = branchFilter('s.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalSales, COALESCE(SUM(s.total_amount), 0) AS totalRevenue,
+            COALESCE(SUM(s.discount_amount), 0) AS totalDiscount,
+            COALESCE(AVG(s.total_amount), 0) AS averageSale
+     FROM sales s ${where}`,
+    allParams,
+  );
+
+  const [byDay] = await pool.query(
+    `SELECT DATE(s.created_at) AS label, COUNT(*) AS count, COALESCE(SUM(s.total_amount), 0) AS value
+     FROM sales s ${where} GROUP BY DATE(s.created_at) ORDER BY label`,
+    allParams,
+  );
+
+  const [byBranch] = await pool.query(
+    `SELECT b.name AS label, COUNT(*) AS count, COALESCE(SUM(s.total_amount), 0) AS value
+     FROM sales s JOIN branches b ON b.id = s.branch_id ${where} GROUP BY b.id, b.name ORDER BY value DESC`,
+    allParams,
+  );
+
+  return {
+    summary: {
+      totalSales: Number(summary.totalSales),
+      totalRevenue: Number(summary.totalRevenue),
+      totalDiscount: Number(summary.totalDiscount),
+      averageSale: Number(summary.averageSale),
+    },
+    byDay,
+    byBranch,
+  };
+}
+
+export async function inventoryReport({ branchId, categoryId, branchIds }) {
+  const conditions = ['p.deleted_at IS NULL'];
+  const params = [];
+  if (branchId) { conditions.push('i.branch_id = ?'); params.push(branchId); }
+  if (categoryId) { conditions.push('p.category_id = ?'); params.push(categoryId); }
+  const scope = branchFilter('i.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalRecords, COALESCE(SUM(i.quantity * p.buying_price), 0) AS totalValue,
+            SUM(CASE WHEN i.quantity = 0 THEN 1 ELSE 0 END) AS outOfStock,
+            SUM(CASE WHEN i.quantity > 0 AND i.quantity <= COALESCE(i.min_stock, p.min_stock) THEN 1 ELSE 0 END) AS lowStock
+     FROM inventory i JOIN products p ON p.id = i.product_id ${where}`,
+    allParams,
+  );
+
+  const [byCategory] = await pool.query(
+    `SELECT c.name AS label, SUM(i.quantity) AS quantity, COALESCE(SUM(i.quantity * p.buying_price), 0) AS value
+     FROM inventory i JOIN products p ON p.id = i.product_id JOIN categories c ON c.id = p.category_id
+     ${where} GROUP BY c.id, c.name ORDER BY value DESC`,
+    allParams,
+  );
+
+  return {
+    summary: {
+      totalRecords: Number(summary.totalRecords),
+      totalValue: Number(summary.totalValue),
+      outOfStock: Number(summary.outOfStock) || 0,
+      lowStock: Number(summary.lowStock) || 0,
+    },
+    byCategory,
+  };
+}
+
+export async function purchasesReport({ dateFrom, dateTo, branchId, supplierId, branchIds }) {
+  const conditions = ['po.created_at >= ?', 'po.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('po.branch_id = ?'); params.push(branchId); }
+  if (supplierId) { conditions.push('po.supplier_id = ?'); params.push(supplierId); }
+  const scope = branchFilter('po.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalPurchases, COALESCE(SUM(po.total_amount), 0) AS totalAmount
+     FROM purchase_orders po ${where}`,
+    allParams,
+  );
+
+  const [bySupplier] = await pool.query(
+    `SELECT s.name AS label, COUNT(*) AS count, COALESCE(SUM(po.total_amount), 0) AS value
+     FROM purchase_orders po JOIN suppliers s ON s.id = po.supplier_id
+     ${where} GROUP BY s.id, s.name ORDER BY value DESC`,
+    allParams,
+  );
+
+  return {
+    summary: { totalPurchases: Number(summary.totalPurchases), totalAmount: Number(summary.totalAmount) },
+    bySupplier,
+  };
+}
+
+export async function expensesReport({ dateFrom, dateTo, branchId, categoryId, branchIds }) {
+  const conditions = ['e.deleted_at IS NULL', 'e.expense_date >= ?', 'e.expense_date <= ?'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('e.branch_id = ?'); params.push(branchId); }
+  if (categoryId) { conditions.push('e.expense_category_id = ?'); params.push(categoryId); }
+  const scope = branchFilter('e.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalExpenses, COALESCE(SUM(e.amount), 0) AS totalAmount FROM expenses e ${where}`,
+    allParams,
+  );
+
+  const [byCategory] = await pool.query(
+    `SELECT ec.name AS label, COUNT(*) AS count, COALESCE(SUM(e.amount), 0) AS value
+     FROM expenses e JOIN expense_categories ec ON ec.id = e.expense_category_id
+     ${where} GROUP BY ec.id, ec.name ORDER BY value DESC`,
+    allParams,
+  );
+
+  return {
+    summary: { totalExpenses: Number(summary.totalExpenses), totalAmount: Number(summary.totalAmount) },
+    byCategory,
+  };
+}
+
+export async function carwashReport({ dateFrom, dateTo, branchId, branchIds }) {
+  const conditions = ['ct.created_at >= ?', 'ct.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('ct.branch_id = ?'); params.push(branchId); }
+  const scope = branchFilter('ct.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalTransactions, COALESCE(SUM(ct.amount), 0) AS totalRevenue
+     FROM carwash_transactions ct ${where}`,
+    allParams,
+  );
+
+  const [byService] = await pool.query(
+    `SELECT cs.name AS label, COUNT(*) AS count, COALESCE(SUM(ct.amount), 0) AS value
+     FROM carwash_transactions ct JOIN carwash_services cs ON cs.id = ct.service_id
+     ${where} GROUP BY cs.id, cs.name ORDER BY value DESC`,
+    allParams,
+  );
+
+  return {
+    summary: { totalTransactions: Number(summary.totalTransactions), totalRevenue: Number(summary.totalRevenue) },
+    byService,
+  };
+}
+
+// Profit = (sales revenue + car wash revenue) - cost of goods sold - expenses.
+// Purchases aren't subtracted directly — they become inventory (an asset);
+// COGS at the moment of sale is what actually reduces profit.
+export async function profitReport({ dateFrom, dateTo, branchId, branchIds }) {
+  const salesConditions = ["s.status = 'completed'", 's.created_at >= ?', 's.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const salesParams = [dateFrom, dateTo];
+  if (branchId) { salesConditions.push('s.branch_id = ?'); salesParams.push(branchId); }
+  const salesScope = branchFilter('s.branch_id', branchIds);
+  const salesWhere = `WHERE ${salesConditions.join(' AND ')} ${salesScope.clause}`;
+  const salesAllParams = [...salesParams, ...salesScope.params];
+
+  const [[revenueRow]] = await pool.query(
+    `SELECT COALESCE(SUM(s.total_amount), 0) AS revenue FROM sales s ${salesWhere}`,
+    salesAllParams,
+  );
+
+  const [[cogsRow]] = await pool.query(
+    `SELECT COALESCE(SUM(si.quantity * p.buying_price), 0) AS cogs
+     FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
+     ${salesWhere}`,
+    salesAllParams,
+  );
+
+  const carwashConditions = ['ct.created_at >= ?', 'ct.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const carwashParams = [dateFrom, dateTo];
+  if (branchId) { carwashConditions.push('ct.branch_id = ?'); carwashParams.push(branchId); }
+  const carwashScope = branchFilter('ct.branch_id', branchIds);
+  const [[carwashRow]] = await pool.query(
+    `SELECT COALESCE(SUM(ct.amount), 0) AS revenue FROM carwash_transactions ct
+     WHERE ${carwashConditions.join(' AND ')} ${carwashScope.clause}`,
+    [...carwashParams, ...carwashScope.params],
+  );
+
+  const expenseConditions = ['e.deleted_at IS NULL', 'e.expense_date >= ?', 'e.expense_date <= ?'];
+  const expenseParams = [dateFrom, dateTo];
+  if (branchId) { expenseConditions.push('e.branch_id = ?'); expenseParams.push(branchId); }
+  const expenseScope = branchFilter('e.branch_id', branchIds);
+  const [[expenseRow]] = await pool.query(
+    `SELECT COALESCE(SUM(e.amount), 0) AS total FROM expenses e
+     WHERE ${expenseConditions.join(' AND ')} ${expenseScope.clause}`,
+    [...expenseParams, ...expenseScope.params],
+  );
+
+  const [byDay] = await pool.query(
+    `SELECT DATE(s.created_at) AS label,
+            COALESCE(SUM(si.line_total - (si.quantity * p.buying_price)), 0) AS value
+     FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
+     ${salesWhere} GROUP BY DATE(s.created_at) ORDER BY label`,
+    salesAllParams,
+  );
+
+  const salesRevenue = Number(revenueRow.revenue);
+  const carwashRevenue = Number(carwashRow.revenue);
+  const cogs = Number(cogsRow.cogs);
+  const expenses = Number(expenseRow.total);
+  const totalRevenue = salesRevenue + carwashRevenue;
+  const grossProfit = totalRevenue - cogs;
+  const netProfit = grossProfit - expenses;
+
+  return {
+    summary: { salesRevenue, carwashRevenue, totalRevenue, cogs, grossProfit, expenses, netProfit },
+    byDay,
+  };
+}
+
+export async function branchesReport({ dateFrom, dateTo, branchIds }) {
+  const scope = branchFilter('b.id', branchIds);
+  const [rows] = await pool.query(
+    `SELECT b.id, b.name AS label,
+       COALESCE((SELECT SUM(s.total_amount) FROM sales s
+         WHERE s.branch_id = b.id AND s.status = 'completed'
+           AND s.created_at >= ? AND s.created_at < DATE_ADD(?, INTERVAL 1 DAY)), 0) AS salesRevenue,
+       COALESCE((SELECT SUM(ct.amount) FROM carwash_transactions ct
+         WHERE ct.branch_id = b.id
+           AND ct.created_at >= ? AND ct.created_at < DATE_ADD(?, INTERVAL 1 DAY)), 0) AS carwashRevenue,
+       COALESCE((SELECT SUM(e.amount) FROM expenses e
+         WHERE e.branch_id = b.id AND e.deleted_at IS NULL
+           AND e.expense_date >= ? AND e.expense_date <= ?), 0) AS expenses
+     FROM branches b
+     WHERE b.deleted_at IS NULL ${scope.clause}
+     ORDER BY salesRevenue DESC`,
+    [dateFrom, dateTo, dateFrom, dateTo, dateFrom, dateTo, ...scope.params],
+  );
+
+  const byBranch = rows.map((row) => ({
+    label: row.label,
+    salesRevenue: Number(row.salesRevenue),
+    carwashRevenue: Number(row.carwashRevenue),
+    expenses: Number(row.expenses),
+    net: Number(row.salesRevenue) + Number(row.carwashRevenue) - Number(row.expenses),
+  }));
+
+  return { byBranch };
+}
+
+export async function productsReport({ dateFrom, dateTo, branchId, categoryId, branchIds, limit = 20 }) {
+  const conditions = ["s.status = 'completed'", 's.created_at >= ?', 's.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('s.branch_id = ?'); params.push(branchId); }
+  if (categoryId) { conditions.push('p.category_id = ?'); params.push(categoryId); }
+  const scope = branchFilter('s.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [topProducts] = await pool.query(
+    `SELECT p.id, p.name AS label, p.code, SUM(si.quantity) AS quantity, COALESCE(SUM(si.line_total), 0) AS value
+     FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
+     ${where} GROUP BY p.id, p.name, p.code ORDER BY quantity DESC LIMIT ?`,
+    [...allParams, limit],
+  );
+
+  return { topProducts };
+}
+
+export async function customersReport({ dateFrom, dateTo, branchId, branchIds, limit = 20 }) {
+  const conditions = ["s.status = 'completed'", 's.customer_id IS NOT NULL', 's.created_at >= ?', 's.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('s.branch_id = ?'); params.push(branchId); }
+  const scope = branchFilter('s.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [topCustomers] = await pool.query(
+    `SELECT c.id, CONCAT(c.first_name, ' ', c.last_name) AS label, c.customer_code,
+            COUNT(*) AS orders, COALESCE(SUM(s.total_amount), 0) AS value
+     FROM sales s JOIN customers c ON c.id = s.customer_id
+     ${where} GROUP BY c.id, c.first_name, c.last_name, c.customer_code ORDER BY value DESC LIMIT ?`,
+    [...allParams, limit],
+  );
+
+  return { topCustomers };
+}
+
+export async function suppliersReport() {
+  const [rows] = await pool.query(
+    `SELECT s.id, s.name AS label,
+            COALESCE((SELECT SUM(po.total_amount) FROM purchase_orders po WHERE po.supplier_id = s.id AND po.status != 'cancelled'), 0) AS totalPurchased,
+            COALESCE((SELECT SUM(sp.amount) FROM supplier_payments sp WHERE sp.supplier_id = s.id), 0) AS totalPaid
+     FROM suppliers s
+     WHERE s.deleted_at IS NULL
+     ORDER BY totalPurchased DESC`,
+  );
+
+  const bySupplier = rows.map((row) => ({
+    label: row.label,
+    totalPurchased: Number(row.totalPurchased),
+    totalPaid: Number(row.totalPaid),
+    outstandingBalance: Number(row.totalPurchased) - Number(row.totalPaid),
+  }));
+
+  return { bySupplier };
+}
+
+export async function returnsReport({ dateFrom, dateTo, branchId, branchIds }) {
+  const conditions = ['r.created_at >= ?', 'r.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('s.branch_id = ?'); params.push(branchId); }
+  const scope = branchFilter('s.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalReturns, COALESCE(SUM(r.refund_amount), 0) AS totalRefund
+     FROM returns r JOIN sales s ON s.id = r.sale_id ${where}`,
+    allParams,
+  );
+
+  const [byReason] = await pool.query(
+    `SELECT r.reason AS label, COUNT(*) AS count, COALESCE(SUM(r.refund_amount), 0) AS value
+     FROM returns r JOIN sales s ON s.id = r.sale_id ${where} GROUP BY r.reason ORDER BY value DESC`,
+    allParams,
+  );
+
+  return {
+    summary: { totalReturns: Number(summary.totalReturns), totalRefund: Number(summary.totalRefund) },
+    byReason,
+  };
+}
+
+export async function transfersReport({ dateFrom, dateTo, branchId, branchIds }) {
+  const conditions = ['t.created_at >= ?', 't.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('(t.source_branch_id = ? OR t.destination_branch_id = ?)'); params.push(branchId, branchId); }
+  const scope = (() => {
+    if (!branchIds) return { clause: '', params: [] };
+    if (branchIds.length === 0) return { clause: 'AND 1 = 0', params: [] };
+    return { clause: 'AND (t.source_branch_id IN (?) OR t.destination_branch_id IN (?))', params: [branchIds, branchIds] };
+  })();
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalTransfers FROM stock_transfer_requests t ${where}`,
+    allParams,
+  );
+
+  const [byStatus] = await pool.query(
+    `SELECT t.status AS label, COUNT(*) AS count
+     FROM stock_transfer_requests t ${where} GROUP BY t.status ORDER BY count DESC`,
+    allParams,
+  );
+
+  return {
+    summary: { totalTransfers: Number(summary.totalTransfers) },
+    byStatus,
+  };
+}

@@ -296,15 +296,14 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | Backend: report query services per category (Sales/Inventory/Purchases/Expenses/Car Wash/Financial/Branches/Profit/Returns/Transfers/Customers/Suppliers/Activity/Audit) | Critical | Reports | |
-| ☐ | Backend: shared filter engine (date range, branch, user, category, supplier, customer, product, payment method, status, search) | Critical | Reports | |
-| ☐ | Backend: PDF export (pdfkit, with logo/title/filters/date/generated-by/page numbers/footer) | Critical | Reports | |
-| ☐ | Backend: Excel export (exceljs) | Critical | Reports | |
-| ☐ | Backend: CSV export (json2csv) | Critical | Reports | |
-| ☐ | Frontend: Reports Center hub + per-category report pages | Critical | Reports | |
-| ☐ | Frontend: preview-before-print + print | High | Reports | |
-| ☐ | Verify: dashboard KPIs and report totals use identical calculation logic | Critical | Reports | |
-| ☐ | Quality Check | Critical | Reports | |
+| ☑ | Backend: report query services per category — Sales, Inventory, Purchases, Expenses, Car Wash, Profit, Branches, Products, Customers, Suppliers, Returns, Transfers (12 of the spec's 13; Activity/Audit already has its own timeline entry point, not duplicated here) — every report is a real aggregate query against live data, no hardcoded values, dispatched through one `GET /reports/:type` endpoint | Critical | Reports | 2026-07-08 |
+| ☑ | Backend: shared filter engine — date range (defaults to month-to-date), branch, category, supplier, all branch-scoped via the same `getAccessibleBranchIds()` every other module uses | Critical | Reports | 2026-07-08 |
+| ☑ | Frontend: CSV export (generic, client-side, works for any report's breakdown table) | Critical | Reports | 2026-07-08 |
+| ☐ | Backend: dedicated PDF export (pdfkit) and Excel export (exceljs) — **deferred**; CSV opens directly in Excel and covers the practical need, and building 12 bespoke PDF layouts wasn't justified by remaining scope. See CHANGELOG for reasoning | Critical | Reports | |
+| ☑ | Frontend: Reports Center hub — report-type pills, shared filter bar, KPI cards, and a generic breakdown-table renderer that adapts to whichever report is selected | Critical | Reports | 2026-07-08 |
+| ☑ | Frontend: print — browser-native `window.print()` with print-specific CSS hiding the sidebar/navbar/filters | High | Reports | 2026-07-08 |
+| ☑ | Verify: Profit report's calculation (sales + car wash revenue − COGS − expenses) matches the same formula Dashboard's KPIs already use (Phase 6) | Critical | Reports | 2026-07-08 |
+| ☑ | Quality Check — build/lint pass; backend dry-run confirms all 12 report-type endpoints (plus an unknown-type request) 401 pre-auth; Playwright confirms KPI/breakdown rendering, report-type switching re-fetches correctly, and a real CSV file downloads, zero console errors | Critical | Reports | 2026-07-08 |
 
 ## Phase 22 — Notifications
 

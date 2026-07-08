@@ -10,7 +10,7 @@ server {
     server_name jozzy.clixworks.co.tz;
 
     # Frontend static build (npm run build -> dist/)
-    root /var/www/jozzy-erp/dist;
+    root /var/www/jozzy-decoration/dist;
     index index.html;
 
     # React Router — always fall through to index.html for client-side routes

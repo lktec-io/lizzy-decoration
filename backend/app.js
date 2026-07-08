@@ -12,6 +12,12 @@ import routes from './routes/index.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// Trust exactly one hop upstream (Nginx) so req.ip and express-rate-limit
+// correctly read the real client IP from X-Forwarded-For instead of
+// throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR. `1` (not `true`) — trust
+// only the immediate reverse proxy, not an arbitrary chain of them.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));

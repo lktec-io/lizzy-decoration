@@ -2,6 +2,29 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 18 — Returns
+
+**The mirror image of Purchases**: where Purchases increases stock on receipt, Returns increases stock on approval — reusing `recordMovement()` a fourth time (movement type `return`, positive quantity), and reusing the exact pending→approve/reject shape Transfers established in Phase 15. Every return points back to a specific `sale_items` row rather than a bare product, which is what makes "cannot return more than sold quantity" and refund-amount calculation both exact.
+
+**Backend**
+- `return.service.createReturn`: locates the original sale, requires it to be `completed` (not voided), and for every selected line validates it actually belongs to that sale and that `requested quantity + already-returned quantity` (summed across every *non-rejected* prior return against that same sale line, not just the current request) doesn't exceed what was sold. Refund amount is computed per line from the sale item's actual paid price — `line_total / quantity` — so a line that had a POS-time discount refunds correctly instead of refunding the pre-discount list price. Request creation is its own transaction (header + items) but has no inventory impact yet, same as a Transfer request.
+- `approveReturn`: one transaction — `recordMovement()` per return line (restocking the branch the original sale was made from) followed by a conditional `status = 'pending'` → `'approved'` update that also flips `refund_status` to `'refunded'` in the same statement, all on one connection. Rejecting is a status-only change that never touches inventory or refund_status.
+- Return numbers (`RET-2026-000001`) reuse Phase 9's sequence engine, matching every other document type.
+- Branch access follows the same rule as Transfers: scoped to the branch of the underlying sale.
+
+**Frontend**
+- `ReturnForm`: "Locate Original Sale" search by sale number (reusing the existing sale-list search), then a checkbox+quantity table per sold line, reason and refund-method selects.
+- `ReturnList` and `ReturnDetail` follow the Transfers list/detail-with-approve-reject pattern exactly — status badges, Approve/Reject behind `returns.approve` and a confirmation dialog, shown only while pending.
+
+**Documented scope decision**
+- The return-quantity input's client-side max is the line's full sold quantity, not "sold minus already returned" — computing the latter live would need a new endpoint exposing per-line returned-quantity, which felt like more plumbing than this phase's remaining time justified. The server is the authoritative check regardless (same trust model used for POS stock and Transfer availability) and returns a clear error naming the product if the cumulative cap is exceeded.
+
+**Verification**
+- Return approval's inventory restock verified with a simulated `PoolConnection` exercising the real `approveReturn` service directly: success path confirmed both lines restock and the status/refund update commit together in one `COMMIT`; failure path (simulated error on the second line's inventory update) confirmed `ROLLBACK` fires before the status/refund update ever runs, `COMMIT` never fires, and the connection is still released.
+- Backend dry-run: all 5 return endpoints return 401 pre-auth.
+- Frontend: Playwright with mocked API drove locate-sale → select-item → detail-with-actions end-to-end, zero console errors.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; only the pre-existing `watch()` warnings on other RHF forms).
+
 ## Phase 17 — POS (Sales Engine)
 
 **The largest and most consequential phase so far** — the point-of-sale terminal is where every other module converges: it decrements the same `inventory` table Purchases/Transfers write to, attaches to Customers, and is the first real consumer of two previously-built-but-idle pieces — Phase 11's `QRScanner.jsx` (built then, unused until now — confirmed via build output going from 0 bytes to a real chunk) and Phase 10's `recordMovement()` composable design, now proven a third time in a third shape (single-direction for Purchases, dual-branch-pair for Transfers, now a per-line-item loop for POS).

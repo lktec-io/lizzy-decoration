@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as authService from '../services/authService';
 import { setAccessToken, clearAccessToken } from '../utils/tokenStorage';
 import { setOnSessionExpired } from '../services/apiClient';
@@ -8,6 +8,15 @@ function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
+
+  // Guards against a race between the mount-time silent /auth/refresh below
+  // and an explicit login(): if the user submits the login form before that
+  // refresh call resolves, its response can land AFTER login's and clobber
+  // (or clear) the token/user login just set — causing the very next
+  // authenticated request (e.g. the Navbar's unread-count poll) to fail with
+  // a stale or missing token. Setting this synchronously at the start of
+  // login() makes restoreSession's callback a no-op if login has begun.
+  const restoreSupersededRef = useRef(false);
 
   useEffect(() => {
     setOnSessionExpired(() => {
@@ -22,11 +31,11 @@ function AuthProvider({ children }) {
     async function restoreSession() {
       try {
         const { accessToken, user: restoredUser } = await authService.refresh();
-        if (cancelled) return;
+        if (cancelled || restoreSupersededRef.current) return;
         setAccessToken(accessToken);
         setUser(restoredUser);
       } catch {
-        if (!cancelled) clearAccessToken();
+        if (!cancelled && !restoreSupersededRef.current) clearAccessToken();
       } finally {
         if (!cancelled) setInitializing(false);
       }
@@ -39,6 +48,7 @@ function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async ({ identifier, password, rememberMe }) => {
+    restoreSupersededRef.current = true;
     const result = await authService.login({ identifier, password, rememberMe });
     setAccessToken(result.accessToken);
     setUser(result.user);

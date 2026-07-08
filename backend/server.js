@@ -3,11 +3,17 @@ import { env } from './config/env.js';
 import { testConnection } from './config/db.js';
 import { logger } from './config/logger.js';
 import { scheduleDailyBackup } from './jobs/backupJob.js';
+import { ensureUploadDirs } from './middlewares/upload.js';
 
 async function start() {
   try {
     await testConnection();
     logger.info('Database connection established');
+
+    // Fresh servers (or any deploy that doesn't preserve empty directories)
+    // won't have backend/uploads/<subfolder> yet — create them up front so
+    // the first avatar/logo/product-image upload never hits ENOENT.
+    await ensureUploadDirs();
 
     app.listen(env.port, () => {
       logger.info(`JOZZY ERP API listening on port ${env.port} [${env.nodeEnv}]`);

@@ -52,4 +52,14 @@ export const env = {
     password: process.env.SMTP_PASSWORD || '',
     from: process.env.SMTP_FROM || 'no-reply@jozzy.clixworks.co.tz',
   },
+
+  // Declared for forward compatibility only — uploads are currently local-
+  // disk via multer (backend/middlewares/upload.js). Not required at
+  // startup and nothing reads this yet; wiring an actual Cloudinary
+  // integration is a separate feature change, not a config change.
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+    apiKey: process.env.CLOUDINARY_API_KEY || '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+  },
 };

@@ -32,6 +32,9 @@ const SupplierDetail = lazy(() => import('../pages/suppliers/SupplierDetail'));
 const PurchaseList = lazy(() => import('../pages/purchases/PurchaseList'));
 const PurchaseForm = lazy(() => import('../pages/purchases/PurchaseForm'));
 const PurchaseDetail = lazy(() => import('../pages/purchases/PurchaseDetail'));
+const TransferList = lazy(() => import('../pages/transfers/TransferList'));
+const TransferForm = lazy(() => import('../pages/transfers/TransferForm'));
+const TransferDetail = lazy(() => import('../pages/transfers/TransferDetail'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -78,6 +81,9 @@ function AppRouter() {
               <Route path="/purchases" element={<PurchaseList />} />
               <Route path="/purchases/new" element={<PurchaseForm />} />
               <Route path="/purchases/:id" element={<PurchaseDetail />} />
+              <Route path="/transfers" element={<TransferList />} />
+              <Route path="/transfers/new" element={<TransferForm />} />
+              <Route path="/transfers/:id" element={<TransferDetail />} />
             </Route>
           </Route>
 

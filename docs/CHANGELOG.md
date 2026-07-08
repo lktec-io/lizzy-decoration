@@ -2,6 +2,30 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 15 — Stock Transfers
+
+**The first module with a genuine two-step workflow**: creating a transfer only reserves a `pending` request — no stock moves until a Manager or Super Admin approves it. Approval is also the first place `recordMovement()` is called *twice* inside one transaction, proving out Phase 10's composable design a step further than Purchases (which called it once per line item, always in the same direction).
+
+**Backend**
+- `transfer.repository`/`transfer.service`: `createTransfer` validates source ≠ destination, both branches exist, every product exists, and the requested quantity doesn't exceed available stock at the source branch (a new `inventoryRepository.getAvailableQuantity()` read helper) — all before opening a transaction that inserts the request header and every line item atomically.
+- `approveTransfer`: one transaction, one connection. For every line item, `recordMovement()` runs twice on that connection — `transfer_out` (negative) at the source, `transfer_in` (positive) at the destination — then the request flips from `pending` to `approved` via a conditional `UPDATE ... WHERE status = 'pending'` that also guards against two concurrent approvals both succeeding. Everything commits together or rolls back together.
+- `rejectTransfer`: a status-only change (no inventory impact), guarded by the same conditional-update pattern.
+- Branch access control: requesting a transfer requires access to the source branch; approving/rejecting requires access to either side of the transfer (source or destination) — reuses Phase 5's `getAccessibleBranchIds()`, unrestricted for Super Admin.
+- Transfer numbers (`TRF-2026-000001`) reuse Phase 9's sequence engine with 6-digit padding, same as Purchases.
+- Routes gated by `transfers.view` / `transfers.create` / `transfers.approve`, matching the seeded role matrix (Manager gets all three, Store Keeper gets view + create only, matching the spec's "Approve (Manager / Super Admin)" rule).
+
+**Frontend**
+- `TransferForm`: selecting a source branch fetches its live inventory (`GET /inventory?branchId=`) to populate the product picker with real available quantities, and flags a line inline if the typed quantity exceeds what's available — before the request ever reaches the server. Destination branch is validated client-side to differ from the source.
+- `TransferList` shows status with color-coded badges (pending/approved/rejected). `TransferDetail` shows Approve/Reject buttons only when the transfer is still pending and the viewer holds `transfers.approve`, each behind a `ConfirmDialog`.
+
+**Verification**
+- Transaction safety verified the same way as Phase 14's Purchases — a simulated `PoolConnection` calling the real, unmodified `approveTransfer` service directly:
+  - **Success path**: asserted the exact sequence for two line items — source `SELECT...FOR UPDATE → UPDATE → INSERT movement (transfer_out)`, then destination `SELECT...FOR UPDATE → UPDATE → INSERT movement (transfer_in)`, repeated per line, followed by the status update and exactly one `COMMIT`.
+  - **Failure path**: simulated a DB error on the *second* inventory update (the destination leg of the first line item, after the source leg had already "succeeded" within the same uncommitted transaction) — asserted `ROLLBACK` fires, `COMMIT` never does, and the connection is still released. Confirms a transfer can never leave stock deducted from one branch without landing at the other, even under mid-transaction failure.
+- Backend dry-run (booting `app.js` directly, bypassing `server.js`'s DB-connectivity gate since no live database exists in this session): all five transfer endpoints (`GET /transfers`, `GET /transfers/:id`, `POST /transfers`, `POST /transfers/:id/approve`, `POST /transfers/:id/reject`) correctly return 401 with the standard safe error envelope pre-auth.
+- Frontend: Playwright with mocked API confirmed list rendering, the source-branch-driven stock picker, client-side same-branch validation blocking submit, and the detail page's Approve/Reject actions rendering for a pending transfer — zero console errors.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; only the pre-existing `watch()` React Compiler warnings on other RHF forms).
+
 ## Phase 14 — Purchases
 
 **The first real multi-step financial transaction in the app**, and the first real consumer of Phase 10's `recordMovement(data, connection?)` composable design — validating that architectural bet.

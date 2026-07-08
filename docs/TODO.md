@@ -218,13 +218,17 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `stock_transfer_requests`, `stock_transfer_items` tables | Critical | Transfers | |
-| ☐ | Backend: transfer number generation (`TRF-2026-000001`) | Critical | Transfers | |
-| ☐ | Backend: create → approve/reject workflow (Manager/Super Admin) | Critical | Transfers | |
-| ☐ | Backend: approval → transaction: decrement source, increment destination, dual movement records | Critical | Transfers | |
-| ☐ | Frontend: Transfer create/approve/history pages | Critical | Transfers | |
-| ☐ | Business rules: cannot exceed available stock, cannot transfer to same branch | Critical | Transfers | |
-| ☐ | Quality Check | Critical | Transfers | |
+| ☑ | DB: `stock_transfer_requests`, `stock_transfer_items` tables | Critical | Transfers | 2026-07-07 (Phase 0) |
+| ☑ | Backend: transfer number generation (`TRF-2026-000001`, 6-digit padding via the Phase 9 sequence engine) | Critical | Transfers | 2026-07-08 |
+| ☑ | Backend: create transfer → own transaction (header + every line item), status `pending`, no stock movement yet — fails fast if source/destination are the same branch, either branch doesn't exist, a product doesn't exist, or the requested quantity exceeds available stock at the source branch | Critical | Transfers | 2026-07-08 |
+| ☑ | Backend: approve transfer (`transfers.approve`, Manager/Super Admin) → **one all-or-nothing transaction**: for every line item, `inventoryRepository.recordMovement()` called twice on the same connection — `transfer_out` at the source branch, `transfer_in` at the destination — then the request is flipped to `approved`. Second real consumer of Phase 10's connection-composable design, and the first to call `recordMovement()` twice per unit of work | Critical | Transfers | 2026-07-08 |
+| ☑ | Backend: reject transfer (`transfers.approve`) — status → `rejected`, no stock movement, guarded against double-processing via a `WHERE status = 'pending'` conditional update | Critical | Transfers | 2026-07-08 |
+| ☑ | Backend: branch-scoped access — request creation requires access to the source branch; approve/reject requires access to the source or destination branch (Super Admin unrestricted), reusing Phase 5's `getAccessibleBranchIds()` | Critical | Transfers | 2026-07-08 |
+| ☑ | Frontend: Transfer list (status badges: pending/approved/rejected) | Critical | Transfers | 2026-07-08 |
+| ☑ | Frontend: Transfer create form — selecting a source branch loads its live available stock (`GET /inventory?branchId=`) into the product picker, with an inline "exceeds available stock" warning as quantities are typed; destination branch validated client-side to differ from source | Critical | Transfers | 2026-07-08 |
+| ☑ | Frontend: Transfer detail page with Approve/Reject actions (gated by `transfers.approve`, shown only while `pending`), confirmation dialogs before either action | Critical | Transfers | 2026-07-08 |
+| ☑ | Business rules: cannot exceed available stock (checked at request time and enforced again by `recordMovement()`'s negative-stock guard at approval time, since stock can change between request and approval), cannot transfer to same branch | Critical | Transfers | 2026-07-08 |
+| ☑ | Quality Check — dual inventory update verified correct: **simulated `PoolConnection`** exercising the real `approveTransfer` service function. Success path asserted the exact sequence per line item (`SELECT...FOR UPDATE → UPDATE → INSERT movement` for the source's `transfer_out`, then the same trio for the destination's `transfer_in`), followed by the status update and a single `COMMIT`. Failure path injected a simulated DB error partway through (after the first line's source leg had already succeeded within the uncommitted transaction) and asserted `ROLLBACK` fires, `COMMIT` never does, and the connection is still released — so a transfer can never leave stock deducted from one branch without landing at the other. Also verified: build/lint pass (zero chunk-size warnings); backend dry-run confirms all five transfer endpoints 401 pre-auth; frontend verified via Playwright with mocked API — list, create-form same-branch validation, and detail-with-actions screenshotted, zero console errors | Critical | Transfers | 2026-07-08 |
 
 ## Phase 16 — Customers
 

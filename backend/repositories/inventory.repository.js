@@ -66,6 +66,18 @@ function branchFilter(branchIds) {
   return { clause: 'AND i.branch_id IN (?)', params: [branchIds] };
 }
 
+// Used by Transfers to fail fast on "cannot transfer more than available
+// stock" before opening a transaction. recordMovement()'s own negative-stock
+// guard remains the authoritative check at the moment stock actually moves.
+export async function getAvailableQuantity(productId, branchId) {
+  const [rows] = await pool.query(
+    'SELECT quantity, reserved_quantity FROM inventory WHERE product_id = ? AND branch_id = ? LIMIT 1',
+    [productId, branchId],
+  );
+  if (!rows[0]) return 0;
+  return rows[0].quantity - rows[0].reserved_quantity;
+}
+
 export async function findAll({ page = 1, limit = 20, search, branchId, lowStock, outOfStock, branchIds }) {
   const conditions = ['p.deleted_at IS NULL'];
   const params = [];

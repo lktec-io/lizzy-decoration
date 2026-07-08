@@ -2,6 +2,24 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 20 — Car Wash
+
+**The simplest module in the system** — a single insert per transaction, no workflow, no inventory impact, `status` is a one-value ENUM. The spec calls it a "simple and professional Car Wash module" and the schema matches that exactly.
+
+**Backend**
+- `vehicle.repository`: vehicles are identified by plate number (unique), found-or-created as part of recording a wash rather than through a separate registration screen — matching a real front-desk flow where "Register Vehicle" and "Record Service" happen in the same conversation. A returning vehicle's customer name/phone are refreshed on each visit (cars change hands; the front desk always has the latest contact).
+- `carwashService.repository`: read-only list of the 4 seeded services (Normal Wash, Full Wash, Engine Wash, Interior Cleaning) — no management UI, same reasoning as Expenses' fixed category list.
+- `carwash.service.recordTransaction`: validates branch access and that the selected service is active, then does the vehicle find-or-create followed by one transaction-table insert. No explicit DB transaction wrapper needed — validation happens entirely before any write, so there's no partial-state risk a rollback would need to guard against, unlike Purchases/Transfers/POS/Returns where writes have to happen before some of the validation (e.g. stock checks against rows being written).
+- Branch-scoped and filterable (service, branch, date range) the same way Expenses is, including a `totalAmount` aggregate for the current filter set powering a "Revenue (filtered results)" KPI.
+
+**Frontend**
+- `CarWash.jsx`: one page, one modal. Selecting a service auto-fills the Amount field with that service's price (still editable, matching the spec's fields listing Service and Amount separately), and the history table sits below with the same filter-toolbar pattern as Expenses.
+
+**Verification**
+- Backend dry-run: all 3 carwash endpoints return 401 pre-auth.
+- Frontend: Playwright with mocked API confirmed history rendering with the correct filtered-revenue KPI, the service-price auto-fill interaction, and a full form fill — zero console errors.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; only the pre-existing `watch()` warnings, now on a fourth RHF form).
+
 ## Phase 19 — Expenses
 
 **The simplest phase since Customers** — a straightforward branch-scoped CRUD module, deliberately so: the spec calls it "simple expense management" and lists only Create/Edit/Delete/Search/Filter, no workflow or approval step.

@@ -244,20 +244,21 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `sales`, `sale_items`, `sale_payments` tables | Critical | POS | |
-| ☐ | Backend: sale number generation (`SAL-2026-000001`) | Critical | POS | |
-| ☐ | Backend: checkout transaction (validate cart/stock/customer/payment → create sale+items+payments → update inventory+movements → audit/activity logs → notifications) | Critical | POS | |
-| ☐ | Backend: discount engine (percentage/fixed, line/cart level, permission-gated limits) | Critical | POS | |
-| ☐ | Backend: mixed payment validation (sum(payments) >= total) | Critical | POS | |
-| ☐ | Backend: receipt data endpoint | Critical | POS | |
-| ☐ | Frontend: POS layout (product grid+search left, cart+payment right) | Critical | POS | |
-| ☐ | Frontend: camera QR scan integrated into product search | Critical | POS | |
-| ☐ | Frontend: cart (qty, price override by permission, discount, notes, clear) | Critical | POS | |
-| ☐ | Frontend: payment section (cash/M-Pesa/Airtel Money manual entry, mixed) | Critical | POS | |
-| ☐ | Frontend: receipt preview + print (80mm layout) + reprint | Critical | POS | |
-| ☐ | Frontend: Sale history + detail pages | High | POS | |
-| ☐ | Architecture-only: Hold Sale (data model + UI stub, not full save/resume flow this phase) | Low | POS | |
-| ☐ | Quality Check — full checkout tested, transaction rollback verified | Critical | POS | |
+| ☑ | DB: `sales`, `sale_items`, `sale_payments` tables | Critical | POS | 2026-07-07 (Phase 0) |
+| ☑ | Backend: sale number generation (`SAL-2026-000001`, 6-digit padding via the Phase 9 sequence engine) | Critical | POS | 2026-07-08 |
+| ☑ | Backend: checkout transaction — validate branch/customer/stock/price-authority/discount-limits/payment up front, then **one all-or-nothing transaction**: insert sale header + every line item + `inventoryRepository.recordMovement()` per line (movement type `sale`, negative quantity) + every payment record, all sharing one connection. Third production consumer of Phase 10's composable design, after Purchases (single direction) and Transfers (dual-branch pair) | Critical | POS | 2026-07-08 |
+| ☑ | Backend: discount engine — line-item and whole-cart discount amounts; actors without `sales.manage` are capped at 10% of the relevant subtotal (spec's "Cashier: Limited Discount" tier), uncapped for `sales.manage` ("Manager: Extended" / "Super Admin: Full Authority"). Same `sales.manage` gate also governs per-line price override | Critical | POS | 2026-07-08 |
+| ☑ | Backend: mixed payment validation — any combination of cash/M-Pesa/Airtel Money/bank transfer/card, `sum(payments) >= total` enforced server-side | Critical | POS | 2026-07-08 |
+| ☑ | Backend: receipt PDF generation (`GET /sales/:id/receipt`) — narrow 80mm-width thermal-receipt-shaped PDF via pdfkit, reusing Phase 12's Label Printing pattern; pulls company name/address/phone/logo/footer from Phase 2's `company_settings` | Critical | POS | 2026-07-08 |
+| ☑ | Backend: `GET /products/sellable` — purpose-built branch-scoped read (active products + live stock) backing the POS grid, separate from the Products admin list and the Inventory admin list | Critical | POS | 2026-07-08 |
+| ☑ | Frontend: POS layout (product grid+search+category pills left, cart+payment right), branch-scoped — a Cashier's own branch is locked in automatically, Super Admin picks a branch | Critical | POS | 2026-07-08 |
+| ☑ | Frontend: camera QR scan integrated — first real consumer of Phase 11's `QRScanner.jsx` (previously built but unused, tree-shaken to 0 bytes); decodes the product QR payload and adds the matching product straight to cart | Critical | POS | 2026-07-08 |
+| ☑ | Frontend: cart (qty with stock cap, price override input disabled unless `sales.manage`, per-line + cart discount, notes, clear cart) | Critical | POS | 2026-07-08 |
+| ☑ | Frontend: payment section (method + amount rows, add/remove for mixed payments, live change/balance-due) | Critical | POS | 2026-07-08 |
+| ☑ | Frontend: receipt — "View / Print Receipt" opens the PDF in a new tab; the browser's native print dialog and "Save as PDF" cover Print/Download/Reprint without separate endpoints (documented deviation — see CHANGELOG) | Critical | POS | 2026-07-08 |
+| ☑ | Frontend: Sale history + detail pages | High | POS | 2026-07-08 |
+| ☐ | Hold Sale (architecture-only per spec) — **deferred**, not started this phase; see CHANGELOG for reasoning | Low | POS | |
+| ☑ | Quality Check — checkout transaction verified with a simulated `PoolConnection` (success + failure paths); build/lint pass; backend dry-run confirms all 5 sale/POS endpoints 401 pre-auth; Playwright confirms grid→cart→checkout→receipt end-to-end with mocked API, zero console errors | Critical | POS | 2026-07-08 |
 
 ## Phase 18 — Returns
 

@@ -8,6 +8,7 @@ import * as brandRepository from '../repositories/brand.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import { generateCode } from '../repositories/sequence.repository.js';
 import { publicPathFor } from '../middlewares/upload.js';
+import { getAccessibleBranchIds } from '../utils/branchScope.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
@@ -32,6 +33,25 @@ export async function getProduct(id) {
   const product = await productRepository.findById(id);
   if (!product) throw new ApiError(404, 'Product not found');
   return product;
+}
+
+// Backs the POS product grid — active products with their live stock at one
+// branch. Branch-scoped the same way every other branch-owned read is.
+export async function getSellableProducts(query, user) {
+  if (!query.branchId) throw new ApiError(400, 'Branch is required');
+  const branchId = Number(query.branchId);
+
+  const branchIds = await getAccessibleBranchIds(user);
+  if (branchIds !== null && !branchIds.includes(branchId)) {
+    throw new ApiError(403, 'You do not have access to this branch');
+  }
+
+  return productRepository.findSellable({
+    branchId,
+    search: query.search,
+    categoryId: query.categoryId ? Number(query.categoryId) : undefined,
+    limit: Math.min(Number(query.limit) || 60, 200),
+  });
 }
 
 function assertPriceSanity(data) {

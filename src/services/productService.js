@@ -10,6 +10,12 @@ export async function getProduct(id) {
   return data.data;
 }
 
+// Backs the POS product grid — active products with live stock at one branch.
+export async function listSellableProducts(params) {
+  const { data } = await apiClient.get('/products/sellable', { params });
+  return data.data;
+}
+
 export async function createProduct(payload) {
   const { data } = await apiClient.post('/products', payload);
   return data.data;

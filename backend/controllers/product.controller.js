@@ -8,6 +8,11 @@ export const list = asyncHandler(async (req, res) => {
   return success(res, { data: { items, meta } });
 });
 
+export const sellable = asyncHandler(async (req, res) => {
+  const products = await productService.getSellableProducts(req.query, req.user);
+  return success(res, { data: products });
+});
+
 export const getById = asyncHandler(async (req, res) => {
   const product = await productService.getProduct(Number(req.params.id));
   return success(res, { data: product });

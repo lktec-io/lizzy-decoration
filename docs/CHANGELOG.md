@@ -2,6 +2,38 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 17 — POS (Sales Engine)
+
+**The largest and most consequential phase so far** — the point-of-sale terminal is where every other module converges: it decrements the same `inventory` table Purchases/Transfers write to, attaches to Customers, and is the first real consumer of two previously-built-but-idle pieces — Phase 11's `QRScanner.jsx` (built then, unused until now — confirmed via build output going from 0 bytes to a real chunk) and Phase 10's `recordMovement()` composable design, now proven a third time in a third shape (single-direction for Purchases, dual-branch-pair for Transfers, now a per-line-item loop for POS).
+
+**Backend**
+- `sale.service.checkout`: the full spec sequence — validate branch access, validate customer, validate every line's product/price-authority/stock/discount-limit, validate payment coverage — all *before* opening a connection, then one all-or-nothing transaction: insert the sale header, every `sale_items` row, a `recordMovement()` call per line (movement type `sale`, negative quantity), and every `sale_payments` row. Commit once; roll back everything on any failure, matching the spec's explicit "Sale processing MUST use MySQL transaction... Never allow partial sales" rule.
+- Discount authority: reused Phase 4's `permission.repository.getCodesForRole()` directly (the same lookup `authorize()` middleware uses, just called from the service layer) to check for `sales.manage` at checkout time. Actors without it are capped at 10% of the relevant subtotal on both line-item and cart-level discounts, and may not override a line's unit price — the spec's three-tier "Cashier: Limited / Manager: Extended / Super Admin: Full" discount authority, made concrete since the spec didn't give numbers.
+- Sale numbers (`SAL-2026-000001`) reuse Phase 9's sequence engine, 6-digit padding like Purchases/Transfers.
+- Mixed payments: `sale_payments` accepts any number of rows in any combination of methods; `sum(payments) >= total` is the only server-side constraint, matching the spec's mixed-payment business rule exactly.
+- `GET /products/sellable`: a new, purpose-built branch-scoped product read (active products + live per-branch stock) added to `product.repository`/`product.service` specifically to back the POS grid — kept separate from the Products admin list and Inventory admin list rather than overloading either with POS-specific shape/filtering.
+- `receipt.service.buildReceiptPdf`: an 80mm-width, thermal-receipt-shaped PDF via pdfkit, following the exact pattern Phase 12's Label Printing established (mm-to-point conversion, streamed buffer). Pulls company name, address, phone, and footer message from Phase 2's `company_settings` (whose `receipt_footer` column existed since Phase 2 specifically for this).
+
+**Frontend**
+- `POS.jsx`: the split-screen terminal — product grid with category pills and instant search on the left, cart and checkout on the right. Branch context comes from the logged-in user (locked for Cashier/Manager, selectable for Super Admin, consistent with the branch-scoping used everywhere else).
+- QR scanning: tapping "Scan QR" opens `QRScanner` in a modal; the decoded payload's `productId`/`code` is resolved against the live sellable-products list (so stock is always current) and added to cart — the QR-code architecture decision from Phase 11 (payload omits branch, since the scanning terminal already knows its own branch) pays off here exactly as designed.
+- Cart: per-line quantity capped at available stock, price input disabled unless the viewer holds `sales.manage`, per-line and cart-level discount inputs, live totals.
+- Payment: add/remove rows for mixed payments, live change/balance-due as amounts are typed.
+- Checkout navigates straight to `SaleDetail`, which doubles as the immediate post-sale receipt screen and the later reprint screen from Sale History — one page, two entry points, no duplicated receipt UI.
+
+**Deliberate scope decisions (documented deviations)**
+- **Receipt Preview/Print/Download/Reprint** all resolve to one action: open the PDF in a new browser tab. The browser's native print dialog and "Save as PDF" cover Print and Download without separate endpoints or a custom in-app PDF viewer — simpler and matches how Label Printing (Phase 12) already worked.
+- **Sale History omits a "Payment Method" column.** A sale can have mixed payments (several methods on one sale), so a single-column value would be misleading; the full payment breakdown is one click away on Sale Detail instead.
+- **Hold Sale is deferred, not started.** The spec explicitly scopes it as "prepare architecture" only for this phase — but starting it would mean adding a `held` sales status and a save/resume flow with no real usage yet, and per the "never leave... unfinished functions" discipline, a non-functional stub isn't an acceptable substitute. Left off this phase's TODO as an honest gap rather than checked off; revisit if a later phase needs it.
+- **No tax calculation.** `sales.tax_amount` is always 0 — no tax rate is configured anywhere in the schema or company settings, and inventing a VAT rule not in the spec would be scope creep. The column exists and is wired through so a future Settings phase can activate it with zero rework.
+- **Audit Logs and Notifications are not written from checkout.** Every phase so far (Purchases, Transfers, Customers) has used only `activity_logs`, never `audit_logs` — POS follows that same established precedent rather than introducing a new logging path unilaterally. Notifications have no backing service until Phase 22 ships.
+
+**Verification**
+- Checkout transaction safety verified the same way as Purchases (Phase 14) and Transfers (Phase 15) — a simulated `PoolConnection` exercising the real, unmodified `checkout` service directly. Success path (2 line items, 1 payment) confirmed the exact sequence: sale header insert → per line (`sale_items` insert → inventory `SELECT...FOR UPDATE`/`UPDATE`/movement insert`) → payment insert → one `COMMIT`. Failure path injected a simulated error on the second line's inventory update (after the first line's full flow and the second line's item insert had already happened inside the same uncommitted transaction) — confirmed `ROLLBACK` fires, `COMMIT` never does, no payment is ever inserted, and the connection is still released.
+- Backend dry-run: all 5 sale/POS endpoints (list, get, receipt, checkout, sellable products) return 401 pre-auth.
+- Frontend: Playwright with mocked API drove the full flow — grid renders, clicking a product twice increments cart quantity, the price-override input is correctly disabled for a Cashier without `sales.manage`, totals compute correctly, checkout navigates to the receipt/detail screen — zero console errors, two screenshots confirming a polished, on-brand terminal.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; the POS route's own chunk is larger than most — expected, since it's `html5-qrcode`'s real weight now actually bundled for the first time — but still under Vite's 500kB warning threshold and lazy-loaded only on `/pos` visits).
+
 ## Phase 16 — Customers
 
 **A straightforward CRUD module** that sets up two future phases: POS (Phase 17) needs a customer picker, and both POS and Returns (Phase 18) need a `customer_id` to attach sales/returns to. This phase builds the entity and its history views; the history stays correctly empty until those phases populate `sales`/`returns`.

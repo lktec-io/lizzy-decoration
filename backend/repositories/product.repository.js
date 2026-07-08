@@ -23,6 +23,42 @@ export async function findByCode(code) {
   return rows[0] || null;
 }
 
+// Purpose-built read for the POS product grid: active products joined with
+// their stock at one specific branch. Kept separate from findAll() (which
+// backs the Products admin list and has a different shape/purpose) and from
+// inventory.repository's findAll() (which backs the Inventory admin list).
+export async function findSellable({ branchId, search, categoryId, limit = 60 }) {
+  const conditions = ["p.deleted_at IS NULL", "p.status = 'active'"];
+  const params = [];
+
+  if (search) {
+    conditions.push('(p.name LIKE ? OR p.code LIKE ?)');
+    const term = `%${search}%`;
+    params.push(term, term);
+  }
+  if (categoryId) {
+    conditions.push('p.category_id = ?');
+    params.push(categoryId);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+  const [rows] = await pool.query(
+    `SELECT p.id, p.name, p.code, p.selling_price, p.category_id, c.name AS category_name,
+            p.brand_id, b.name AS brand_name,
+            COALESCE(i.quantity - i.reserved_quantity, 0) AS available_quantity
+     FROM products p
+     JOIN categories c ON c.id = p.category_id
+     JOIN brands b ON b.id = p.brand_id
+     LEFT JOIN inventory i ON i.product_id = p.id AND i.branch_id = ?
+     ${whereClause}
+     ORDER BY p.name
+     LIMIT ?`,
+    [branchId, ...params, limit],
+  );
+  return rows;
+}
+
 export async function findAll({ page = 1, limit = 20, search, categoryId, brandId, status }) {
   const conditions = ['p.deleted_at IS NULL'];
   const params = [];

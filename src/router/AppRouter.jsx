@@ -37,6 +37,9 @@ const TransferForm = lazy(() => import('../pages/transfers/TransferForm'));
 const TransferDetail = lazy(() => import('../pages/transfers/TransferDetail'));
 const CustomerList = lazy(() => import('../pages/customers/CustomerList'));
 const CustomerDetail = lazy(() => import('../pages/customers/CustomerDetail'));
+const POS = lazy(() => import('../pages/pos/POS'));
+const SaleList = lazy(() => import('../pages/pos/SaleList'));
+const SaleDetail = lazy(() => import('../pages/pos/SaleDetail'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
 function RouteFallback() {
@@ -88,6 +91,9 @@ function AppRouter() {
               <Route path="/transfers/:id" element={<TransferDetail />} />
               <Route path="/customers" element={<CustomerList />} />
               <Route path="/customers/:id" element={<CustomerDetail />} />
+              <Route path="/pos" element={<POS />} />
+              <Route path="/pos/sales" element={<SaleList />} />
+              <Route path="/pos/sales/:id" element={<SaleDetail />} />
             </Route>
           </Route>
 

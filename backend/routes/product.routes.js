@@ -15,6 +15,7 @@ const productImageUploader = createUploader({ subfolder: 'products', maxSizeMb: 
 router.use(authenticate);
 
 router.get('/', authorize('products.view'), productController.list);
+router.get('/sellable', authorize('products.view'), productController.sellable);
 router.get('/:id', authorize('products.view'), productController.getById);
 router.post('/', authorize('products.create'), productValidator, validateRequest, productController.create);
 router.put('/:id', authorize('products.edit'), productValidator, validateRequest, productController.update);

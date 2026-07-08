@@ -234,10 +234,11 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | DB: `customers` table | Critical | Customers | |
-| ☐ | Backend: Customer CRUD, customer types, purchase/return history | Critical | Customers | |
-| ☐ | Frontend: Customer list/create/edit/detail | Critical | Customers | |
-| ☐ | Quality Check | Critical | Customers | |
+| ☑ | DB: `customers` table | Critical | Customers | 2026-07-07 (Phase 0) |
+| ☑ | Backend: Customer CRUD, customer code generation (`CUST-2026-00001` via the Phase 9 sequence engine), 5 customer types (walk-in/retail/wholesale/vip/business), deactivate | Critical | Customers | 2026-07-08 |
+| ☑ | Backend: purchase history + return history + lifetime stats (total orders, total spent, total returns) — real queries against `sales`/`returns` (correctly empty/zero until Phases 17/18 ship, same pattern as Suppliers → Purchases in Phase 13/14) | Critical | Customers | 2026-07-08 |
+| ☑ | Frontend: Customer list (modal create/edit, matches Suppliers/Categories/Brands pattern) + detail page (KPI stat cards + purchase history table + return history table) | Critical | Customers | 2026-07-08 |
+| ☑ | Quality Check: build/lint pass (zero chunk-size warnings); backend dry-run confirms all 8 customer endpoints 401 pre-auth; frontend verified via Playwright with mocked API — list, create-form required-field validation, and detail (correctly empty stats/history) screenshotted, zero console errors | Critical | Customers | 2026-07-08 |
 
 ## Phase 17 — POS (Sales Engine)
 

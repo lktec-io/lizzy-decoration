@@ -2,6 +2,26 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 16 — Customers
+
+**A straightforward CRUD module** that sets up two future phases: POS (Phase 17) needs a customer picker, and both POS and Returns (Phase 18) need a `customer_id` to attach sales/returns to. This phase builds the entity and its history views; the history stays correctly empty until those phases populate `sales`/`returns`.
+
+**Backend**
+- `customer.repository`/`customer.service`: full CRUD plus deactivate, following the exact shape established by Suppliers (Phase 13) — `findAllActive()` for lightweight dropdown lookups (ready for POS), paginated `findAll()` with search across name/business name/phone/code, and a status toggle gated the same way (`customers.edit`, not a separate delete permission).
+- Customer codes (`CUST-2026-00001`) generated via Phase 9's sequence engine, matching the Product code pattern (5-digit padding).
+- All 5 customer types from the spec supported as an enum: walk-in, retail, wholesale, VIP, business.
+- `getCustomer()` merges the customer record with lifetime stats (total orders, total spent, total returns) computed via real aggregate queries against `sales`/`returns` — both tables exist from Phase 0 but are empty until Phases 17/18 ship, so this correctly returns zeros today with no rework needed later. `getPurchaseHistory()`/`getReturnHistory()` are the same real-query-against-empty-table pattern, paginated.
+- Duplicate phone numbers are rejected automatically by the `customers.phone` unique constraint — the existing global error handler already converts `ER_DUP_ENTRY` into a clean 409 without leaking SQL, so no extra service-layer duplicate check was needed.
+
+**Frontend**
+- `CustomerList`: modal create/edit (the wider `lg` modal size, given customers have more fields than Suppliers — first/last name, business name, phone, alt phone, email, address, region, district, TIN, type, status), status badges, deactivate toggle.
+- `CustomerDetail`: three KPI cards (Total Orders, Total Spent, Total Returns) followed by separate Purchase History and Return History tables, each with its own independent pagination via two `useTable()` instances on one page.
+
+**Verification**
+- Backend dry-run: all 8 customer endpoints (`/customers/active`, list, get, purchases, returns, create, update, status) correctly return 401 pre-auth.
+- Frontend: Playwright with mocked API confirmed list rendering, the create-form's required-field validation (phone required, blocks submit), and the detail page rendering its KPI cards plus the correctly-empty purchase/return history tables — zero console errors.
+- `npm run lint` (frontend + backend) and `npm run build` clean (0 errors; only the pre-existing `watch()` React Compiler warnings on other RHF forms).
+
 ## Phase 15 — Stock Transfers
 
 **The first module with a genuine two-step workflow**: creating a transfer only reserves a `pending` request — no stock moves until a Manager or Super Admin approves it. Approval is also the first place `recordMovement()` is called *twice* inside one transaction, proving out Phase 10's composable design a step further than Purchases (which called it once per line item, always in the same direction).

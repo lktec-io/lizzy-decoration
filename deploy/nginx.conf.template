@@ -1,0 +1,42 @@
+# Nginx reverse proxy for JOZZY ERP — serves the built frontend as static
+# files and proxies /api and /uploads to the Node backend (PM2, port 4000).
+#
+# Copy to /etc/nginx/sites-available/jozzy.clixworks.co.tz, symlink into
+# sites-enabled, then run certbot --nginx to fill in the SSL block below.
+# See docs/DEPLOYMENT.md for the full walkthrough.
+
+server {
+    listen 80;
+    server_name jozzy.clixworks.co.tz;
+
+    # Frontend static build (npm run build -> dist/)
+    root /var/www/jozzy-erp/dist;
+    index index.html;
+
+    # React Router — always fall through to index.html for client-side routes
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://127.0.0.1:4000/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Product images, avatars, logos, QR codes, labels, receipts —
+    # NOT backend/backups, which is deliberately never served (see SECURITY.md)
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:4000/uploads/;
+        proxy_set_header Host $host;
+    }
+
+    client_max_body_size 5M;
+}

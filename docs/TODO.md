@@ -346,14 +346,14 @@ Legend: Priority = Critical / High / Medium / Low. Status = ☐ Not Started / �
 
 | Status | Task | Priority | Module | Completed |
 |---|---|---|---|---|
-| ☐ | Provision Contabo VPS (Ubuntu), Node.js, MySQL install | Critical | Deploy | |
-| ☐ | Nginx reverse proxy config for `jozzy.clixworks.co.tz` | Critical | Deploy | |
-| ☐ | PM2 process config for backend | Critical | Deploy | |
-| ☐ | SSL certificate (Let's Encrypt/Certbot) | Critical | Deploy | |
-| ☐ | Production `.env` setup (never committed) | Critical | Deploy | |
-| ☐ | Backup + restore procedure documented and tested | Critical | Deploy | |
-| ☐ | Write `DEPLOYMENT.md` | Critical | Deploy | |
-| ☐ | Go-live smoke test | Critical | Deploy | |
+| ☐ | Provision Contabo VPS (Ubuntu), Node.js, MySQL install | Critical | Deploy | *(manual — user's own server, documented step-by-step in `DEPLOYMENT.md` §1)* |
+| ☑ | Nginx reverse proxy config for `jozzy.clixworks.co.tz` | Critical | Deploy | 2026-07-08 — template written: `deploy/nginx.conf.template` |
+| ☑ | PM2 process config for backend | Critical | Deploy | 2026-07-08 — `backend/ecosystem.config.cjs`, verified it loads correctly |
+| ☐ | SSL certificate (Let's Encrypt/Certbot) | Critical | Deploy | *(manual — requires the real domain pointed at the real server; exact `certbot` command documented in `DEPLOYMENT.md` §7)* |
+| ☑ | Production `.env` setup (never committed) | Critical | Deploy | 2026-07-08 — `.env.example` already complete since Phase 0; `DEPLOYMENT.md` §4 documents every required variable and how to generate strong JWT secrets |
+| ☑ | Backup + restore procedure documented and tested | Critical | Deploy | 2026-07-08 — backup itself built and tested in Phase 23/24 (including its failure path, for real, in this sandbox); restore procedure documented in `DEPLOYMENT.md` §8 as a manual, direct-server-access-only operation (deliberately no restore-via-HTTP endpoint) — genuinely testing a restore requires a real MySQL instance, which is the user's to run |
+| ☑ | Write `DEPLOYMENT.md` | Critical | Deploy | 2026-07-08 — full walkthrough: prerequisites, DB setup, app deployment, `.env`, PM2, Nginx, SSL, backup/restore, go-live checklist, ongoing maintenance |
+| ☐ | Go-live smoke test | Critical | Deploy | *(manual — an 11-item checklist is in `DEPLOYMENT.md` §9, ready to run once the user deploys to the real server)* |
 
 ---
 

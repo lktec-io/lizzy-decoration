@@ -2,6 +2,18 @@
 
 All notable changes to JOZZY ERP are recorded here, newest first.
 
+## Phase 25 — Deployment Preparation
+
+**The final phase.** Everything in this phase is preparation, not execution — provisioning the actual Contabo VPS, pointing the real domain at it, and obtaining a real SSL certificate are the user's own actions against infrastructure this build never had access to (by design, per the constraint that governed the entire project: "I will handle the real Contabo MySQL credentials and production `.env`"). What *is* done: every config file and every documented step needed for that deployment to be routine rather than improvised.
+
+**New files**
+- `backend/ecosystem.config.cjs`: PM2 process definition for the backend API — single-instance fork mode (the right default for this VPS scale; cluster-mode tradeoffs are noted in `DEPLOYMENT.md` for later), auto-restart with a memory ceiling, log files under `backend/logs/`. Verified it loads correctly and resolves `__dirname` as expected.
+- `deploy/nginx.conf.template`: reverse-proxy config serving the frontend's `dist/` build as static files, proxying `/api/` and `/uploads/` to the PM2-managed backend on port 4000. Deliberately does **not** expose `backend/backups/` — consistent with the security reasoning from Phase 23/24 that a full database dump must never be reachable at a public URL.
+- `docs/DEPLOYMENT.md`: the complete walkthrough — server prerequisites, database setup (including applying `schema.sql` and the two seeders, and creating the first Super Admin via the existing `npm run seed:admin` script), application deployment, the full list of required `.env` variables with guidance on generating strong JWT secrets, starting the backend with PM2, wiring up Nginx, obtaining SSL via Certbot, the backup/restore procedure (restore is deliberately a manual, direct-server-access-only operation — never an HTTP endpoint, for the same reason there's no way to trigger it remotely), an 11-item go-live smoke test checklist, and ongoing maintenance notes.
+
+**Documentation accuracy pass**
+- Verified every command referenced in `DEPLOYMENT.md` against the actual codebase rather than writing from assumption — confirmed `npm run seed:admin` behaves exactly as documented (interactive or env-var-driven, no hardcoded credentials), confirmed the PM2 config loads and resolves paths correctly, confirmed `.env.example` (complete since Phase 0) covers every variable `DEPLOYMENT.md` tells the operator to set.
+
 ## Phase 24 — Final Testing
 
 **The QA pass across all 23 feature phases** — no new features, but real findings and real fixes, not a rubber stamp.

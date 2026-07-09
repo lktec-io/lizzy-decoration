@@ -53,10 +53,10 @@ export const env = {
     from: process.env.SMTP_FROM || 'no-reply@jozzy.clixworks.co.tz',
   },
 
-  // Declared for forward compatibility only — uploads are currently local-
-  // disk via multer (backend/middlewares/upload.js). Not required at
-  // startup and nothing reads this yet; wiring an actual Cloudinary
-  // integration is a separate feature change, not a config change.
+  // Primary storage for uploaded images (avatars, company logo, product
+  // images) — see backend/config/cloudinary.js and backend/middlewares/
+  // upload.js. Not in REQUIRED_VARS so a developer without credentials
+  // still boots fine and transparently gets the local-disk fallback.
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
     apiKey: process.env.CLOUDINARY_API_KEY || '',

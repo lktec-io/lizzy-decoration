@@ -7,7 +7,7 @@ import { upsertCompanyValidator } from '../validators/company.validator.js';
 import { createUploader } from '../middlewares/upload.js';
 
 const router = Router();
-const logoUploader = createUploader({ subfolder: 'logo', maxSizeMb: 2 });
+const logoUploader = createUploader({ subfolder: 'logo', cloudinaryFolder: 'company', maxSizeMb: 2 });
 
 // Public: the login page (pre-authentication) needs the company name/logo too.
 // This is a single-tenant internal system — there is exactly one company's

@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import { ApiError } from '../utils/apiError.js';
 import * as companyRepository from '../repositories/company.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
-import { publicPathFor } from '../middlewares/upload.js';
+import { resolveUploadedFileUrl, deleteUploadedFile } from '../middlewares/upload.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
@@ -51,14 +51,20 @@ export async function updateLogo(file, userId) {
     throw new ApiError(400, 'Create the company profile before uploading a logo');
   }
 
-  const logoPath = publicPathFor('logo', file.filename);
+  const logoPath = resolveUploadedFileUrl(file, 'logo');
   const updated = await companyRepository.updateLogoPath(existing.id, logoPath);
 
   if (existing.logo_path) {
-    const oldFilePath = path.join(UPLOADS_ROOT, existing.logo_path.replace('/uploads/', ''));
-    fs.unlink(oldFilePath).catch(() => {
-      // Old file already gone or inaccessible — not fatal.
-    });
+    if (existing.logo_path.startsWith('/uploads/')) {
+      const oldFilePath = path.join(UPLOADS_ROOT, existing.logo_path.replace('/uploads/', ''));
+      fs.unlink(oldFilePath).catch(() => {
+        // Old file already gone or inaccessible — not fatal.
+      });
+    } else {
+      deleteUploadedFile(existing.logo_path).catch(() => {
+        // Cloudinary cleanup failures are already logged inside deleteUploadedFile — not fatal.
+      });
+    }
   }
 
   await activityLogRepository.create({

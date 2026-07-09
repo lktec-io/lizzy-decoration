@@ -7,7 +7,7 @@ import * as categoryRepository from '../repositories/category.repository.js';
 import * as brandRepository from '../repositories/brand.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import { generateCode } from '../repositories/sequence.repository.js';
-import { publicPathFor } from '../middlewares/upload.js';
+import { resolveUploadedFileUrl, deleteUploadedFile } from '../middlewares/upload.js';
 import { getAccessibleBranchIds } from '../utils/branchScope.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -137,7 +137,7 @@ export async function addImage(productId, file, isPrimary) {
   const product = await productRepository.findById(productId);
   if (!product) throw new ApiError(404, 'Product not found');
 
-  const imagePath = publicPathFor('products', file.filename);
+  const imagePath = resolveUploadedFileUrl(file, 'products');
   const shouldBePrimary = isPrimary || product.images.length === 0;
   await productRepository.addImage(productId, imagePath, shouldBePrimary);
   return productRepository.findById(productId);
@@ -151,10 +151,16 @@ export async function removeImage(productId, imageId) {
 
   await productRepository.removeImage(imageId, productId);
 
-  const filePath = path.join(UPLOADS_ROOT, image.image_path.replace('/uploads/', ''));
-  fs.unlink(filePath).catch(() => {
-    // File already gone or inaccessible — not fatal.
-  });
+  if (image.image_path.startsWith('/uploads/')) {
+    const filePath = path.join(UPLOADS_ROOT, image.image_path.replace('/uploads/', ''));
+    fs.unlink(filePath).catch(() => {
+      // File already gone or inaccessible — not fatal.
+    });
+  } else {
+    deleteUploadedFile(image.image_path).catch(() => {
+      // Cloudinary cleanup failures are already logged inside deleteUploadedFile — not fatal.
+    });
+  }
 
   return productRepository.findById(productId);
 }

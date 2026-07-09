@@ -3,7 +3,7 @@ import * as userRepository from '../repositories/user.repository.js';
 import * as roleRepository from '../repositories/role.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import { hashPassword } from './auth.service.js';
-import { publicPathFor } from '../middlewares/upload.js';
+import { resolveUploadedFileUrl } from '../middlewares/upload.js';
 
 function sanitize(user) {
   if (!user) return user;
@@ -173,7 +173,7 @@ export async function updateAvatar(id, file) {
   const existing = await userRepository.findById(id);
   if (!existing) throw new ApiError(404, 'User not found');
 
-  const avatarPath = publicPathFor('avatars', file.filename);
+  const avatarPath = resolveUploadedFileUrl(file, 'avatars');
   const user = await userRepository.updateAvatarPath(id, avatarPath);
   return sanitize(user);
 }

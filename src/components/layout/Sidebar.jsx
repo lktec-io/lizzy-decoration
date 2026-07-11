@@ -1,8 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  FiGrid, FiMapPin, FiUsers, FiShield, FiUserCheck, FiTruck, FiTag, FiBookmark,
-  FiBox, FiArchive, FiShoppingCart, FiRepeat, FiRotateCcw, FiDollarSign,
-  FiDroplet, FiBarChart2, FiBell, FiSettings, FiUser, FiLogOut,
+  FiGrid, FiUserCheck, FiTruck,
+  FiBox, FiArchive, FiShoppingCart, FiDollarSign,
+  FiDroplet, FiBarChart2, FiSettings, FiLogOut,
   FiChevronsLeft, FiChevronsRight,
 } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
@@ -10,27 +10,23 @@ import { useCompany } from '../../hooks/useCompany';
 import { ROUTES } from '../../constants/routes';
 import '../../styles/components/Sidebar.css';
 
+// Branches, Users, Roles, Categories, Brands, Notifications, Transfers,
+// Returns, and Profile are intentionally not top-level nav items — they're
+// reachable via Settings, the Product form, or the Navbar (Profile,
+// notification bell) instead. Their routes/pages/backends are untouched,
+// just no longer linked from here.
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: FiGrid, end: true },
-  { to: '/branches', label: 'Branches', icon: FiMapPin },
-  { to: '/users', label: 'Users', icon: FiUsers },
-  { to: '/roles', label: 'Roles', icon: FiShield },
   { to: '/customers', label: 'Customers', icon: FiUserCheck },
   { to: '/suppliers', label: 'Suppliers', icon: FiTruck },
-  { to: '/categories', label: 'Categories', icon: FiBookmark },
-  { to: '/brands', label: 'Brands', icon: FiTag },
   { to: '/products', label: 'Products', icon: FiBox },
   { to: '/inventory', label: 'Inventory', icon: FiArchive },
   { to: '/purchases', label: 'Purchases', icon: FiShoppingCart },
   { to: '/pos', label: 'Sales (POS)', icon: FiDollarSign },
-  { to: '/returns', label: 'Returns', icon: FiRotateCcw },
-  { to: '/transfers', label: 'Transfers', icon: FiRepeat },
   { to: '/expenses', label: 'Expenses', icon: FiDollarSign },
   { to: '/carwash', label: 'Car Wash', icon: FiDroplet },
   { to: '/reports', label: 'Reports', icon: FiBarChart2 },
-  { to: '/notifications', label: 'Notifications', icon: FiBell },
   { to: '/settings/company', label: 'Settings', icon: FiSettings },
-  { to: '/profile', label: 'Profile', icon: FiUser },
 ];
 
 function Sidebar({ collapsed, onToggle }) {

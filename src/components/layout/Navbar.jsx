@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiMenu, FiSearch, FiBell, FiChevronDown, FiCheck } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompany } from '../../hooks/useCompany';
 import { useDebounce } from '../../hooks/useDebounce';
 import * as searchService from '../../services/searchService';
 import * as notificationService from '../../services/notificationService';
+import { ROUTES } from '../../constants/routes';
 import '../../styles/components/Navbar.css';
 
 const UNREAD_POLL_MS = 60_000;
@@ -105,12 +106,14 @@ function useGlobalSearch() {
 function Navbar({ onMenuClick }) {
   const now = useClock();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { company } = useCompany();
   const { query, setQuery, results, open, setOpen } = useGlobalSearch();
   const searchRef = useRef(null);
   const notifications = useNotifications();
   const notificationsRef = useRef(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
 
   const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const timeLabel = now.toLocaleTimeString('en-TZ', { hour: '2-digit', minute: '2-digit' });
@@ -126,11 +129,20 @@ function Navbar({ onMenuClick }) {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         notifications.setOpen(false);
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- notifications.setOpen is stable across renders (useState setter)
   }, [setOpen]);
+
+  const handleLogout = async () => {
+    setUserMenuOpen(false);
+    await logout();
+    navigate(ROUTES.LOGIN, { replace: true });
+  };
 
   const users = results?.users || [];
 
@@ -227,20 +239,31 @@ function Navbar({ onMenuClick }) {
                   ))
                 )}
               </div>
-              <div className="navbar-notification-footer">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { notifications.setOpen(false); navigate('/notifications'); }}>
-                  View All
-                </button>
-              </div>
             </div>
           )}
         </div>
 
-        <button type="button" className="navbar-user">
-          <span className="navbar-user-avatar">{initial}</span>
-          <span className="navbar-user-name">{displayName}</span>
-          <FiChevronDown className="navbar-user-caret" />
-        </button>
+        <div className="navbar-user-menu" ref={userMenuRef}>
+          <button type="button" className="navbar-user" onClick={() => setUserMenuOpen((prev) => !prev)}>
+            <span className="navbar-user-avatar">{initial}</span>
+            <span className="navbar-user-name">{displayName}</span>
+            <FiChevronDown className="navbar-user-caret" />
+          </button>
+          {userMenuOpen && (
+            <div className="navbar-user-panel">
+              <button
+                type="button"
+                className="navbar-user-panel-item"
+                onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}
+              >
+                <FiUser aria-hidden="true" /> Profile
+              </button>
+              <button type="button" className="navbar-user-panel-item" onClick={handleLogout}>
+                <FiLogOut aria-hidden="true" /> Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

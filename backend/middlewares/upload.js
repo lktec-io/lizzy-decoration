@@ -34,12 +34,17 @@ function diskStorageFor(subfolder) {
   });
 }
 
-// Uploads a buffer (from multer.memoryStorage) straight to Cloudinary — no
-// disk round-trip, so it works identically on any server regardless of
-// whether the filesystem is ephemeral or /uploads is proxied by Nginx.
-async function uploadBufferToCloudinary(buffer, mimetype, folder) {
+// Uploads a buffer straight to Cloudinary — no disk round-trip, so it works
+// identically on any server regardless of whether the filesystem is
+// ephemeral or /uploads is proxied by Nginx. Shared by the multer upload
+// pipeline below and by any service that generates an image in memory
+// (e.g. qrCode.service.js) — the one call site for "put these bytes on
+// Cloudinary", so folder/public_id conventions live in a single place.
+export async function uploadImageBuffer(buffer, mimetype, folder, { publicId } = {}) {
   const dataUri = `data:${mimetype};base64,${buffer.toString('base64')}`;
-  return cloudinary.uploader.upload(dataUri, { folder, resource_type: 'image' });
+  const options = { folder, resource_type: 'image' };
+  if (publicId) options.public_id = publicId;
+  return cloudinary.uploader.upload(dataUri, options);
 }
 
 // After multer parses the file, mirror it onto Cloudinary and normalize
@@ -50,7 +55,7 @@ function cloudinaryUploadMiddleware(cloudinaryFolder) {
   return asyncHandler(async (req, res, next) => {
     if (!req.file) return next();
 
-    const result = await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype, cloudinaryFolder);
+    const result = await uploadImageBuffer(req.file.buffer, req.file.mimetype, cloudinaryFolder);
     req.file.secureUrl = result.secure_url;
     req.file.cloudinaryPublicId = result.public_id;
     return next();

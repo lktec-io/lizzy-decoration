@@ -1,12 +1,79 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiUpload, FiX } from 'react-icons/fi';
+import { FiUpload, FiX, FiPlus } from 'react-icons/fi';
 import * as productService from '../../services/productService';
 import * as categoryService from '../../services/categoryService';
 import * as brandService from '../../services/brandService';
 import QRCodeDisplay from '../../components/products/QRCodeDisplay';
+import Modal from '../../components/common/Modal';
 import '../../styles/pages/ProductForm.css';
+
+// Shared by both the Category and Brand "+ Add" popups below -- each needs
+// exactly the two fields the backend actually requires (name + code; see
+// backend/validators/category.validator.js and brand.validator.js),
+// nothing else, so a new item can be created without ever leaving the
+// product form.
+function QuickAddModal({ open, title, onClose, onCreate }) {
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const resetFields = () => {
+    setName('');
+    setCode('');
+    setError('');
+  };
+
+  const handleClose = () => {
+    resetFields();
+    onClose();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await onCreate({ name: name.trim(), code: code.trim() });
+      resetFields();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={handleClose}
+      title={title}
+      size="sm"
+      footer={
+        <>
+          <button type="button" className="btn btn-secondary" onClick={handleClose}>Cancel</button>
+          <button type="submit" form="quick-add-form" className={`btn btn-primary ${submitting ? 'btn-loading' : ''}`} disabled={submitting}>
+            Create
+          </button>
+        </>
+      }
+    >
+      {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
+      <form id="quick-add-form" onSubmit={handleSubmit} noValidate>
+        <div className="form-group">
+          <label className="form-label form-label-required" htmlFor="quick-add-name">Name</label>
+          <input id="quick-add-name" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
+        </div>
+        <div className="form-group">
+          <label className="form-label form-label-required" htmlFor="quick-add-code">Code</label>
+          <input id="quick-add-code" className="form-control" value={code} onChange={(e) => setCode(e.target.value)} required />
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 function ProductForm() {
   const { id } = useParams();
@@ -22,12 +89,15 @@ function ProductForm() {
   const [formError, setFormError] = useState('');
   const [priceConfirmRequired, setPriceConfirmRequired] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [brandModalOpen, setBrandModalOpen] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
     getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
@@ -124,6 +194,22 @@ function ProductForm() {
     setImages(product.images);
   };
 
+  const handleCreateCategory = async ({ name, code }) => {
+    const created = await categoryService.createCategory({ name, code });
+    const refreshed = await categoryService.listActiveCategories();
+    setCategories(refreshed);
+    setValue('categoryId', String(created.id), { shouldValidate: true });
+    setCategoryModalOpen(false);
+  };
+
+  const handleCreateBrand = async ({ name, code }) => {
+    const created = await brandService.createBrand({ name, code });
+    const refreshed = await brandService.listActiveBrands();
+    setBrands(refreshed);
+    setValue('brandId', String(created.id), { shouldValidate: true });
+    setBrandModalOpen(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-6">
@@ -203,7 +289,12 @@ function ProductForm() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="categoryId">Category</label>
+                <div className="flex items-center justify-between">
+                  <label className="form-label form-label-required" htmlFor="categoryId">Category</label>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCategoryModalOpen(true)}>
+                    <FiPlus aria-hidden="true" /> Add Category
+                  </button>
+                </div>
                 <select id="categoryId" className={`form-control ${errors.categoryId ? 'form-control-error' : ''}`} {...register('categoryId', { required: 'Category is required' })}>
                   <option value="">Select a category</option>
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -211,7 +302,12 @@ function ProductForm() {
                 {errors.categoryId && <span className="form-error">{errors.categoryId.message}</span>}
               </div>
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="brandId">Brand</label>
+                <div className="flex items-center justify-between">
+                  <label className="form-label form-label-required" htmlFor="brandId">Brand</label>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBrandModalOpen(true)}>
+                    <FiPlus aria-hidden="true" /> Add Brand
+                  </button>
+                </div>
                 <select id="brandId" className={`form-control ${errors.brandId ? 'form-control-error' : ''}`} {...register('brandId', { required: 'Brand is required' })}>
                   <option value="">Select a brand</option>
                   {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -276,6 +372,19 @@ function ProductForm() {
           </button>
         </div>
       </form>
+
+      <QuickAddModal
+        open={categoryModalOpen}
+        title="Add Category"
+        onClose={() => setCategoryModalOpen(false)}
+        onCreate={handleCreateCategory}
+      />
+      <QuickAddModal
+        open={brandModalOpen}
+        title="Add Brand"
+        onClose={() => setBrandModalOpen(false)}
+        onCreate={handleCreateBrand}
+      />
     </div>
   );
 }

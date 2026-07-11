@@ -21,8 +21,6 @@ const RoleList = lazy(() => import('../pages/roles/RoleList'));
 const PermissionMatrix = lazy(() => import('../pages/roles/PermissionMatrix'));
 const BranchList = lazy(() => import('../pages/branches/BranchList'));
 const BranchForm = lazy(() => import('../pages/branches/BranchForm'));
-const CategoryList = lazy(() => import('../pages/categories/CategoryList'));
-const BrandList = lazy(() => import('../pages/brands/BrandList'));
 const ProductList = lazy(() => import('../pages/products/ProductList'));
 const ProductForm = lazy(() => import('../pages/products/ProductForm'));
 const InventoryOverview = lazy(() => import('../pages/inventory/InventoryOverview'));
@@ -105,8 +103,6 @@ function AppRouter() {
               <Route path="/branches/new" element={<Navigate to="/settings/branches/new" replace />} />
               <Route path="/branches/:id/edit" element={<RedirectWithId to="/settings/branches/:id/edit" />} />
 
-              <Route path="/categories" element={<CategoryList />} />
-              <Route path="/brands" element={<BrandList />} />
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/new" element={<ProductForm />} />
               <Route path="/products/:id/edit" element={<ProductForm />} />

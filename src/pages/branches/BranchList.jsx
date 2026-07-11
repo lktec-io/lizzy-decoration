@@ -6,7 +6,9 @@ import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import SettingsTabs from '../../components/common/SettingsTabs';
 import * as branchService from '../../services/branchService';
+import '../../styles/pages/Notifications.css';
 
 function BranchList() {
   const navigate = useNavigate();
@@ -49,7 +51,7 @@ function BranchList() {
       render: (row) => (
         <div className="table-actions">
           {canEdit && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/branches/${row.id}/edit`)} aria-label="Edit branch">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/settings/branches/${row.id}/edit`)} aria-label="Edit branch">
               <FiEdit2 />
             </button>
           )}
@@ -77,12 +79,14 @@ function BranchList() {
         </div>
         {canCreate && (
           <div className="page-actions">
-            <button type="button" className="btn btn-primary" onClick={() => navigate('/branches/new')}>
+            <button type="button" className="btn btn-primary" onClick={() => navigate('/settings/branches/new')}>
               <FiPlus aria-hidden="true" /> New Branch
             </button>
           </div>
         )}
       </div>
+
+      <SettingsTabs />
 
       {actionError && <div className="alert alert-danger mb-4" role="alert">{actionError}</div>}
 

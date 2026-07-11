@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import AuthLayout from '../layouts/AuthLayout';
 import MainLayout from '../layouts/MainLayout';
 import ErrorLayout from '../layouts/ErrorLayout';
@@ -59,6 +59,14 @@ function RouteFallback() {
   );
 }
 
+// Bookmark-safety redirect for an id-scoped route that moved under
+// Settings — preserves the :id param instead of dropping the user at a
+// generic list page.
+function RedirectWithId({ to }) {
+  const { id } = useParams();
+  return <Navigate to={to.replace(':id', id)} replace />;
+}
+
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -75,17 +83,28 @@ function AppRouter() {
             <Route element={<MainLayout />}>
               <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
               <Route path={ROUTES.SETTINGS_COMPANY} element={<CompanySettings />} />
+              <Route path="/settings/branches" element={<BranchList />} />
+              <Route path="/settings/branches/new" element={<BranchForm />} />
+              <Route path="/settings/branches/:id/edit" element={<BranchForm />} />
+              <Route path="/settings/users" element={<UserList />} />
+              <Route path="/settings/users/new" element={<UserForm />} />
+              <Route path="/settings/users/:id/edit" element={<UserForm />} />
+              <Route path="/settings/permissions" element={<RoleList />} />
+              <Route path="/settings/permissions/matrix" element={<PermissionMatrix />} />
               <Route path="/settings/system" element={<SystemSettings />} />
               <Route path="/settings/backups" element={<BackupSettings />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/users" element={<UserList />} />
-              <Route path="/users/new" element={<UserForm />} />
-              <Route path="/users/:id/edit" element={<UserForm />} />
-              <Route path="/roles" element={<RoleList />} />
-              <Route path="/roles/:id/permissions" element={<PermissionMatrix />} />
-              <Route path="/branches" element={<BranchList />} />
-              <Route path="/branches/new" element={<BranchForm />} />
-              <Route path="/branches/:id/edit" element={<BranchForm />} />
+
+              {/* Bookmark-safety redirects — these pages moved under Settings. */}
+              <Route path="/users" element={<Navigate to="/settings/users" replace />} />
+              <Route path="/users/new" element={<Navigate to="/settings/users/new" replace />} />
+              <Route path="/users/:id/edit" element={<RedirectWithId to="/settings/users/:id/edit" />} />
+              <Route path="/roles" element={<Navigate to="/settings/permissions" replace />} />
+              <Route path="/roles/:id/permissions" element={<Navigate to="/settings/permissions/matrix" replace />} />
+              <Route path="/branches" element={<Navigate to="/settings/branches" replace />} />
+              <Route path="/branches/new" element={<Navigate to="/settings/branches/new" replace />} />
+              <Route path="/branches/:id/edit" element={<RedirectWithId to="/settings/branches/:id/edit" />} />
+
               <Route path="/categories" element={<CategoryList />} />
               <Route path="/brands" element={<BrandList />} />
               <Route path="/products" element={<ProductList />} />

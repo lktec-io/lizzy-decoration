@@ -2,6 +2,9 @@ import { NavLink } from 'react-router-dom';
 
 const TABS = [
   { to: '/settings/company', label: 'Company' },
+  { to: '/settings/branches', label: 'Branches' },
+  { to: '/settings/users', label: 'Users' },
+  { to: '/settings/permissions', label: 'Permissions' },
   { to: '/settings/system', label: 'Tax & Email' },
   { to: '/settings/backups', label: 'Backups' },
 ];

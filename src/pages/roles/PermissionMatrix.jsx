@@ -103,7 +103,7 @@ function PermissionMatrix() {
     <div>
       <div className="page-header">
         <div>
-          <button type="button" className="btn btn-ghost btn-sm mb-2" onClick={() => navigate('/roles')}>
+          <button type="button" className="btn btn-ghost btn-sm mb-2" onClick={() => navigate('/settings/permissions')}>
             <FiArrowLeft aria-hidden="true" /> Back to Roles
           </button>
           <h1 className="page-title">Permission Matrix</h1>

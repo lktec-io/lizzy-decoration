@@ -64,7 +64,7 @@ function BranchForm() {
       } else {
         await branchService.createBranch(payload);
       }
-      navigate('/branches');
+      navigate('/settings/branches');
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to save branch.');
     }
@@ -160,7 +160,7 @@ function BranchForm() {
         </div>
 
         <div className="form-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('/branches')}>Cancel</button>
+          <button type="button" className="btn btn-secondary" onClick={() => navigate('/settings/branches')}>Cancel</button>
           <button type="submit" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
             {isEdit ? 'Save Changes' : 'Create Branch'}
           </button>

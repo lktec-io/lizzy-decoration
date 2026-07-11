@@ -183,7 +183,7 @@ function Navbar({ onMenuClick }) {
                   type="button"
                   className="navbar-search-result"
                   onClick={() => {
-                    navigate(`/users/${result.id}/edit`);
+                    navigate(`/settings/users/${result.id}/edit`);
                     setOpen(false);
                   }}
                 >

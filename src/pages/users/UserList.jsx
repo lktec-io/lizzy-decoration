@@ -7,7 +7,9 @@ import SearchInput from '../../components/common/SearchInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import SettingsTabs from '../../components/common/SettingsTabs';
 import * as userService from '../../services/userService';
+import '../../styles/pages/Notifications.css';
 
 const STATUS_BADGE = {
   active: 'badge-success',
@@ -72,7 +74,7 @@ function UserList() {
       render: (row) => (
         <div className="table-actions">
           {canEdit && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/users/${row.id}/edit`)} aria-label="Edit user">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/settings/users/${row.id}/edit`)} aria-label="Edit user">
               <FiEdit2 />
             </button>
           )}
@@ -105,12 +107,14 @@ function UserList() {
         </div>
         {canCreate && (
           <div className="page-actions">
-            <button type="button" className="btn btn-primary" onClick={() => navigate('/users/new')}>
+            <button type="button" className="btn btn-primary" onClick={() => navigate('/settings/users/new')}>
               <FiPlus aria-hidden="true" /> New User
             </button>
           </div>
         )}
       </div>
+
+      <SettingsTabs />
 
       {actionError && (
         <div className="alert alert-danger mb-4" role="alert">

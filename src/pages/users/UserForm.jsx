@@ -92,7 +92,7 @@ function UserForm() {
         setSuccessMessage('User updated successfully.');
       } else {
         const created = await userService.createUser(payload);
-        navigate(`/users/${created.id}/edit`, { replace: true });
+        navigate(`/settings/users/${created.id}/edit`, { replace: true });
       }
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to save user.');
@@ -288,7 +288,7 @@ function UserForm() {
         </div>
 
         <div className="form-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('/users')}>Cancel</button>
+          <button type="button" className="btn btn-secondary" onClick={() => navigate('/settings/users')}>Cancel</button>
           <button type="submit" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
             {isEdit ? 'Save Changes' : 'Create User'}
           </button>

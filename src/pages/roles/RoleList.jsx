@@ -5,8 +5,10 @@ import { FiPlus, FiEdit2, FiTrash2, FiShield } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import SettingsTabs from '../../components/common/SettingsTabs';
 import { usePermission } from '../../hooks/usePermission';
 import * as roleService from '../../services/roleService';
+import '../../styles/pages/Notifications.css';
 
 function RoleList() {
   const navigate = useNavigate();
@@ -92,7 +94,7 @@ function RoleList() {
       render: (row) => (
         <div className="table-actions">
           {canManagePermissions && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/roles/${row.id}/permissions`)} aria-label="Manage permissions">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate('/settings/permissions/matrix')} aria-label="Manage permissions">
               <FiShield />
             </button>
           )}
@@ -126,6 +128,8 @@ function RoleList() {
           </div>
         )}
       </div>
+
+      <SettingsTabs />
 
       <div className="card">
         <Table columns={columns} rows={roles} loading={loading} emptyMessage="No roles found" />

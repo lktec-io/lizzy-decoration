@@ -46,7 +46,6 @@ const ReturnDetail = lazy(() => import('../pages/returns/ReturnDetail'));
 const ExpenseList = lazy(() => import('../pages/expenses/ExpenseList'));
 const CarWash = lazy(() => import('../pages/carwash/CarWash'));
 const ReportsCenter = lazy(() => import('../pages/reports/ReportsCenter'));
-const NotificationsPage = lazy(() => import('../pages/notifications/NotificationsPage'));
 const SystemSettings = lazy(() => import('../pages/settings/SystemSettings'));
 const BackupSettings = lazy(() => import('../pages/settings/BackupSettings'));
 const Profile = lazy(() => import('../pages/profile/Profile'));
@@ -113,7 +112,6 @@ function AppRouter() {
               <Route path="/expenses" element={<ExpenseList />} />
               <Route path="/carwash" element={<CarWash />} />
               <Route path="/reports" element={<ReportsCenter />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
             </Route>
           </Route>
 

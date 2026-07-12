@@ -5,6 +5,8 @@ const TABS = [
   { to: '/settings/branches', label: 'Branches' },
   { to: '/settings/users', label: 'Users' },
   { to: '/settings/permissions', label: 'Permissions' },
+  { to: '/settings/expense-categories', label: 'Expense Categories' },
+  { to: '/settings/carwash-services', label: 'Car Wash Packages' },
   { to: '/settings/system', label: 'Tax & Email' },
   { to: '/settings/backups', label: 'Backups' },
 ];

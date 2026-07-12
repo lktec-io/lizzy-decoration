@@ -43,6 +43,8 @@ const CarWash = lazy(() => import('../pages/carwash/CarWash'));
 const ReportsCenter = lazy(() => import('../pages/reports/ReportsCenter'));
 const SystemSettings = lazy(() => import('../pages/settings/SystemSettings'));
 const BackupSettings = lazy(() => import('../pages/settings/BackupSettings'));
+const ExpenseCategorySettings = lazy(() => import('../pages/settings/ExpenseCategorySettings'));
+const CarwashServiceSettings = lazy(() => import('../pages/settings/CarwashServiceSettings'));
 const Profile = lazy(() => import('../pages/profile/Profile'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 
@@ -86,6 +88,8 @@ function AppRouter() {
               <Route path="/settings/users/:id/edit" element={<UserForm />} />
               <Route path="/settings/permissions" element={<RoleList />} />
               <Route path="/settings/permissions/matrix" element={<PermissionMatrix />} />
+              <Route path="/settings/expense-categories" element={<ExpenseCategorySettings />} />
+              <Route path="/settings/carwash-services" element={<CarwashServiceSettings />} />
               <Route path="/settings/system" element={<SystemSettings />} />
               <Route path="/settings/backups" element={<BackupSettings />} />
               <Route path="/profile" element={<Profile />} />

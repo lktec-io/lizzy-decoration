@@ -7,6 +7,7 @@ const router = Router();
 
 router.use(authenticate, authorize('reports.view'));
 
+router.get('/:type/export/pdf', authorize('reports.export'), reportController.exportPdf);
 router.get('/:type', reportController.getReport);
 
 export default router;

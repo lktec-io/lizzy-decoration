@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FiPrinter, FiDownload } from 'react-icons/fi';
+import { FiPrinter, FiDownload, FiFileText } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
 import { usePermission } from '../../hooks/usePermission';
 import * as reportService from '../../services/reportService';
 import * as branchService from '../../services/branchService';
 import * as categoryService from '../../services/categoryService';
-import * as supplierService from '../../services/supplierService';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { downloadCsv } from '../../utils/exportCsv';
 import '../../styles/pages/Reports.css';
@@ -21,10 +20,13 @@ function firstOfMonthIso() {
 
 const MONEY_KEYS = new Set([
   'value', 'totalRevenue', 'totalAmount', 'totalDiscount', 'averageSale', 'totalValue',
-  'totalPurchased', 'totalPaid', 'outstandingBalance', 'totalRefund', 'salesRevenue',
-  'carwashRevenue', 'expenses', 'net', 'cogs', 'grossProfit', 'netProfit',
+  'salesRevenue', 'carwashRevenue', 'expenses', 'net', 'cogs', 'grossProfit', 'netProfit',
 ]);
 
+// Exactly the reports named in the signed proposal's "12. Reporting Module"
+// section (Sales, Inventory, Financial/Profit, Car Wash, Branch Reports) —
+// the backend still supports the other report types (Purchases, Products,
+// Customers, Suppliers, Returns, Transfers), they're just not surfaced here.
 const REPORT_CONFIGS = {
   sales: {
     label: 'Sales', filters: ['dateFrom', 'dateTo', 'branchId'],
@@ -35,11 +37,6 @@ const REPORT_CONFIGS = {
     label: 'Inventory', filters: ['branchId', 'categoryId'],
     summary: { totalRecords: 'Total Records', totalValue: 'Total Value', lowStock: 'Low Stock', outOfStock: 'Out of Stock' },
     breakdowns: [{ key: 'byCategory', title: 'By Category', labelHeader: 'Category' }],
-  },
-  purchases: {
-    label: 'Purchases', filters: ['dateFrom', 'dateTo', 'branchId', 'supplierId'],
-    summary: { totalPurchases: 'Total Purchases', totalAmount: 'Total Amount' },
-    breakdowns: [{ key: 'bySupplier', title: 'By Supplier', labelHeader: 'Supplier' }],
   },
   expenses: {
     label: 'Expenses', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
@@ -62,28 +59,6 @@ const REPORT_CONFIGS = {
   branches: {
     label: 'Branches', filters: ['dateFrom', 'dateTo'],
     breakdowns: [{ key: 'byBranch', title: 'Branch Comparison', labelHeader: 'Branch' }],
-  },
-  products: {
-    label: 'Products', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
-    breakdowns: [{ key: 'topProducts', title: 'Top Products', labelHeader: 'Product' }],
-  },
-  customers: {
-    label: 'Customers', filters: ['dateFrom', 'dateTo', 'branchId'],
-    breakdowns: [{ key: 'topCustomers', title: 'Top Customers', labelHeader: 'Customer' }],
-  },
-  suppliers: {
-    label: 'Suppliers', filters: [],
-    breakdowns: [{ key: 'bySupplier', title: 'Supplier Balances', labelHeader: 'Supplier' }],
-  },
-  returns: {
-    label: 'Returns', filters: ['dateFrom', 'dateTo', 'branchId'],
-    summary: { totalReturns: 'Total Returns', totalRefund: 'Total Refund' },
-    breakdowns: [{ key: 'byReason', title: 'By Reason', labelHeader: 'Reason' }],
-  },
-  transfers: {
-    label: 'Transfers', filters: ['dateFrom', 'dateTo', 'branchId'],
-    summary: { totalTransfers: 'Total Transfers' },
-    breakdowns: [{ key: 'byStatus', title: 'By Status', labelHeader: 'Status' }],
   },
 };
 
@@ -142,18 +117,17 @@ function ReportsCenter() {
   const [reportType, setReportType] = useState('sales');
   const [branches, setBranches] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [filters, setFilters] = useState({ dateFrom: firstOfMonthIso(), dateTo: todayIso(), branchId: '', categoryId: '', supplierId: '' });
+  const [filters, setFilters] = useState({ dateFrom: firstOfMonthIso(), dateTo: todayIso(), branchId: '', categoryId: '' });
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const config = REPORT_CONFIGS[reportType];
 
   useEffect(() => {
     branchService.listActiveBranches().then(setBranches);
     categoryService.listActiveCategories().then(setCategories);
-    supplierService.listActiveSuppliers().then(setSuppliers);
   }, []);
 
   const loadReport = () => {
@@ -174,12 +148,27 @@ function ReportsCenter() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetching the selected report on filter/type change is standard data-fetching, not derived state
     loadReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- config is derived from reportType, individual filter fields tracked explicitly below
-  }, [reportType, filters.dateFrom, filters.dateTo, filters.branchId, filters.categoryId, filters.supplierId]);
+  }, [reportType, filters.dateFrom, filters.dateTo, filters.branchId, filters.categoryId]);
 
   const summaryEntries = useMemo(() => {
     if (!report?.summary || !config.summary) return [];
     return Object.entries(config.summary).map(([key, label]) => ({ key, label, value: report.summary[key] }));
   }, [report, config]);
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      const params = {};
+      config.filters.forEach((key) => {
+        if (filters[key]) params[key] = filters[key];
+      });
+      await reportService.exportReportPdf(reportType, params);
+    } catch {
+      setError('Failed to export PDF.');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   return (
     <div className="reports-page">
@@ -192,6 +181,9 @@ function ReportsCenter() {
           <div className="page-actions">
             <button type="button" className="btn btn-secondary" onClick={() => window.print()}>
               <FiPrinter aria-hidden="true" /> Print
+            </button>
+            <button type="button" className={`btn btn-secondary ${exportingPdf ? 'btn-loading' : ''}`} onClick={handleExportPdf} disabled={exportingPdf}>
+              <FiFileText aria-hidden="true" /> Export PDF
             </button>
           </div>
         )}
@@ -239,15 +231,6 @@ function ReportsCenter() {
               <select id="categoryId" className="form-control" value={filters.categoryId} onChange={(e) => setFilters((prev) => ({ ...prev, categoryId: e.target.value }))}>
                 <option value="">All Categories</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-          )}
-          {config.filters.includes('supplierId') && (
-            <div className="form-group">
-              <label className="form-label" htmlFor="supplierId">Supplier</label>
-              <select id="supplierId" className="form-control" value={filters.supplierId} onChange={(e) => setFilters((prev) => ({ ...prev, supplierId: e.target.value }))}>
-                <option value="">All Suppliers</option>
-                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
           )}

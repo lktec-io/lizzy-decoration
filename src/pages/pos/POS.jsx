@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiTrash2, FiCamera, FiPlus, FiClock } from 'react-icons/fi';
+import { FiTrash2, FiCamera, FiPlus, FiClock, FiShoppingCart } from 'react-icons/fi';
 import Modal from '../../components/common/Modal';
 import SearchInput from '../../components/common/SearchInput';
 import QRScanner from '../../components/common/QRScanner';
+import EmptyState from '../../components/common/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -257,7 +258,7 @@ function POS() {
 
         <div className="pos-cart-items">
           {cart.length === 0 ? (
-            <div className="pos-cart-empty">Cart is empty — select products to begin a sale.</div>
+            <EmptyState icon={FiShoppingCart} title="Cart is empty" description="Select products to begin a sale." />
           ) : (
             cart.map((line) => (
               <div className="pos-cart-line" key={line.productId}>

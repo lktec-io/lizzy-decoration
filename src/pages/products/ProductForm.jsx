@@ -7,6 +7,7 @@ import * as categoryService from '../../services/categoryService';
 import * as brandService from '../../services/brandService';
 import QRCodeDisplay from '../../components/products/QRCodeDisplay';
 import Modal from '../../components/common/Modal';
+import { useToast } from '../../hooks/useToast';
 import '../../styles/pages/ProductForm.css';
 
 // Shared by both the Category and Brand "+ Add" popups below -- each needs
@@ -79,6 +80,7 @@ function ProductForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const toast = useToast();
   const imageInputRef = useRef(null);
 
   const [categories, setCategories] = useState([]);
@@ -152,9 +154,11 @@ function ProductForm() {
     try {
       if (isEdit) {
         await productService.updateProduct(id, payload);
+        toast.success('Product updated.');
         navigate('/products');
       } else {
         const created = await productService.createProduct(payload);
+        toast.success('Product created.');
         navigate(`/products/${created.id}/edit`, { replace: true });
       }
     } catch (err) {

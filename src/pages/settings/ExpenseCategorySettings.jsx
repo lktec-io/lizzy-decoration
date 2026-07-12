@@ -9,11 +9,13 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SettingsTabs from '../../components/common/SettingsTabs';
 import { usePermission } from '../../hooks/usePermission';
 import { useTable } from '../../hooks/useTable';
+import { useToast } from '../../hooks/useToast';
 import * as settingsService from '../../services/settingsService';
 import '../../styles/pages/Notifications.css';
 
 function ExpenseCategorySettings() {
   const canManage = usePermission('settings.manage');
+  const toast = useToast();
 
   const fetchCategories = useCallback((params) => settingsService.listExpenseCategories(params), []);
   const { items, meta, loading, page, setPage, search, setSearch, refetch } = useTable(fetchCategories);
@@ -49,8 +51,10 @@ function ExpenseCategorySettings() {
     try {
       if (editing) {
         await settingsService.updateExpenseCategory(editing.id, values);
+        toast.success('Expense category updated.');
       } else {
         await settingsService.createExpenseCategory(values);
+        toast.success('Expense category created.');
       }
       setModalOpen(false);
       refetch();
@@ -61,6 +65,7 @@ function ExpenseCategorySettings() {
 
   const handleDelete = async () => {
     await settingsService.deleteExpenseCategory(pendingDelete.id);
+    toast.success('Expense category deleted.');
     refetch();
   };
 

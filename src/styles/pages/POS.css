@@ -195,13 +195,6 @@
   white-space: nowrap;
 }
 
-.pos-cart-empty {
-  text-align: center;
-  color: var(--color-text-secondary);
-  padding: var(--space-9) 0;
-  font-size: var(--font-size-sm);
-}
-
 .pos-cart-footer {
   border-top: 1px solid var(--color-border);
   padding: var(--space-4);

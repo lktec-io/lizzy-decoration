@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FiPrinter, FiDownload, FiFileText } from 'react-icons/fi';
+import { FiPrinter, FiDownload, FiFileText, FiBarChart2 } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
+import EmptyState from '../../components/common/EmptyState';
+import Skeleton from '../../components/common/Skeleton';
 import { usePermission } from '../../hooks/usePermission';
 import * as reportService from '../../services/reportService';
 import * as branchService from '../../services/branchService';
@@ -77,7 +79,9 @@ function BreakdownTable({ title, labelHeader, rows, onExport, canExport }) {
     return (
       <div className="card mb-5">
         <div className="card-header"><span className="card-title">{title}</span></div>
-        <div className="card-body"><p className="text-sm text-secondary">No data for the selected filters.</p></div>
+        <div className="card-body">
+          <EmptyState icon={FiBarChart2} title="No data" description="No data for the selected filters." />
+        </div>
       </div>
     );
   }
@@ -240,7 +244,16 @@ function ReportsCenter() {
       {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
 
       {loading ? (
-        <div className="flex items-center justify-center p-6"><span className="spinner" aria-label="Loading" /></div>
+        <div className="grid grid-cols-4 mb-5">
+          {Array.from({ length: 4 }, (_, i) => `report-summary-skeleton-${i}`).map((skeletonKey) => (
+            <div className="card kpi-card" key={skeletonKey}>
+              <div style={{ width: '100%' }}>
+                <Skeleton width="60%" height="0.8em" style={{ marginBottom: 'var(--space-2)' }} />
+                <Skeleton width="40%" height="1.4em" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <>
           {summaryEntries.length > 0 && (

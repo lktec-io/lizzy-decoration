@@ -8,12 +8,14 @@ import Modal from '../../components/common/Modal';
 import SettingsTabs from '../../components/common/SettingsTabs';
 import { usePermission } from '../../hooks/usePermission';
 import { useTable } from '../../hooks/useTable';
+import { useToast } from '../../hooks/useToast';
 import * as settingsService from '../../services/settingsService';
 import { formatCurrency } from '../../utils/formatCurrency';
 import '../../styles/pages/Notifications.css';
 
 function CarwashServiceSettings() {
   const canManage = usePermission('settings.manage');
+  const toast = useToast();
 
   const fetchServices = useCallback((params) => settingsService.listCarwashServices(params), []);
   const { items, meta, loading, page, setPage, search, setSearch, refetch } = useTable(fetchServices);
@@ -50,8 +52,10 @@ function CarwashServiceSettings() {
     try {
       if (editing) {
         await settingsService.updateCarwashService(editing.id, { ...payload, status: editing.status });
+        toast.success('Car wash package updated.');
       } else {
         await settingsService.createCarwashService(payload);
+        toast.success('Car wash package created.');
       }
       setModalOpen(false);
       refetch();
@@ -65,6 +69,7 @@ function CarwashServiceSettings() {
     const nextStatus = service.status === 'active' ? 'inactive' : 'active';
     try {
       await settingsService.setCarwashServiceStatus(service.id, nextStatus);
+      toast.success(nextStatus === 'active' ? 'Package activated.' : 'Package deactivated.');
       refetch();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to update package status.');

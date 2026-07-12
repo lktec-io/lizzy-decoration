@@ -3,11 +3,13 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as branchService from '../../services/branchService';
 import * as userService from '../../services/userService';
+import { useToast } from '../../hooks/useToast';
 
 function BranchForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [managers, setManagers] = useState([]);
   const [loading, setLoading] = useState(isEdit);
@@ -61,8 +63,10 @@ function BranchForm() {
     try {
       if (isEdit) {
         await branchService.updateBranch(id, payload);
+        toast.success('Branch updated.');
       } else {
         await branchService.createBranch(payload);
+        toast.success('Branch created.');
       }
       navigate('/settings/branches');
     } catch (err) {

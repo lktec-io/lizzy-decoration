@@ -17,6 +17,17 @@ img { max-width: 100%; display: block; }
 a { color: var(--color-link); text-decoration: none; }
 a:hover { color: #2563EB; }
 
+/* Baseline focus-visible ring for any interactive element without its own
+   component-specific treatment (buttons/forms/switch already define theirs). */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* Authenticated app shell */
 .app-shell {
   display: grid;

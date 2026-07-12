@@ -95,10 +95,9 @@
   z-index: var(--z-dropdown);
 }
 
-.navbar-search-empty {
-  padding: var(--space-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+.navbar-search-results .empty-state,
+.navbar-notification-list .empty-state {
+  padding: var(--space-6) var(--space-4);
 }
 
 .navbar-search-result {

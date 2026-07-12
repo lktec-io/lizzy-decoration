@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   FiGrid, FiUserCheck, FiTruck,
   FiBox, FiArchive, FiShoppingCart, FiDollarSign, FiRotateCcw,
@@ -59,8 +60,19 @@ function Sidebar({ collapsed, onToggle }) {
             end={end}
             className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
           >
-            <Icon className="sidebar-link-icon" aria-hidden="true" />
-            {!collapsed && <span className="sidebar-link-label">{label}</span>}
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.span
+                    layoutId="sidebar-active-pill"
+                    className="sidebar-link-indicator"
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <Icon className="sidebar-link-icon" aria-hidden="true" />
+                {!collapsed && <span className="sidebar-link-label">{label}</span>}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

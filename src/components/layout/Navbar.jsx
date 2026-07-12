@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiMenu, FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut } from 'react-icons/fi';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FiMenu, FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut, FiInbox } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompany } from '../../hooks/useCompany';
 import { useDebounce } from '../../hooks/useDebounce';
 import * as searchService from '../../services/searchService';
 import * as notificationService from '../../services/notificationService';
 import { ROUTES } from '../../constants/routes';
+import EmptyState from '../common/EmptyState';
 import '../../styles/components/Navbar.css';
+
+const DROPDOWN_MOTION = {
+  initial: { opacity: 0, scale: 0.96, y: -6 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.96, y: -6 },
+  transition: { duration: 0.15 },
+};
 
 const UNREAD_POLL_MS = 60_000;
 
@@ -172,28 +181,30 @@ function Navbar({ onMenuClick }) {
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => setOpen(true)}
         />
-        {open && query.trim() && (
-          <div className="navbar-search-results">
-            {users.length === 0 ? (
-              <div className="navbar-search-empty">No matches yet — search currently covers Users only.</div>
-            ) : (
-              users.map((result) => (
-                <button
-                  key={result.id}
-                  type="button"
-                  className="navbar-search-result"
-                  onClick={() => {
-                    navigate(`/settings/users/${result.id}/edit`);
-                    setOpen(false);
-                  }}
-                >
-                  <span className="navbar-search-result-name">{result.first_name} {result.last_name}</span>
-                  <span className="navbar-search-result-meta">{result.email}</span>
-                </button>
-              ))
-            )}
-          </div>
-        )}
+        <AnimatePresence>
+          {open && query.trim() && (
+            <motion.div className="navbar-search-results" {...DROPDOWN_MOTION}>
+              {users.length === 0 ? (
+                <EmptyState icon={FiSearch} title="No matches yet" description="Search currently covers Users only." />
+              ) : (
+                users.map((result) => (
+                  <button
+                    key={result.id}
+                    type="button"
+                    className="navbar-search-result"
+                    onClick={() => {
+                      navigate(`/settings/users/${result.id}/edit`);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="navbar-search-result-name">{result.first_name} {result.last_name}</span>
+                    <span className="navbar-search-result-meta">{result.email}</span>
+                  </button>
+                ))
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="navbar-right">
@@ -206,41 +217,43 @@ function Navbar({ onMenuClick }) {
             <FiBell />
             {notifications.unreadCount > 0 && <span className="navbar-notification-badge">{notifications.unreadCount > 9 ? '9+' : notifications.unreadCount}</span>}
           </button>
-          {notifications.open && (
-            <div className="navbar-notification-panel">
-              <div className="navbar-notification-header">
-                <span>Notifications</span>
-                {notifications.unreadCount > 0 && (
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={notifications.markAllRead}>
-                    Mark All Read
-                  </button>
-                )}
-              </div>
-              <div className="navbar-notification-list">
-                {notifications.loading ? (
-                  <div className="navbar-notification-empty"><span className="spinner" aria-label="Loading" /></div>
-                ) : notifications.recent.length === 0 ? (
-                  <div className="navbar-notification-empty">No notifications yet.</div>
-                ) : (
-                  notifications.recent.map((n) => (
-                    <div key={n.id} className={`navbar-notification-item ${!n.read_at ? 'navbar-notification-item-unread' : ''}`}>
-                      <span className={`navbar-notification-dot ${NOTIFICATION_TYPE_DOT[n.type] || ''}`} aria-hidden="true" />
-                      <div className="navbar-notification-body">
-                        <span className="navbar-notification-title">{n.title}</span>
-                        <span className="navbar-notification-message">{n.message}</span>
-                        <span className="navbar-notification-time">{formatNotificationTime(n.created_at)}</span>
+          <AnimatePresence>
+            {notifications.open && (
+              <motion.div className="navbar-notification-panel" {...DROPDOWN_MOTION}>
+                <div className="navbar-notification-header">
+                  <span>Notifications</span>
+                  {notifications.unreadCount > 0 && (
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={notifications.markAllRead}>
+                      Mark All Read
+                    </button>
+                  )}
+                </div>
+                <div className="navbar-notification-list">
+                  {notifications.loading ? (
+                    <div className="navbar-notification-empty"><span className="spinner" aria-label="Loading" /></div>
+                  ) : notifications.recent.length === 0 ? (
+                    <EmptyState icon={FiInbox} title="No notifications yet" />
+                  ) : (
+                    notifications.recent.map((n) => (
+                      <div key={n.id} className={`navbar-notification-item ${!n.read_at ? 'navbar-notification-item-unread' : ''}`}>
+                        <span className={`navbar-notification-dot ${NOTIFICATION_TYPE_DOT[n.type] || ''}`} aria-hidden="true" />
+                        <div className="navbar-notification-body">
+                          <span className="navbar-notification-title">{n.title}</span>
+                          <span className="navbar-notification-message">{n.message}</span>
+                          <span className="navbar-notification-time">{formatNotificationTime(n.created_at)}</span>
+                        </div>
+                        {!n.read_at && (
+                          <button type="button" className="btn btn-ghost btn-icon" onClick={() => notifications.markRead(n.id)} aria-label="Mark as read">
+                            <FiCheck />
+                          </button>
+                        )}
                       </div>
-                      {!n.read_at && (
-                        <button type="button" className="btn btn-ghost btn-icon" onClick={() => notifications.markRead(n.id)} aria-label="Mark as read">
-                          <FiCheck />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="navbar-user-menu" ref={userMenuRef}>
@@ -249,20 +262,22 @@ function Navbar({ onMenuClick }) {
             <span className="navbar-user-name">{displayName}</span>
             <FiChevronDown className="navbar-user-caret" />
           </button>
-          {userMenuOpen && (
-            <div className="navbar-user-panel">
-              <button
-                type="button"
-                className="navbar-user-panel-item"
-                onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}
-              >
-                <FiUser aria-hidden="true" /> Profile
-              </button>
-              <button type="button" className="navbar-user-panel-item" onClick={handleLogout}>
-                <FiLogOut aria-hidden="true" /> Logout
-              </button>
-            </div>
-          )}
+          <AnimatePresence>
+            {userMenuOpen && (
+              <motion.div className="navbar-user-panel" {...DROPDOWN_MOTION}>
+                <button
+                  type="button"
+                  className="navbar-user-panel-item"
+                  onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}
+                >
+                  <FiUser aria-hidden="true" /> Profile
+                </button>
+                <button type="button" className="navbar-user-panel-item" onClick={handleLogout}>
+                  <FiLogOut aria-hidden="true" /> Logout
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </header>

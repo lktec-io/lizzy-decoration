@@ -1,43 +1,38 @@
 import { useEffect, useState } from 'react';
-import {
-  FiDollarSign, FiTrendingUp, FiUsers, FiTruck, FiBox, FiArchive,
-  FiAlertTriangle, FiCreditCard, FiDroplet, FiRepeat, FiShoppingCart,
-} from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiAlertTriangle, FiDroplet } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
 import ChartCard from '../../components/dashboard/ChartCard';
-import ActivityTimeline from '../../components/dashboard/ActivityTimeline';
-import QuickActions from '../../components/dashboard/QuickActions';
-import LineChart from '../../components/charts/LineChart';
+import Table from '../../components/common/Table';
 import BarChart from '../../components/charts/BarChart';
-import DoughnutChart from '../../components/charts/DoughnutChart';
-import { CHART_COLORS } from '../../components/charts/chartTheme';
 import * as dashboardService from '../../services/dashboardService';
+import * as saleService from '../../services/saleService';
+import * as inventoryService from '../../services/inventoryService';
 import { formatCurrency, formatNumber } from '../../utils/formatCurrency';
 import '../../styles/pages/Dashboard.css';
 
+// Exactly the 9 items in the signed proposal's "1. Main Dashboard" section:
+// Daily Sales, Monthly Sales, Business Profit Summary, Low Stock Alerts,
+// Car Wash Activity Summary, Branch Performance Statistics, Top Selling
+// Products, Recent Transactions, Inventory Notifications. Nothing else.
 const KPI_DEFS = [
   { key: 'todaySales', label: "Today's Sales", icon: FiDollarSign, money: true },
   { key: 'monthlySales', label: 'Monthly Sales', icon: FiTrendingUp, money: true },
-  { key: 'todayProfit', label: "Today's Profit", icon: FiTrendingUp, money: true },
-  { key: 'monthlyProfit', label: 'Monthly Profit', icon: FiTrendingUp, money: true },
-  { key: 'totalCustomers', label: 'Total Customers', icon: FiUsers, money: false },
-  { key: 'totalSuppliers', label: 'Total Suppliers', icon: FiTruck, money: false },
-  { key: 'totalProducts', label: 'Total Products', icon: FiBox, money: false },
-  { key: 'inventoryValue', label: 'Inventory Value', icon: FiArchive, money: true },
-  { key: 'lowStockCount', label: 'Low Stock Items', icon: FiAlertTriangle, money: false },
-  { key: 'todayExpenses', label: "Today's Expenses", icon: FiCreditCard, money: true },
-  { key: 'monthlyExpenses', label: 'Monthly Expenses', icon: FiCreditCard, money: true },
-  { key: 'carwashRevenue', label: 'Car Wash Revenue', icon: FiDroplet, money: true },
-  { key: 'pendingTransfers', label: 'Pending Transfers', icon: FiRepeat, money: false },
-  { key: 'pendingPurchases', label: 'Pending Purchases', icon: FiShoppingCart, money: false },
+  { key: 'todayProfit', label: 'Profit', icon: FiTrendingUp, money: true },
+  { key: 'lowStockCount', label: 'Low Stock', icon: FiAlertTriangle, money: false },
+  { key: 'carwashRevenue', label: 'Car Wash Today', icon: FiDroplet, money: true },
 ];
 
-const CHART_TYPES = ['sales-trend', 'revenue-trend', 'expense-trend', 'profit-trend', 'top-products', 'branch-performance', 'inventory-summary', 'carwash-summary'];
+const CHART_TYPES = ['branch-performance', 'top-products'];
+
+function formatDate(isoString) {
+  return new Date(isoString).toLocaleDateString('en-TZ', { dateStyle: 'medium' });
+}
 
 function Dashboard() {
   const [kpis, setKpis] = useState(null);
   const [charts, setCharts] = useState({});
-  const [activity, setActivity] = useState([]);
+  const [recentSales, setRecentSales] = useState([]);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -46,21 +41,25 @@ function Dashboard() {
 
     async function load() {
       try {
-        const [kpiResult, activityResult, ...chartResults] = await Promise.all([
+        const [kpiResult, ...chartResults] = await Promise.all([
           dashboardService.getKpis(),
-          dashboardService.getActivity(10),
           ...CHART_TYPES.map((type) => dashboardService.getChart(type)),
+        ]);
+        const [salesResult, lowStockResult] = await Promise.all([
+          saleService.listSales({ limit: 10 }),
+          inventoryService.listInventory({ lowStock: true, limit: 10 }),
         ]);
 
         if (cancelled) return;
 
         setKpis(kpiResult);
-        setActivity(activityResult);
         const chartMap = {};
         CHART_TYPES.forEach((type, index) => {
           chartMap[type] = chartResults[index];
         });
         setCharts(chartMap);
+        setRecentSales(salesResult.items);
+        setLowStockProducts(lowStockResult.items);
       } catch {
         if (!cancelled) setError('Failed to load dashboard data.');
       } finally {
@@ -74,26 +73,29 @@ function Dashboard() {
     };
   }, []);
 
-  const trendChart = (type, label, color) => {
-    const rows = charts[type] || [];
-    return (
-      <ChartCard title={label} loading={loading} empty={rows.length === 0} emptyMessage="No data for this period yet">
-        <LineChart labels={rows.map((r) => r.date || r.month)} values={rows.map((r) => Number(r.value))} label={label} color={color} />
-      </ChartCard>
-    );
-  };
-
-  const topProducts = charts['top-products'] || [];
   const branchPerformance = charts['branch-performance'] || [];
-  const inventorySummary = charts['inventory-summary'];
-  const carwashSummary = charts['carwash-summary'] || [];
+  const topProducts = charts['top-products'] || [];
+
+  const recentSalesColumns = [
+    { key: 'sale_number', label: 'Sale #' },
+    { key: 'branch_name', label: 'Branch' },
+    { key: 'total_amount', label: 'Amount', render: (row) => formatCurrency(row.total_amount) },
+    { key: 'created_at', label: 'Date', render: (row) => formatDate(row.created_at) },
+  ];
+
+  const lowStockColumns = [
+    { key: 'product_name', label: 'Product', render: (row) => <div>{row.product_name}<div className="text-xs text-secondary">{row.product_code}</div></div> },
+    { key: 'branch_name', label: 'Branch' },
+    { key: 'quantity', label: 'Stock', render: (row) => formatNumber(row.quantity) },
+    { key: 'min_stock', label: 'Min Stock', render: (row) => formatNumber(row.min_stock) },
+  ];
 
   return (
     <div>
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Executive overview of JOZZY Decoration &amp; Accessories</p>
+          <p className="page-subtitle">Overview of JOZZY Decoration &amp; Accessories</p>
         </div>
       </div>
 
@@ -112,51 +114,24 @@ function Dashboard() {
       </div>
 
       <div className="chart-grid">
-        {trendChart('sales-trend', 'Sales Trend', CHART_COLORS.gold)}
-        {trendChart('revenue-trend', 'Revenue Trend', CHART_COLORS.info)}
-        {trendChart('expense-trend', 'Expense Trend', CHART_COLORS.danger)}
-        {trendChart('profit-trend', 'Monthly Profit', CHART_COLORS.success)}
-
-        <ChartCard title="Top Selling Products" loading={loading} empty={topProducts.length === 0} emptyMessage="No sales recorded yet">
-          <BarChart labels={topProducts.map((p) => p.name)} values={topProducts.map((p) => Number(p.quantity))} label="Units Sold" horizontal />
-        </ChartCard>
-
         <ChartCard title="Branch Performance" loading={loading} empty={branchPerformance.length === 0} emptyMessage="No branches yet">
           <BarChart labels={branchPerformance.map((b) => b.name)} values={branchPerformance.map((b) => Number(b.value))} label="Monthly Sales" />
         </ChartCard>
 
-        <ChartCard
-          title="Inventory Summary"
-          loading={loading}
-          empty={!inventorySummary || (inventorySummary.inStock + inventorySummary.lowStock + inventorySummary.outOfStock === 0)}
-          emptyMessage="No inventory recorded yet"
-        >
-          {inventorySummary && (
-            <DoughnutChart
-              labels={['In Stock', 'Low Stock', 'Out of Stock']}
-              values={[inventorySummary.inStock, inventorySummary.lowStock, inventorySummary.outOfStock]}
-            />
-          )}
-        </ChartCard>
-
-        <ChartCard title="Car Wash Summary" loading={loading} empty={carwashSummary.every((s) => Number(s.value) === 0)} emptyMessage="No car wash revenue yet">
-          <DoughnutChart labels={carwashSummary.map((s) => s.name)} values={carwashSummary.map((s) => Number(s.value))} />
+        <ChartCard title="Top Selling Products" loading={loading} empty={topProducts.length === 0} emptyMessage="No sales recorded yet">
+          <BarChart labels={topProducts.map((p) => p.name)} values={topProducts.map((p) => Number(p.quantity))} label="Units Sold" horizontal />
         </ChartCard>
       </div>
 
       <div className="dashboard-bottom-grid">
         <div className="card">
-          <div className="card-header"><span className="card-title">Recent Activity</span></div>
-          <div className="card-body">
-            <ActivityTimeline items={activity} loading={loading} />
-          </div>
+          <div className="card-header"><span className="card-title">Recent Transactions</span></div>
+          <Table columns={recentSalesColumns} rows={recentSales} loading={loading} emptyMessage="No sales recorded yet" />
         </div>
 
         <div className="card">
-          <div className="card-header"><span className="card-title">Quick Actions</span></div>
-          <div className="card-body">
-            <QuickActions />
-          </div>
+          <div className="card-header"><span className="card-title">Inventory Notifications</span></div>
+          <Table columns={lowStockColumns} rows={lowStockProducts} loading={loading} emptyMessage="No low-stock products right now" />
         </div>
       </div>
     </div>

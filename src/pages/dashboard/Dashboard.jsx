@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { FiDollarSign, FiTrendingUp, FiAlertTriangle, FiDroplet } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
 import ChartCard from '../../components/dashboard/ChartCard';
@@ -23,6 +24,16 @@ const KPI_DEFS = [
 ];
 
 const CHART_TYPES = ['branch-performance', 'top-products'];
+
+const STAGGER_CONTAINER = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+const STAGGER_ITEM = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
 
 function formatDate(isoString) {
   return new Date(isoString).toLocaleDateString('en-TZ', { dateStyle: 'medium' });
@@ -101,39 +112,41 @@ function Dashboard() {
 
       {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
 
-      <div className="kpi-grid">
-        {KPI_DEFS.map(({ key, label, icon, money }) => (
-          <KPICard
-            key={key}
-            icon={icon}
-            label={label}
-            value={loading || !kpis ? 0 : kpis[key]}
-            formatter={money ? (v) => formatCurrency(v) : (v) => formatNumber(v)}
-          />
-        ))}
-      </div>
+      <motion.div variants={STAGGER_CONTAINER} initial="hidden" animate="show">
+        <motion.div className="kpi-grid" variants={STAGGER_ITEM}>
+          {KPI_DEFS.map(({ key, label, icon, money }) => (
+            <KPICard
+              key={key}
+              icon={icon}
+              label={label}
+              value={loading || !kpis ? 0 : kpis[key]}
+              formatter={money ? (v) => formatCurrency(v) : (v) => formatNumber(v)}
+            />
+          ))}
+        </motion.div>
 
-      <div className="chart-grid">
-        <ChartCard title="Branch Performance" loading={loading} empty={branchPerformance.length === 0} emptyMessage="No branches yet">
-          <BarChart labels={branchPerformance.map((b) => b.name)} values={branchPerformance.map((b) => Number(b.value))} label="Monthly Sales" />
-        </ChartCard>
+        <motion.div className="chart-grid" variants={STAGGER_ITEM}>
+          <ChartCard title="Branch Performance" loading={loading} empty={branchPerformance.length === 0} emptyMessage="No branches yet">
+            <BarChart labels={branchPerformance.map((b) => b.name)} values={branchPerformance.map((b) => Number(b.value))} label="Monthly Sales" />
+          </ChartCard>
 
-        <ChartCard title="Top Selling Products" loading={loading} empty={topProducts.length === 0} emptyMessage="No sales recorded yet">
-          <BarChart labels={topProducts.map((p) => p.name)} values={topProducts.map((p) => Number(p.quantity))} label="Units Sold" horizontal />
-        </ChartCard>
-      </div>
+          <ChartCard title="Top Selling Products" loading={loading} empty={topProducts.length === 0} emptyMessage="No sales recorded yet">
+            <BarChart labels={topProducts.map((p) => p.name)} values={topProducts.map((p) => Number(p.quantity))} label="Units Sold" horizontal />
+          </ChartCard>
+        </motion.div>
 
-      <div className="dashboard-bottom-grid">
-        <div className="card">
-          <div className="card-header"><span className="card-title">Recent Transactions</span></div>
-          <Table columns={recentSalesColumns} rows={recentSales} loading={loading} emptyMessage="No sales recorded yet" />
-        </div>
+        <motion.div className="dashboard-bottom-grid" variants={STAGGER_ITEM}>
+          <div className="card">
+            <div className="card-header"><span className="card-title">Recent Transactions</span></div>
+            <Table columns={recentSalesColumns} rows={recentSales} loading={loading} emptyMessage="No sales recorded yet" />
+          </div>
 
-        <div className="card">
-          <div className="card-header"><span className="card-title">Inventory Notifications</span></div>
-          <Table columns={lowStockColumns} rows={lowStockProducts} loading={loading} emptyMessage="No low-stock products right now" />
-        </div>
-      </div>
+          <div className="card">
+            <div className="card-header"><span className="card-title">Inventory Notifications</span></div>
+            <Table columns={lowStockColumns} rows={lowStockProducts} loading={loading} emptyMessage="No low-stock products right now" />
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

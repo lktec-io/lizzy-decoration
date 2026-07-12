@@ -1,11 +1,13 @@
-function KPICard({ icon: Icon, label, value, formatter }) {
-  const displayValue = formatter ? formatter(value) : value;
+import AnimatedCounter from './AnimatedCounter';
 
+function KPICard({ icon: Icon, label, value, formatter }) {
   return (
-    <div className="card kpi-card">
+    <div className="card card-hover kpi-card">
       <div>
         <div className="kpi-card-label">{label}</div>
-        <div className="kpi-card-value">{displayValue}</div>
+        <div className="kpi-card-value">
+          <AnimatedCounter value={value} formatter={formatter || ((v) => v)} />
+        </div>
       </div>
       {Icon && (
         <div className="kpi-card-icon">

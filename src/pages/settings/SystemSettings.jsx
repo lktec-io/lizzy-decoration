@@ -68,7 +68,7 @@ function SystemSettings() {
           <div className="card mb-5">
             <div className="card-header"><span className="card-title">Tax</span></div>
             <div className="card-body">
-              <label className="form-checkbox mb-3">
+              <label className="form-switch mb-3">
                 <input type="checkbox" disabled={!canManage} {...register('taxEnabled')} />
                 Enable tax on sales
               </label>
@@ -82,7 +82,7 @@ function SystemSettings() {
           <div className="card mb-5">
             <div className="card-header"><span className="card-title">Email</span></div>
             <div className="card-body">
-              <label className="form-checkbox">
+              <label className="form-switch">
                 <input type="checkbox" disabled={!canManage} {...register('notificationEmailEnabled')} />
                 Send email notifications (in addition to in-app notifications)
               </label>

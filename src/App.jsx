@@ -1,12 +1,15 @@
 import AppRouter from './router/AppRouter';
 import AuthProvider from './contexts/AuthContext';
 import CompanyProvider from './contexts/CompanyContext';
+import ToastProvider from './contexts/ToastContext';
 
 function App() {
   return (
     <CompanyProvider>
       <AuthProvider>
-        <AppRouter />
+        <ToastProvider>
+          <AppRouter />
+        </ToastProvider>
       </AuthProvider>
     </CompanyProvider>
   );

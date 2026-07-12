@@ -14,19 +14,19 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="btn btn-secondary btn-sm"
+          className="btn btn-secondary btn-sm btn-icon"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
           aria-label="Previous page"
         >
           <FiChevronLeft />
         </button>
-        <span className="text-sm">
+        <span className="pagination-indicator">
           Page {page} of {Math.max(totalPages, 1)}
         </span>
         <button
           type="button"
-          className="btn btn-secondary btn-sm"
+          className="btn btn-secondary btn-sm btn-icon"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
           aria-label="Next page"

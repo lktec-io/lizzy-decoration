@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   FiGrid, FiUserCheck, FiTruck,
-  FiBox, FiArchive, FiShoppingCart, FiDollarSign,
+  FiBox, FiArchive, FiShoppingCart, FiDollarSign, FiRotateCcw,
   FiDroplet, FiBarChart2, FiSettings, FiLogOut,
   FiChevronsLeft, FiChevronsRight,
 } from 'react-icons/fi';
@@ -10,11 +10,11 @@ import { useCompany } from '../../hooks/useCompany';
 import { ROUTES } from '../../constants/routes';
 import '../../styles/components/Sidebar.css';
 
-// Branches, Users, Roles, Categories, Brands, Notifications, Transfers,
-// Returns, and Profile are intentionally not top-level nav items — they're
-// reachable via Settings, the Product form, or the Navbar (Profile,
-// notification bell) instead. Their routes/pages/backends are untouched,
-// just no longer linked from here.
+// Branches, Users, Roles, Categories, Brands, Notifications, and Profile
+// are intentionally not top-level nav items — they're reachable via
+// Settings, the Product form, or the Navbar (Profile, notification bell)
+// instead. Transfers has no UI at all anymore (backend untouched). Returns
+// is a full top-level module, matching the client's module list.
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: FiGrid, end: true },
   { to: '/customers', label: 'Customers', icon: FiUserCheck },
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { to: '/inventory', label: 'Inventory', icon: FiArchive },
   { to: '/purchases', label: 'Purchases', icon: FiShoppingCart },
   { to: '/pos', label: 'Sales (POS)', icon: FiDollarSign },
+  { to: '/returns', label: 'Returns', icon: FiRotateCcw },
   { to: '/expenses', label: 'Expenses', icon: FiDollarSign },
   { to: '/carwash', label: 'Car Wash', icon: FiDroplet },
   { to: '/reports', label: 'Reports', icon: FiBarChart2 },

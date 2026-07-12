@@ -15,7 +15,7 @@ body {
 img { max-width: 100%; display: block; }
 
 a { color: var(--color-link); text-decoration: none; }
-a:hover { color: var(--color-gold-dark); }
+a:hover { color: #2563EB; }
 
 /* Authenticated app shell */
 .app-shell {

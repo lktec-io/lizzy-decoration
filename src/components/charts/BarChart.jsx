@@ -4,7 +4,7 @@ import { CHART_COLORS, BASE_FONT } from './chartTheme';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
-function BarChart({ labels, values, label = 'Value', color = CHART_COLORS.gold, horizontal = false }) {
+function BarChart({ labels, values, label = 'Value', color = CHART_COLORS.primary, horizontal = false }) {
   const data = {
     labels,
     datasets: [

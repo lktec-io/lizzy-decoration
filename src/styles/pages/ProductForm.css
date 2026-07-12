@@ -60,6 +60,6 @@
 }
 
 .product-image-add:hover:not(:disabled) {
-  border-color: var(--color-gold);
-  color: var(--color-gold-dark);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }

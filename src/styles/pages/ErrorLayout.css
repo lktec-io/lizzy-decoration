@@ -12,7 +12,7 @@
 .error-code {
   font-size: 4rem;
   font-weight: var(--font-weight-bold);
-  color: var(--color-gold);
+  color: var(--color-primary);
   line-height: 1;
 }
 

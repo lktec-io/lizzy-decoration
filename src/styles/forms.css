@@ -40,8 +40,8 @@
 
 .form-control:focus {
   outline: none;
-  border-color: var(--color-gold);
-  box-shadow: 0 0 0 3px rgba(200, 165, 106, 0.18);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.12);
 }
 
 .form-control:disabled {

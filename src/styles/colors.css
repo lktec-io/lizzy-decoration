@@ -1,40 +1,49 @@
-/* JOZZY brand palette — locked decision: gold/black Brand Identity section of MASTER_PROMPT.md */
+/* Premium SaaS palette — Linear/Stripe/Vercel-inspired redesign.
+   Gold is retained ONLY for company branding contexts (Sidebar brand
+   mark / logo fallback) — never used as a general UI color elsewhere. */
 :root {
-  /* Brand */
-  --color-gold: #C8A56A;
-  --color-gold-dark: #A88447;
-  --color-gold-light: #D9BC84;
-  --color-black: #111111;
-  --color-gray-dark: #1F2937;
-  --color-gray-light: #F5F5F5;
-  --color-background: #FAFAFA;
+  /* Core palette */
+  --color-primary: #0F172A;
+  --color-primary-hover: #1E293B;
+  --color-sidebar-bg: #111827;
+  --color-accent: #22C55E;
+  --color-accent-hover: #16A34A;
+  --color-blue: #3B82F6;
+
+  --color-black: #0F172A;
+  --color-gray-dark: #334155;
+  --color-gray-light: #F1F5F9;
+  --color-background: #F8FAFC;
   --color-white: #FFFFFF;
-  --color-border: #E5E7EB;
+  --color-border: #E2E8F0;
 
   /* Status */
-  --color-success: #16A34A;
+  --color-success: #10B981;
   --color-warning: #F59E0B;
-  --color-danger: #DC2626;
-  --color-info: #2563EB;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
 
   /* Status tints (backgrounds for badges/alerts) */
-  --color-success-bg: #DCFCE7;
+  --color-success-bg: #D1FAE5;
   --color-warning-bg: #FEF3C7;
   --color-danger-bg: #FEE2E2;
   --color-info-bg: #DBEAFE;
 
-  /* Semantic usage mapping — per COLOR USAGE section of the spec */
-  --color-primary: var(--color-gold);
-  --color-primary-hover: var(--color-gold-dark);
-  --color-sidebar-bg: var(--color-black);
+  /* Semantic usage mapping */
   --color-navbar-bg: var(--color-white);
   --color-card-bg: var(--color-white);
   --color-page-bg: var(--color-background);
-  --color-icon: var(--color-gold);
-  --color-link: var(--color-gray-dark);
+  --color-icon: var(--color-primary);
+  --color-link: var(--color-blue);
 
   --color-text-primary: var(--color-black);
-  --color-text-secondary: #6B7280;
+  --color-text-secondary: #64748B;
   --color-text-inverse: var(--color-white);
-  --color-text-on-sidebar: var(--color-gray-light);
+  --color-text-on-sidebar: #E2E8F0;
+
+  /* Company branding only — the Sidebar brand mark is the sole consumer;
+     never reference these for general buttons/focus states/icons. */
+  --color-gold: #C8A56A;
+  --color-gold-dark: #A88447;
+  --color-gold-light: #D9BC84;
 }

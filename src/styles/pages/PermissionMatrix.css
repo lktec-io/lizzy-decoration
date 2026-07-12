@@ -15,7 +15,7 @@
 .permission-matrix-table input[type='checkbox'] {
   width: 16px;
   height: 16px;
-  accent-color: var(--color-gold);
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 

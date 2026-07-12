@@ -47,8 +47,8 @@
   width: 44px;
   height: 44px;
   border-radius: var(--radius-md);
-  background-color: rgba(200, 165, 106, 0.12);
-  color: var(--color-gold);
+  background-color: rgba(15, 23, 42, 0.08);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -105,7 +105,7 @@
   font-size: var(--font-size-sm);
 }
 
-.alert-success { background-color: var(--color-success-bg); color: #14532D; border-color: rgba(22,163,74,0.25); }
+.alert-success { background-color: var(--color-success-bg); color: #065F46; border-color: rgba(16,185,129,0.25); }
 .alert-warning { background-color: var(--color-warning-bg); color: #78350F; border-color: rgba(245,158,11,0.25); }
-.alert-danger { background-color: var(--color-danger-bg); color: #7F1D1D; border-color: rgba(220,38,38,0.25); }
-.alert-info { background-color: var(--color-info-bg); color: #1E3A8A; border-color: rgba(37,99,235,0.25); }
+.alert-danger { background-color: var(--color-danger-bg); color: #7F1D1D; border-color: rgba(239,68,68,0.25); }
+.alert-info { background-color: var(--color-info-bg); color: #1E3A8A; border-color: rgba(59,130,246,0.25); }

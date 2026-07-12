@@ -17,12 +17,12 @@
 }
 
 .reports-type-pill:hover {
-  border-color: var(--color-gold);
+  border-color: var(--color-primary);
 }
 
 .reports-type-pill-active {
-  background-color: var(--color-gold);
-  border-color: var(--color-gold);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: var(--color-white);
 }
 

@@ -1,26 +1,27 @@
 // Mirrors src/styles/colors.css — Chart.js can't read CSS custom properties
-// directly, so the brand palette is duplicated here as plain hex values.
+// directly, so the palette is duplicated here as plain hex values.
 export const CHART_COLORS = {
-  gold: '#C8A56A',
-  goldDark: '#A88447',
-  goldLight: '#D9BC84',
-  black: '#111111',
-  grayDark: '#1F2937',
-  graySecondary: '#6B7280',
-  border: '#E5E7EB',
-  success: '#16A34A',
+  primary: '#0F172A',
+  primaryHover: '#1E293B',
+  accent: '#22C55E',
+  blue: '#3B82F6',
+  black: '#0F172A',
+  grayDark: '#334155',
+  graySecondary: '#64748B',
+  border: '#E2E8F0',
+  success: '#10B981',
   warning: '#F59E0B',
-  danger: '#DC2626',
-  info: '#2563EB',
+  danger: '#EF4444',
+  info: '#3B82F6',
 };
 
 export const CATEGORICAL_PALETTE = [
-  CHART_COLORS.gold,
-  CHART_COLORS.grayDark,
-  CHART_COLORS.info,
-  CHART_COLORS.success,
+  CHART_COLORS.primary,
+  CHART_COLORS.blue,
+  CHART_COLORS.accent,
   CHART_COLORS.warning,
-  CHART_COLORS.goldDark,
+  CHART_COLORS.grayDark,
+  CHART_COLORS.danger,
 ];
 
 export const BASE_FONT = {

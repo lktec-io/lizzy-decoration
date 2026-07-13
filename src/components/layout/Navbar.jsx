@@ -261,7 +261,10 @@ function Navbar({ onMenuClick, menuOpen }) {
                       <div key={n.id} className={`navbar-notification-item ${!n.read_at ? 'navbar-notification-item-unread' : ''}`}>
                         <span className={`navbar-notification-dot ${NOTIFICATION_TYPE_DOT[n.type] || ''}`} aria-hidden="true" />
                         <div className="navbar-notification-body">
-                          <span className="navbar-notification-title">{n.title}</span>
+                          <span className="navbar-notification-title-row">
+                            <span className="navbar-notification-title">{n.title}</span>
+                            {!n.read_at && <span className="navbar-notification-unread-dot" aria-label="Unread" />}
+                          </span>
                           <span className="navbar-notification-message">{n.message}</span>
                           <span className="navbar-notification-time">{formatNotificationTime(n.created_at)}</span>
                         </div>

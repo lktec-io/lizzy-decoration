@@ -1,15 +1,17 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FiPlus, FiEdit2, FiEye, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiEye, FiToggleLeft, FiToggleRight, FiUser } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import Modal from '../../components/common/Modal';
+import ViewToggle from '../../components/common/ViewToggle';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
 import * as customerService from '../../services/customerService';
+import '../../styles/components/ViewToggle.css';
 
 const CUSTOMER_TYPE_LABELS = {
   walk_in: 'Walk In',
@@ -47,6 +49,7 @@ function CustomerList() {
 
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [view, setView] = useState('list');
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
 
@@ -183,8 +186,59 @@ function CustomerList() {
       <div className="card">
         <div className="table-toolbar">
           <SearchInput value={search} onChange={setSearch} placeholder="Search by name, phone, code..." />
+          <ViewToggle view={view} onChange={setView} />
         </div>
-        <Table columns={columns} rows={items} loading={loading} emptyMessage="No customers found" />
+
+        {view === 'list' ? (
+          <Table columns={columns} rows={items} loading={loading} emptyMessage="No customers found" />
+        ) : (
+          <div className="management-grid">
+            {items.map((row) => (
+              <div className="card card-hover management-grid-card" key={row.id}>
+                <div className="management-grid-card-header">
+                  <div className="management-grid-card-media">
+                    <FiUser aria-hidden="true" />
+                  </div>
+                  <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status}</span>
+                </div>
+                <div>
+                  <div className="management-grid-card-title">{row.first_name} {row.last_name}</div>
+                  <div className="management-grid-card-subtitle">{row.customer_code}</div>
+                </div>
+                <div className="management-grid-card-body">
+                  <span>{row.phone}</span>
+                  <span>{CUSTOMER_TYPE_LABELS[row.customer_type] || row.customer_type}</span>
+                </div>
+                <div className="management-grid-card-footer">
+                  <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/customers/${row.id}`)} aria-label="View customer">
+                    <FiEye />
+                  </button>
+                  {canEdit && (
+                    <div className="table-actions">
+                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit customer">
+                        <FiEdit2 />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon"
+                        onClick={() => handleToggleStatus(row)}
+                        aria-label={row.status === 'active' ? 'Deactivate customer' : 'Activate customer'}
+                      >
+                        {row.status === 'active' ? <FiToggleRight /> : <FiToggleLeft />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {!loading && items.length === 0 && (
+              <div className="text-sm text-secondary" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 'var(--space-8)' }}>
+                No customers found
+              </div>
+            )}
+          </div>
+        )}
+
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>
 

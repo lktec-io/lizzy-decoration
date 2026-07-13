@@ -433,10 +433,28 @@
   min-width: 0;
 }
 
+.navbar-notification-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .navbar-notification-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+}
+
+.navbar-notification-item-unread .navbar-notification-title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.navbar-notification-unread-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-accent);
+  flex-shrink: 0;
 }
 
 .navbar-notification-message {

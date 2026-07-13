@@ -5,6 +5,7 @@ import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import ViewToggle from '../../components/common/ViewToggle';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
@@ -13,6 +14,7 @@ import * as categoryService from '../../services/categoryService';
 import * as brandService from '../../services/brandService';
 import * as labelService from '../../services/labelService';
 import { formatCurrency } from '../../utils/formatCurrency';
+import '../../styles/components/ViewToggle.css';
 
 function ProductList() {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ function ProductList() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [actionError, setActionError] = useState('');
   const [printing, setPrinting] = useState(false);
+  const [view, setView] = useState('list');
 
   const fetchProducts = useCallback((params) => productService.listProducts(params), []);
   const { items, meta, loading, page, setPage, search, setSearch, filters, setFilters, refetch } = useTable(fetchProducts);
@@ -176,9 +179,55 @@ function ProductList() {
                 <FiPrinter aria-hidden="true" /> Print Labels ({selected.size})
               </button>
             )}
+            <ViewToggle view={view} onChange={setView} />
           </div>
         </div>
-        <Table columns={columns} rows={items} loading={loading} emptyMessage="No products found" />
+
+        {view === 'list' ? (
+          <Table columns={columns} rows={items} loading={loading} emptyMessage="No products found" />
+        ) : (
+          <div className="management-grid">
+            {items.map((row) => (
+              <div className="card card-hover management-grid-card" key={row.id}>
+                <div className="management-grid-card-header">
+                  <div className="management-grid-card-media">
+                    {row.images?.[0] ? <img src={row.images[0].image_path} alt={row.name} /> : <FiPackage aria-hidden="true" />}
+                  </div>
+                  <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status}</span>
+                </div>
+                <div>
+                  <div className="management-grid-card-title">{row.name}</div>
+                  <div className="management-grid-card-subtitle">{row.code}</div>
+                </div>
+                <div className="management-grid-card-body">
+                  <span>{row.category_name} &middot; {row.brand_name}</span>
+                  <span>{formatCurrency(row.selling_price)}</span>
+                </div>
+                <div className="management-grid-card-footer">
+                  <input type="checkbox" checked={selected.has(row.id)} onChange={() => toggleSelected(row.id)} aria-label={`Select ${row.name}`} />
+                  <div className="table-actions">
+                    {canEdit && (
+                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/products/${row.id}/edit`)} aria-label="Edit product">
+                        <FiEdit2 />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete product">
+                        <FiTrash2 />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!loading && items.length === 0 && (
+              <div className="text-sm text-secondary" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 'var(--space-8)' }}>
+                No products found
+              </div>
+            )}
+          </div>
+        )}
+
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>
 

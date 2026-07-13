@@ -1,15 +1,17 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FiPlus, FiEdit2, FiEye, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiEye, FiToggleLeft, FiToggleRight, FiTruck } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import Modal from '../../components/common/Modal';
+import ViewToggle from '../../components/common/ViewToggle';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
 import * as supplierService from '../../services/supplierService';
+import '../../styles/components/ViewToggle.css';
 
 function SupplierList() {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ function SupplierList() {
 
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [view, setView] = useState('list');
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
 
@@ -141,8 +144,59 @@ function SupplierList() {
       <div className="card">
         <div className="table-toolbar">
           <SearchInput value={search} onChange={setSearch} placeholder="Search by name, phone, email..." />
+          <ViewToggle view={view} onChange={setView} />
         </div>
-        <Table columns={columns} rows={items} loading={loading} emptyMessage="No suppliers found" />
+
+        {view === 'list' ? (
+          <Table columns={columns} rows={items} loading={loading} emptyMessage="No suppliers found" />
+        ) : (
+          <div className="management-grid">
+            {items.map((row) => (
+              <div className="card card-hover management-grid-card" key={row.id}>
+                <div className="management-grid-card-header">
+                  <div className="management-grid-card-media">
+                    <FiTruck aria-hidden="true" />
+                  </div>
+                  <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status}</span>
+                </div>
+                <div>
+                  <div className="management-grid-card-title">{row.name}</div>
+                  <div className="management-grid-card-subtitle">{row.email || row.phone || '—'}</div>
+                </div>
+                <div className="management-grid-card-body">
+                  <span>{row.phone || '—'}</span>
+                  <span>{row.tin_number ? `TIN: ${row.tin_number}` : ''}</span>
+                </div>
+                <div className="management-grid-card-footer">
+                  <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/suppliers/${row.id}`)} aria-label="View supplier">
+                    <FiEye />
+                  </button>
+                  {canEdit && (
+                    <div className="table-actions">
+                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit supplier">
+                        <FiEdit2 />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon"
+                        onClick={() => handleToggleStatus(row)}
+                        aria-label={row.status === 'active' ? 'Deactivate supplier' : 'Activate supplier'}
+                      >
+                        {row.status === 'active' ? <FiToggleRight /> : <FiToggleLeft />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {!loading && items.length === 0 && (
+              <div className="text-sm text-secondary" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 'var(--space-8)' }}>
+                No suppliers found
+              </div>
+            )}
+          </div>
+        )}
+
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>
 

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from '../components/layout/Sidebar';
 import Navbar from '../components/layout/Navbar';
@@ -16,8 +17,33 @@ const SIDEBAR_DRAWER_VARIANTS = {
 function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   const closeMobile = () => setMobileOpen(false);
+
+  // Robust close-on-navigate: rather than relying solely on each nav
+  // element's onClick firing correctly, close whenever the route itself
+  // changes — this covers every way a navigation can happen (link click,
+  // back/forward, programmatic navigate()) with one mechanism. Derived
+  // during render (React's "adjusting state when a prop changes" pattern)
+  // rather than a useEffect, since this project's lint config treats
+  // setState-in-effect as an error for what's really a synchronous
+  // derivation, not a side effect.
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
+    if (mobileOpen) setMobileOpen(false);
+  }
+
+  // Escape closes the drawer — only listens while it's actually open.
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
 
   return (
     <div className={`app-shell ${collapsed ? 'app-shell-collapsed' : ''}`}>

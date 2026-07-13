@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut, FiInbox } from 'react-icons/fi';
+import { FiMenu, FiX, FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut, FiInbox, FiSettings } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompany } from '../../hooks/useCompany';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -9,7 +9,6 @@ import * as searchService from '../../services/searchService';
 import * as notificationService from '../../services/notificationService';
 import { ROUTES } from '../../constants/routes';
 import EmptyState from '../common/EmptyState';
-import HamburgerIcon from '../common/HamburgerIcon';
 import '../../styles/components/Navbar.css';
 
 const DROPDOWN_MOTION = {
@@ -159,7 +158,18 @@ function Navbar({ onMenuClick, menuOpen }) {
   return (
     <header className="navbar">
       <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>
-        <HamburgerIcon open={menuOpen} />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={menuOpen ? 'close' : 'open'}
+            className="navbar-menu-btn-icon"
+            initial={{ rotate: -90, opacity: 0 }}
+            animate={{ rotate: 0, opacity: 1 }}
+            exit={{ rotate: 90, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+          >
+            {menuOpen ? <FiX /> : <FiMenu />}
+          </motion.span>
+        </AnimatePresence>
       </button>
 
       {company?.logo_path && (
@@ -216,7 +226,19 @@ function Navbar({ onMenuClick, menuOpen }) {
         <div className="navbar-notifications" ref={notificationsRef}>
           <button type="button" className="navbar-icon-btn" aria-label="Notifications" onClick={notifications.toggleOpen}>
             <FiBell />
-            {notifications.unreadCount > 0 && <span className="navbar-notification-badge">{notifications.unreadCount > 9 ? '9+' : notifications.unreadCount}</span>}
+            <AnimatePresence>
+              {notifications.unreadCount > 0 && (
+                <motion.span
+                  className="navbar-notification-badge"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                >
+                  {notifications.unreadCount > 9 ? '9+' : notifications.unreadCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
           <AnimatePresence>
             {notifications.open && (
@@ -233,7 +255,7 @@ function Navbar({ onMenuClick, menuOpen }) {
                   {notifications.loading ? (
                     <div className="navbar-notification-empty"><span className="spinner" aria-label="Loading" /></div>
                   ) : notifications.recent.length === 0 ? (
-                    <EmptyState icon={FiInbox} title="No notifications yet" />
+                    <EmptyState icon={FiInbox} title="No new notifications" />
                   ) : (
                     notifications.recent.map((n) => (
                       <div key={n.id} className={`navbar-notification-item ${!n.read_at ? 'navbar-notification-item-unread' : ''}`}>
@@ -266,16 +288,33 @@ function Navbar({ onMenuClick, menuOpen }) {
           <AnimatePresence>
             {userMenuOpen && (
               <motion.div className="navbar-user-panel" {...DROPDOWN_MOTION}>
-                <button
-                  type="button"
-                  className="navbar-user-panel-item"
-                  onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}
-                >
-                  <FiUser aria-hidden="true" /> Profile
-                </button>
-                <button type="button" className="navbar-user-panel-item" onClick={handleLogout}>
-                  <FiLogOut aria-hidden="true" /> Logout
-                </button>
+                <div className="navbar-user-panel-header">
+                  <span className="navbar-user-panel-avatar">{initial}</span>
+                  <div className="navbar-user-panel-info">
+                    <div className="navbar-user-panel-name">{displayName}</div>
+                    <div className="navbar-user-panel-role">{user?.role_name || user?.email || ''}</div>
+                  </div>
+                </div>
+                <div className="navbar-user-panel-items">
+                  <button
+                    type="button"
+                    className="navbar-user-panel-item"
+                    onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}
+                  >
+                    <FiUser aria-hidden="true" /> Profile
+                  </button>
+                  <button
+                    type="button"
+                    className="navbar-user-panel-item"
+                    onClick={() => { setUserMenuOpen(false); navigate('/settings/company'); }}
+                  >
+                    <FiSettings aria-hidden="true" /> Settings
+                  </button>
+                  <div className="navbar-user-panel-divider" />
+                  <button type="button" className="navbar-user-panel-item navbar-user-panel-item-danger" onClick={handleLogout}>
+                    <FiLogOut aria-hidden="true" /> Logout
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

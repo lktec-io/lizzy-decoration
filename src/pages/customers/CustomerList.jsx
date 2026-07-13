@@ -19,9 +19,21 @@ const CUSTOMER_TYPE_LABELS = {
 };
 
 const DEFAULT_VALUES = {
-  firstName: '', lastName: '', businessName: '', phone: '', altPhone: '', email: '',
+  fullName: '', firstName: '', lastName: '', businessName: '', phone: '', altPhone: '', email: '',
   address: '', region: '', district: '', tinNumber: '', customerType: 'walk_in', status: 'active',
 };
+
+// Quick registration only collects a single "Full Name" field (fast for a
+// cashier to type at the counter); the backend still requires firstName +
+// lastName separately, so this splits on the first space. A single-word
+// name (no space) duplicates into both fields rather than leaving lastName
+// empty, since the backend's notEmpty validator would otherwise reject it.
+function splitFullName(fullName) {
+  const parts = fullName.trim().split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || firstName;
+  return { firstName, lastName };
+}
 
 function CustomerList() {
   const navigate = useNavigate();
@@ -53,6 +65,7 @@ function CustomerList() {
   const openEdit = (customer) => {
     setEditing(customer);
     reset({
+      fullName: `${customer.first_name} ${customer.last_name}`.trim(),
       firstName: customer.first_name,
       lastName: customer.last_name,
       businessName: customer.business_name || '',
@@ -72,11 +85,12 @@ function CustomerList() {
 
   const onSubmit = async (values) => {
     setError('');
+    const { fullName, ...rest } = values;
     try {
       if (editing) {
-        await customerService.updateCustomer(editing.id, values);
+        await customerService.updateCustomer(editing.id, rest);
       } else {
-        await customerService.createCustomer(values);
+        await customerService.createCustomer({ ...rest, ...splitFullName(fullName) });
       }
       setModalOpen(false);
       refetch();
@@ -173,7 +187,7 @@ function CustomerList() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? 'Edit Customer' : 'New Customer'}
-        size="lg"
+        size={editing ? 'lg' : 'sm'}
         footer={
           <>
             <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
@@ -185,82 +199,103 @@ function CustomerList() {
       >
         {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
         <form id="customer-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="firstName">First Name</label>
-              <input id="firstName" className={`form-control ${errors.firstName ? 'form-control-error' : ''}`} {...register('firstName', { required: 'First name is required' })} />
-              {errors.firstName && <span className="form-error">{errors.firstName.message}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="lastName">Last Name</label>
-              <input id="lastName" className={`form-control ${errors.lastName ? 'form-control-error' : ''}`} {...register('lastName', { required: 'Last name is required' })} />
-              {errors.lastName && <span className="form-error">{errors.lastName.message}</span>}
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="businessName">Business Name (Optional)</label>
-            <input id="businessName" className="form-control" {...register('businessName')} />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="phone">Phone Number</label>
-              <input id="phone" className={`form-control ${errors.phone ? 'form-control-error' : ''}`} {...register('phone', { required: 'Phone number is required' })} />
-              {errors.phone && <span className="form-error">{errors.phone.message}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="altPhone">Alternative Phone</label>
-              <input id="altPhone" className="form-control" {...register('altPhone')} />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                className={`form-control ${errors.email ? 'form-control-error' : ''}`}
-                {...register('email', { pattern: { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' } })}
-              />
-              {errors.email && <span className="form-error">{errors.email.message}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="customerType">Customer Type</label>
-              <select id="customerType" className="form-control" {...register('customerType')}>
-                <option value="walk_in">Walk In</option>
-                <option value="retail">Retail</option>
-                <option value="wholesale">Wholesale</option>
-                <option value="vip">VIP</option>
-                <option value="business">Business</option>
-              </select>
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="address">Address</label>
-            <input id="address" className="form-control" {...register('address')} />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="region">Region</label>
-              <input id="region" className="form-control" {...register('region')} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="district">District</label>
-              <input id="district" className="form-control" {...register('district')} />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="tinNumber">TIN Number (Optional)</label>
-              <input id="tinNumber" className="form-control" {...register('tinNumber')} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="status">Status</label>
-              <select id="status" className="form-control" {...register('status')}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
+          {editing ? (
+            <>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label form-label-required" htmlFor="firstName">First Name</label>
+                  <input id="firstName" className={`form-control ${errors.firstName ? 'form-control-error' : ''}`} {...register('firstName', { required: 'First name is required' })} />
+                  {errors.firstName && <span className="form-error">{errors.firstName.message}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label form-label-required" htmlFor="lastName">Last Name</label>
+                  <input id="lastName" className={`form-control ${errors.lastName ? 'form-control-error' : ''}`} {...register('lastName', { required: 'Last name is required' })} />
+                  {errors.lastName && <span className="form-error">{errors.lastName.message}</span>}
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="businessName">Business Name (Optional)</label>
+                <input id="businessName" className="form-control" {...register('businessName')} />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label form-label-required" htmlFor="phone">Phone Number</label>
+                  <input id="phone" className={`form-control ${errors.phone ? 'form-control-error' : ''}`} {...register('phone', { required: 'Phone number is required' })} />
+                  {errors.phone && <span className="form-error">{errors.phone.message}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="altPhone">Alternative Phone</label>
+                  <input id="altPhone" className="form-control" {...register('altPhone')} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    className={`form-control ${errors.email ? 'form-control-error' : ''}`}
+                    {...register('email', { pattern: { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' } })}
+                  />
+                  {errors.email && <span className="form-error">{errors.email.message}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="customerType">Customer Type</label>
+                  <select id="customerType" className="form-control" {...register('customerType')}>
+                    <option value="walk_in">Walk In</option>
+                    <option value="retail">Retail</option>
+                    <option value="wholesale">Wholesale</option>
+                    <option value="vip">VIP</option>
+                    <option value="business">Business</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="address">Address</label>
+                <input id="address" className="form-control" {...register('address')} />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="region">Region</label>
+                  <input id="region" className="form-control" {...register('region')} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="district">District</label>
+                  <input id="district" className="form-control" {...register('district')} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="tinNumber">TIN Number (Optional)</label>
+                  <input id="tinNumber" className="form-control" {...register('tinNumber')} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="status">Status</label>
+                  <select id="status" className="form-control" {...register('status')}>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-group">
+                <label className="form-label form-label-required" htmlFor="fullName">Full Name</label>
+                <input id="fullName" className={`form-control ${errors.fullName ? 'form-control-error' : ''}`} autoFocus {...register('fullName', { required: 'Full name is required' })} />
+                {errors.fullName && <span className="form-error">{errors.fullName.message}</span>}
+              </div>
+              <div className="form-group">
+                <label className="form-label form-label-required" htmlFor="phone">Phone Number</label>
+                <input id="phone" className={`form-control ${errors.phone ? 'form-control-error' : ''}`} {...register('phone', { required: 'Phone number is required' })} />
+                {errors.phone && <span className="form-error">{errors.phone.message}</span>}
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="address">Address (Optional)</label>
+                <input id="address" className="form-control" {...register('address')} />
+              </div>
+            </>
+          )}
         </form>
       </Modal>
     </div>

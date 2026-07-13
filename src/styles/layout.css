@@ -17,15 +17,27 @@ img { max-width: 100%; display: block; }
 a { color: var(--color-link); text-decoration: none; }
 a:hover { color: #2563EB; }
 
-/* Baseline focus-visible ring for any interactive element without its own
-   component-specific treatment (buttons/forms/switch already define theirs). */
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
+/* No default browser focus ring anywhere (no blue flash on click) — every
+   interactive element gets a consistent custom focus-visible ring instead,
+   which only appears for keyboard navigation, not mouse/touch activation.
+   Component-specific rules (.btn, .sidebar-link, .form-switch input, etc.)
+   have higher specificity and override the color/offset where a different
+   treatment makes sense (e.g. an accent-green ring on the dark sidebar). */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+button:not(:disabled),
+[role="button"],
+a[href],
+select,
+summary {
+  cursor: pointer;
 }
 
 /* Authenticated app shell */

@@ -13,31 +13,18 @@
   justify-content: center;
   background: none;
   border: none;
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   color: var(--color-gray-dark);
   cursor: pointer;
-  padding: var(--space-2);
+  padding: 6px;
   border-radius: var(--radius-md);
   transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.hamburger-icon {
-  position: relative;
+.navbar-menu-btn-icon {
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 30px;
-  height: 21px;
-}
-
-.hamburger-bar {
-  display: block;
-  width: 100%;
-  height: 3px;
-  border-radius: 999px;
-  background-color: currentColor;
 }
 
 /* Sidebar already carries the brand on desktop; the navbar logo exists for
@@ -182,10 +169,16 @@
   padding: var(--space-2);
   border-radius: var(--radius-md);
   position: relative;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .navbar-icon-btn:hover {
   background-color: var(--color-gray-light);
+  transform: translateY(-1px);
+}
+
+.navbar-icon-btn:active {
+  transform: translateY(0) scale(0.94);
 }
 
 .navbar-user-menu {
@@ -207,7 +200,7 @@
   position: absolute;
   top: calc(100% + var(--space-2));
   right: 0;
-  min-width: 180px;
+  min-width: 240px;
   background-color: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -215,7 +208,57 @@
   z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.navbar-user-panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-gray-light);
+}
+
+.navbar-user-panel-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+}
+
+.navbar-user-panel-info {
+  min-width: 0;
+}
+
+.navbar-user-panel-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-user-panel-role {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-user-panel-items {
   padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
 }
 
 .navbar-user-panel-item {
@@ -231,10 +274,32 @@
   color: var(--color-text-primary);
   cursor: pointer;
   text-align: left;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.navbar-user-panel-item svg {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .navbar-user-panel-item:hover {
   background-color: var(--color-gray-light);
+  transform: translateX(2px);
+}
+
+.navbar-user-panel-item-danger {
+  color: var(--color-danger);
+}
+
+.navbar-user-panel-item-danger svg {
+  color: var(--color-danger);
+}
+
+.navbar-user-panel-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--space-1) 0;
 }
 
 .navbar-user:hover {
@@ -328,14 +393,23 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--transition-fast);
 }
 
 .navbar-notification-item:last-child {
   border-bottom: none;
 }
 
-.navbar-notification-item-unread {
+.navbar-notification-item:hover {
   background-color: var(--color-gray-light);
+}
+
+.navbar-notification-item-unread {
+  background-color: rgba(34, 197, 94, 0.06);
+}
+
+.navbar-notification-item-unread:hover {
+  background-color: rgba(34, 197, 94, 0.1);
 }
 
 .navbar-notification-dot {
@@ -391,6 +465,7 @@
   .navbar-user-name,
   .navbar-user-caret { display: none; }
   .navbar-notification-panel { width: calc(100vw - var(--space-6) * 2); max-width: 300px; }
+  .navbar-user-panel { min-width: 220px; max-width: calc(100vw - var(--space-6) * 2); }
 }
 
 @media (max-width: 360px) {

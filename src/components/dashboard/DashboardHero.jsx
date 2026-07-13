@@ -28,36 +28,29 @@ function DashboardHero() {
   const firstName = user?.first_name || 'there';
   const branchLabel = user?.branch_name || 'All Branches';
   const greeting = getGreeting(now.getHours());
-  const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'short', day: 'numeric', month: 'short' });
   const timeLabel = now.toLocaleTimeString('en-TZ', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <motion.div
       className="dashboard-hero"
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
     >
-      <span className="dashboard-hero-orb dashboard-hero-orb-1" aria-hidden="true" />
-      <span className="dashboard-hero-orb dashboard-hero-orb-2" aria-hidden="true" />
-      <span className="dashboard-hero-orb dashboard-hero-orb-3" aria-hidden="true" />
+      <span className="dashboard-hero-orb" aria-hidden="true" />
 
-      <div className="dashboard-hero-content">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.15 }}>
-          <span className="dashboard-hero-greeting">{greeting}</span>
-          <h1 className="dashboard-hero-title">
-            Welcome Back, {firstName} <span aria-hidden="true">👋</span>
-          </h1>
-          <p className="dashboard-hero-tagline">Have a productive day.</p>
-        </motion.div>
+      <motion.div className="dashboard-hero-greeting-block" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.1 }}>
+        <span className="dashboard-hero-eyebrow">{greeting}</span>
+        <h1 className="dashboard-hero-title">Welcome back, {firstName}</h1>
+      </motion.div>
 
-        <div className="dashboard-hero-meta">
-          <span className="dashboard-hero-chip">{dateLabel}</span>
-          <span className="dashboard-hero-chip dashboard-hero-chip-time">{timeLabel}</span>
-          <span className="dashboard-hero-chip">
-            <FiMapPin aria-hidden="true" /> {branchLabel}
-          </span>
-        </div>
+      <div className="dashboard-hero-meta">
+        <span className="dashboard-hero-chip">{dateLabel}</span>
+        <span className="dashboard-hero-chip dashboard-hero-chip-time">{timeLabel}</span>
+        <span className="dashboard-hero-chip">
+          <FiMapPin aria-hidden="true" /> {branchLabel}
+        </span>
       </div>
     </motion.div>
   );

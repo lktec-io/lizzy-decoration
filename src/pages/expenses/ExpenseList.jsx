@@ -9,6 +9,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import KPICard from '../../components/dashboard/KPICard';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as expenseService from '../../services/expenseService';
 import * as branchService from '../../services/branchService';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -25,6 +26,7 @@ function ExpenseList() {
   const canCreate = usePermission('expenses.create');
   const canEdit = usePermission('expenses.edit');
   const canDelete = usePermission('expenses.delete');
+  const toast = useToast();
 
   const [categories, setCategories] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -82,8 +84,10 @@ function ExpenseList() {
     try {
       if (editing) {
         await expenseService.updateExpense(editing.id, payload);
+        toast.success('Expense updated.');
       } else {
         await expenseService.createExpense(payload);
+        toast.success('Expense recorded.');
       }
       setModalOpen(false);
       refetch();
@@ -96,6 +100,7 @@ function ExpenseList() {
     setActionError('');
     try {
       await expenseService.deleteExpense(deleting.id);
+      toast.success('Expense deleted.');
       refetch();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to delete expense.');

@@ -5,6 +5,7 @@ import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as settingsService from '../../services/settingsService';
 import '../../styles/pages/Notifications.css';
 
@@ -20,6 +21,7 @@ function formatDateTime(isoString) {
 
 function BackupSettings() {
   const canManage = usePermission('settings.manage');
+  const toast = useToast();
   const fetchBackups = useCallback((params) => settingsService.listBackups(params), []);
   const { items, meta, loading, page, setPage, refetch } = useTable(fetchBackups);
   const [running, setRunning] = useState(false);
@@ -30,6 +32,7 @@ function BackupSettings() {
     setRunning(true);
     try {
       await settingsService.createBackup();
+      toast.success('Backup completed.');
       refetch();
     } catch (err) {
       setError(err.response?.data?.message || 'Backup failed.');

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiPrinter } from 'react-icons/fi';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import * as saleService from '../../services/saleService';
 import { formatCurrency } from '../../utils/formatCurrency';
 import '../../styles/pages/POS.css';
@@ -27,11 +28,7 @@ function SaleDetail() {
   }, [id]);
 
   if (!sale) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   const totalPaid = sale.payments.reduce((sum, p) => sum + Number(p.amount), 0);

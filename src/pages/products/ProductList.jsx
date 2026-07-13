@@ -7,6 +7,7 @@ import SearchInput from '../../components/common/SearchInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as productService from '../../services/productService';
 import * as categoryService from '../../services/categoryService';
 import * as brandService from '../../services/brandService';
@@ -20,6 +21,7 @@ function ProductList() {
   const canDelete = usePermission('products.delete');
   const canManage = usePermission('products.manage');
   const canPrint = usePermission('products.print');
+  const toast = useToast();
 
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -49,6 +51,7 @@ function ProductList() {
     setActionError('');
     try {
       await productService.bulkUpdateStatus(Array.from(selected), status);
+      toast.success(status === 'active' ? 'Products activated.' : 'Products deactivated.');
       setSelected(new Set());
       refetch();
     } catch (err) {
@@ -58,6 +61,7 @@ function ProductList() {
 
   const handleDelete = async () => {
     await productService.deleteProduct(pendingDelete.id);
+    toast.success('Product deleted.');
     refetch();
   };
 
@@ -66,6 +70,7 @@ function ProductList() {
     setPrinting(true);
     try {
       await labelService.printBulkLabels(Array.from(selected), { size: 'medium' });
+      toast.success('Labels PDF generated.');
     } catch {
       setActionError('Failed to generate labels PDF.');
     } finally {

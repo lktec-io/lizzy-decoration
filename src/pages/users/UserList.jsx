@@ -7,6 +7,7 @@ import SearchInput from '../../components/common/SearchInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import SettingsTabs from '../../components/common/SettingsTabs';
 import * as userService from '../../services/userService';
 import '../../styles/pages/Notifications.css';
@@ -22,6 +23,7 @@ function UserList() {
   const canCreate = usePermission('users.create');
   const canEdit = usePermission('users.edit');
   const canDelete = usePermission('users.delete');
+  const toast = useToast();
 
   const [pendingDelete, setPendingDelete] = useState(null);
   const [actionError, setActionError] = useState('');
@@ -34,6 +36,7 @@ function UserList() {
     const nextStatus = user.status === 'active' ? 'suspended' : 'active';
     try {
       await userService.changeUserStatus(user.id, nextStatus);
+      toast.success(nextStatus === 'active' ? 'User activated.' : 'User suspended.');
       refetch();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to update status.');
@@ -42,6 +45,7 @@ function UserList() {
 
   const handleDelete = async () => {
     await userService.deleteUser(pendingDelete.id);
+    toast.success('User deleted.');
     refetch();
   };
 

@@ -8,6 +8,7 @@ import SearchInput from '../../components/common/SearchInput';
 import Modal from '../../components/common/Modal';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as customerService from '../../services/customerService';
 
 const CUSTOMER_TYPE_LABELS = {
@@ -39,6 +40,7 @@ function CustomerList() {
   const navigate = useNavigate();
   const canCreate = usePermission('customers.create');
   const canEdit = usePermission('customers.edit');
+  const toast = useToast();
 
   const fetchCustomers = useCallback((params) => customerService.listCustomers(params), []);
   const { items, meta, loading, page, setPage, search, setSearch, refetch } = useTable(fetchCustomers);
@@ -89,8 +91,10 @@ function CustomerList() {
     try {
       if (editing) {
         await customerService.updateCustomer(editing.id, rest);
+        toast.success('Customer updated.');
       } else {
         await customerService.createCustomer({ ...rest, ...splitFullName(fullName) });
+        toast.success('Customer registered.');
       }
       setModalOpen(false);
       refetch();
@@ -104,6 +108,7 @@ function CustomerList() {
     const nextStatus = customer.status === 'active' ? 'inactive' : 'active';
     try {
       await customerService.changeCustomerStatus(customer.id, nextStatus);
+      toast.success(nextStatus === 'active' ? 'Customer activated.' : 'Customer deactivated.');
       refetch();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to update customer status.');

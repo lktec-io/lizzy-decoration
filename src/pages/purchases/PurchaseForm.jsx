@@ -6,10 +6,12 @@ import * as purchaseService from '../../services/purchaseService';
 import * as supplierService from '../../services/supplierService';
 import * as branchService from '../../services/branchService';
 import * as productService from '../../services/productService';
+import { useToast } from '../../hooks/useToast';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 function PurchaseForm() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [suppliers, setSuppliers] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
@@ -58,6 +60,7 @@ function PurchaseForm() {
 
     try {
       const purchase = await purchaseService.createPurchase(payload);
+      toast.success('Purchase recorded.');
       navigate(`/purchases/${purchase.id}`, { replace: true });
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to record purchase.');

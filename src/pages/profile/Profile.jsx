@@ -3,20 +3,20 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { FiUpload } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import * as authService from '../../services/authService';
 import '../../styles/pages/CompanySettings.css';
 
 function Profile() {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const fileInputRef = useRef(null);
 
   const [avatarPath, setAvatarPath] = useState(user?.avatar_path || null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [profileError, setProfileError] = useState('');
-  const [profileSuccess, setProfileSuccess] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   const profileForm = useForm({
     defaultValues: {
@@ -32,11 +32,10 @@ function Profile() {
 
   const onSubmitProfile = async (values) => {
     setProfileError('');
-    setProfileSuccess('');
     try {
       const updated = await authService.updateProfile(values);
       updateUser(updated);
-      setProfileSuccess('Profile updated successfully.');
+      toast.success('Profile updated successfully.');
     } catch (err) {
       setProfileError(err.response?.data?.message || 'Failed to update profile.');
     }
@@ -52,7 +51,7 @@ function Profile() {
       const updated = await authService.uploadProfileAvatar(file);
       setAvatarPath(updated.avatar_path);
       updateUser(updated);
-      setProfileSuccess('Avatar updated successfully.');
+      toast.success('Avatar updated successfully.');
     } catch (err) {
       setProfileError(err.response?.data?.message || 'Failed to upload avatar.');
     } finally {
@@ -63,10 +62,9 @@ function Profile() {
 
   const onSubmitPassword = async (values) => {
     setPasswordError('');
-    setPasswordSuccess('');
     try {
       await authService.changePassword({ currentPassword: values.currentPassword, newPassword: values.newPassword });
-      setPasswordSuccess('Password changed. You will be signed out shortly.');
+      toast.success('Password changed. You will be signed out shortly.');
       passwordForm.reset();
       setTimeout(async () => {
         await logout();
@@ -86,7 +84,6 @@ function Profile() {
         </div>
       </div>
 
-      {profileSuccess && <div className="alert alert-success mb-4" role="status">{profileSuccess}</div>}
       {profileError && <div className="alert alert-danger mb-4" role="alert">{profileError}</div>}
 
       <div className="card mb-5">
@@ -168,7 +165,6 @@ function Profile() {
         </div>
       </form>
 
-      {passwordSuccess && <div className="alert alert-success mb-4 mt-5" role="status">{passwordSuccess}</div>}
       {passwordError && <div className="alert alert-danger mb-4 mt-5" role="alert">{passwordError}</div>}
 
       <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} noValidate className="mt-5">

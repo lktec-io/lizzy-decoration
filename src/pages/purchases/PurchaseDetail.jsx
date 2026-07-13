@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import * as purchaseService from '../../services/purchaseService';
 import { formatCurrency } from '../../utils/formatCurrency';
 
@@ -18,11 +19,7 @@ function PurchaseDetail() {
   }, [id]);
 
   if (!purchase) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

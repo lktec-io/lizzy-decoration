@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as branchService from '../../services/branchService';
 import * as userService from '../../services/userService';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import { useToast } from '../../hooks/useToast';
 
 function BranchForm() {
@@ -75,11 +76,7 @@ function BranchForm() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

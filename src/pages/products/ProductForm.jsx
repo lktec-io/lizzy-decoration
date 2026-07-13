@@ -7,6 +7,7 @@ import * as categoryService from '../../services/categoryService';
 import * as brandService from '../../services/brandService';
 import QRCodeDisplay from '../../components/products/QRCodeDisplay';
 import Modal from '../../components/common/Modal';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import { useToast } from '../../hooks/useToast';
 import '../../styles/pages/ProductForm.css';
 
@@ -215,11 +216,7 @@ function ProductForm() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

@@ -7,6 +7,7 @@ import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SettingsTabs from '../../components/common/SettingsTabs';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as roleService from '../../services/roleService';
 import '../../styles/pages/Notifications.css';
 
@@ -16,6 +17,7 @@ function RoleList() {
   const canEdit = usePermission('roles.edit');
   const canDelete = usePermission('roles.delete');
   const canManagePermissions = usePermission('roles.manage');
+  const toast = useToast();
 
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,8 +67,10 @@ function RoleList() {
     try {
       if (editingRole) {
         await roleService.updateRole(editingRole.id, values);
+        toast.success('Role updated.');
       } else {
         await roleService.createRole(values);
+        toast.success('Role created.');
       }
       setModalOpen(false);
       loadRoles();
@@ -77,6 +81,7 @@ function RoleList() {
 
   const handleDelete = async () => {
     await roleService.deleteRole(pendingDelete.id);
+    toast.success('Role deleted.');
     loadRoles();
   };
 

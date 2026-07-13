@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiSearch } from 'react-icons/fi';
 import * as saleService from '../../services/saleService';
 import * as returnService from '../../services/returnService';
+import { useToast } from '../../hooks/useToast';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const REASONS = [
@@ -22,6 +23,7 @@ const REFUND_METHODS = [
 
 function ReturnForm() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [saleQuery, setSaleQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -83,6 +85,7 @@ function ReturnForm() {
     setSubmitting(true);
     try {
       const created = await returnService.createReturn({ saleId: sale.id, reason, refundMethod, items });
+      toast.success('Return request submitted.');
       navigate(`/returns/${created.id}`, { replace: true });
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to create the return request.');

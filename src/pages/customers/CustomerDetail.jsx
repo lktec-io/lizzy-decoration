@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiShoppingBag, FiDollarSign, FiRotateCcw } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import KPICard from '../../components/dashboard/KPICard';
 import { useTable } from '../../hooks/useTable';
 import * as customerService from '../../services/customerService';
@@ -55,11 +56,7 @@ function CustomerDetail() {
   ];
 
   if (loading || !customer) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

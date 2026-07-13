@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiUpload } from 'react-icons/fi';
+import PageSkeleton from '../../components/common/PageSkeleton';
+import { useToast } from '../../hooks/useToast';
 import * as userService from '../../services/userService';
 import * as roleService from '../../services/roleService';
 import * as branchService from '../../services/branchService';
@@ -14,6 +16,7 @@ function UserForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const toast = useToast();
   const avatarInputRef = useRef(null);
 
   const [roles, setRoles] = useState([]);
@@ -21,7 +24,6 @@ function UserForm() {
   const [avatarPath, setAvatarPath] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [formError, setFormError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [resetPasswordValue, setResetPasswordValue] = useState('');
@@ -76,7 +78,6 @@ function UserForm() {
 
   const onSubmit = async (values) => {
     setFormError('');
-    setSuccessMessage('');
 
     const payload = {
       ...values,
@@ -89,9 +90,10 @@ function UserForm() {
       if (isEdit) {
         delete payload.password;
         await userService.updateUser(id, payload);
-        setSuccessMessage('User updated successfully.');
+        toast.success('User updated successfully.');
       } else {
         const created = await userService.createUser(payload);
+        toast.success('User created successfully.');
         navigate(`/settings/users/${created.id}/edit`, { replace: true });
       }
     } catch (err) {
@@ -107,6 +109,7 @@ function UserForm() {
     try {
       const user = await userService.uploadUserAvatar(id, file);
       setAvatarPath(user.avatar_path);
+      toast.success('Avatar updated.');
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to upload avatar.');
     } finally {
@@ -125,7 +128,7 @@ function UserForm() {
     setResetPasswordSubmitting(true);
     try {
       await userService.resetUserPassword(id, resetPasswordValue);
-      setSuccessMessage('Password reset successfully.');
+      toast.success('Password reset successfully.');
       setResetPasswordValue('');
     } catch (err) {
       setResetPasswordError(err.response?.data?.message || 'Failed to reset password.');
@@ -135,11 +138,7 @@ function UserForm() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (
@@ -151,7 +150,6 @@ function UserForm() {
         </div>
       </div>
 
-      {successMessage && <div className="alert alert-success mb-4" role="status">{successMessage}</div>}
       {formError && <div className="alert alert-danger mb-4" role="alert">{formError}</div>}
 
       {isEdit && (

@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FiUpload } from 'react-icons/fi';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import SettingsTabs from '../../components/common/SettingsTabs';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import * as companyService from '../../services/companyService';
 import '../../styles/pages/CompanySettings.css';
 import '../../styles/pages/Notifications.css';
@@ -30,12 +32,12 @@ const EMPTY_FORM = {
 
 function CompanySettings() {
   const canManage = usePermission('company.manage');
+  const toast = useToast();
   const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [logoPath, setLogoPath] = useState(null);
   const [formError, setFormError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const {
@@ -90,10 +92,9 @@ function CompanySettings() {
 
   const onSubmit = async (values) => {
     setFormError('');
-    setSuccessMessage('');
     try {
       await companyService.updateCompany(values);
-      setSuccessMessage('Company profile saved successfully.');
+      toast.success('Company profile saved successfully.');
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to save company profile.');
     }
@@ -108,7 +109,7 @@ function CompanySettings() {
     try {
       const profile = await companyService.uploadLogo(file);
       setLogoPath(profile.logo_path);
-      setSuccessMessage('Logo updated successfully.');
+      toast.success('Logo updated successfully.');
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to upload logo.');
     } finally {
@@ -118,11 +119,7 @@ function CompanySettings() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (
@@ -139,12 +136,6 @@ function CompanySettings() {
       {!canManage && (
         <div className="alert alert-info mb-4" role="status">
           Only Super Administrators can edit company settings. You are viewing this in read-only mode.
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="alert alert-success mb-4" role="status">
-          {successMessage}
         </div>
       )}
 

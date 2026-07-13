@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiCheck, FiX } from 'react-icons/fi';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as returnService from '../../services/returnService';
 import { formatCurrency } from '../../utils/formatCurrency';
 
@@ -35,6 +37,7 @@ function ReturnDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const canApprove = usePermission('returns.approve');
+  const toast = useToast();
   const [returnRecord, setReturnRecord] = useState(null);
   const [dialog, setDialog] = useState(null);
   const [actionError, setActionError] = useState('');
@@ -48,17 +51,14 @@ function ReturnDetail() {
   }, [loadReturn]);
 
   if (!returnRecord) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   const handleApprove = async () => {
     setActionError('');
     try {
       await returnService.approveReturn(returnRecord.id);
+      toast.success('Return approved.');
       loadReturn();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to approve return.');
@@ -69,6 +69,7 @@ function ReturnDetail() {
     setActionError('');
     try {
       await returnService.rejectReturn(returnRecord.id);
+      toast.success('Return rejected.');
       loadReturn();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to reject return.');

@@ -94,6 +94,7 @@ function Sidebar({ collapsed, onToggle, onNavigate, mobileOpen }) {
         variants={NAV_STAGGER_CONTAINER}
         initial={openKey === 0 ? false : 'hidden'}
         animate="visible"
+        onClickCapture={onNavigate}
       >
         {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
           <NavLink

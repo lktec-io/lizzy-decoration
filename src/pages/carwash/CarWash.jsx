@@ -8,6 +8,7 @@ import Modal from '../../components/common/Modal';
 import KPICard from '../../components/dashboard/KPICard';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as carwashService from '../../services/carwashService';
 import * as branchService from '../../services/branchService';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -28,6 +29,7 @@ function formatDateTime(isoString) {
 
 function CarWash() {
   const canCreate = usePermission('carwash.create');
+  const toast = useToast();
 
   const [services, setServices] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -80,6 +82,7 @@ function CarWash() {
     };
     try {
       await carwashService.recordCarwashTransaction(payload);
+      toast.success('Car wash transaction recorded.');
       setModalOpen(false);
       refetch();
     } catch (err) {

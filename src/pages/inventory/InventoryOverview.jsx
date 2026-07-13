@@ -9,6 +9,7 @@ import Modal from '../../components/common/Modal';
 import KPICard from '../../components/dashboard/KPICard';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as inventoryService from '../../services/inventoryService';
 import * as branchService from '../../services/branchService';
 import { formatCurrency, formatNumber } from '../../utils/formatCurrency';
@@ -24,6 +25,7 @@ const REASONS = [
 
 function InventoryOverview() {
   const canAdjust = usePermission('inventory.adjust');
+  const toast = useToast();
 
   const [branches, setBranches] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -62,6 +64,7 @@ function InventoryOverview() {
         description: values.description,
       });
       setAdjustingRow(null);
+      toast.success('Stock adjustment recorded.');
       refetch();
       inventoryService.getInventorySummary().then(setSummary);
     } catch (err) {

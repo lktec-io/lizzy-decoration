@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import SettingsTabs from '../../components/common/SettingsTabs';
+import Skeleton from '../../components/common/Skeleton';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as settingsService from '../../services/settingsService';
 import '../../styles/pages/Notifications.css';
 
 function SystemSettings() {
   const canManage = usePermission('settings.manage');
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   const {
     register,
@@ -28,7 +30,6 @@ function SystemSettings() {
 
   const onSubmit = async (values) => {
     setFormError('');
-    setSuccessMessage('');
     try {
       const updated = await settingsService.updateSystemSettings({
         taxEnabled: values.taxEnabled,
@@ -36,7 +37,7 @@ function SystemSettings() {
         notificationEmailEnabled: values.notificationEmailEnabled,
       });
       reset(updated);
-      setSuccessMessage('Settings saved successfully.');
+      toast.success('Settings saved successfully.');
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to save settings.');
     }
@@ -58,11 +59,16 @@ function SystemSettings() {
           Only Super Administrators can edit system settings. You are viewing this in read-only mode.
         </div>
       )}
-      {successMessage && <div className="alert alert-success mb-4" role="status">{successMessage}</div>}
       {formError && <div className="alert alert-danger mb-4" role="alert">{formError}</div>}
 
       {loading ? (
-        <div className="flex items-center justify-center p-6"><span className="spinner" aria-label="Loading" /></div>
+        <div className="card">
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <Skeleton height="1rem" width="40%" />
+            <Skeleton height="1rem" width="60%" />
+            <Skeleton height="1rem" width="35%" />
+          </div>
+        </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="card mb-5">

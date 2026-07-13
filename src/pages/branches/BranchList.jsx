@@ -6,6 +6,7 @@ import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import SettingsTabs from '../../components/common/SettingsTabs';
 import * as branchService from '../../services/branchService';
 import '../../styles/pages/Notifications.css';
@@ -14,6 +15,7 @@ function BranchList() {
   const navigate = useNavigate();
   const canCreate = usePermission('branches.create');
   const canEdit = usePermission('branches.edit');
+  const toast = useToast();
 
   const [actionError, setActionError] = useState('');
   const fetchBranches = useCallback((params) => branchService.listBranches(params), []);
@@ -24,6 +26,7 @@ function BranchList() {
     const nextStatus = branch.status === 'active' ? 'inactive' : 'active';
     try {
       await branchService.changeBranchStatus(branch.id, nextStatus);
+      toast.success(nextStatus === 'active' ? 'Branch activated.' : 'Branch deactivated.');
       refetch();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to update branch status.');

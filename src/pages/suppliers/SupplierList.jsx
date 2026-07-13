@@ -8,12 +8,14 @@ import SearchInput from '../../components/common/SearchInput';
 import Modal from '../../components/common/Modal';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
+import { useToast } from '../../hooks/useToast';
 import * as supplierService from '../../services/supplierService';
 
 function SupplierList() {
   const navigate = useNavigate();
   const canCreate = usePermission('suppliers.create');
   const canEdit = usePermission('suppliers.edit');
+  const toast = useToast();
 
   const fetchSuppliers = useCallback((params) => supplierService.listSuppliers(params), []);
   const { items, meta, loading, page, setPage, search, setSearch, refetch } = useTable(fetchSuppliers);
@@ -56,8 +58,10 @@ function SupplierList() {
     try {
       if (editing) {
         await supplierService.updateSupplier(editing.id, values);
+        toast.success('Supplier updated.');
       } else {
         await supplierService.createSupplier(values);
+        toast.success('Supplier created.');
       }
       setModalOpen(false);
       refetch();
@@ -71,6 +75,7 @@ function SupplierList() {
     const nextStatus = supplier.status === 'active' ? 'inactive' : 'active';
     try {
       await supplierService.changeSupplierStatus(supplier.id, nextStatus);
+      toast.success(nextStatus === 'active' ? 'Supplier activated.' : 'Supplier deactivated.');
       refetch();
     } catch (err) {
       setActionError(err.response?.data?.message || 'Failed to update supplier status.');

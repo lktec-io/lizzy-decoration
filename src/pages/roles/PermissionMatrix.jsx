@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
+import PageSkeleton from '../../components/common/PageSkeleton';
 import * as roleService from '../../services/roleService';
 import '../../styles/pages/PermissionMatrix.css';
 
@@ -92,11 +93,7 @@ function PermissionMatrix() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

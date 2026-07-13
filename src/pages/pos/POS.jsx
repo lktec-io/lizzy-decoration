@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTrash2, FiCamera, FiPlus, FiClock, FiShoppingCart } from 'react-icons/fi';
 import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SearchInput from '../../components/common/SearchInput';
 import QRScanner from '../../components/common/QRScanner';
 import EmptyState from '../../components/common/EmptyState';
@@ -46,6 +47,7 @@ function POS() {
   const [payments, setPayments] = useState([{ method: 'cash', amount: '', referenceNumber: '' }]);
 
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [clearCartConfirmOpen, setClearCartConfirmOpen] = useState(false);
   const [scanMessage, setScanMessage] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -106,6 +108,7 @@ function POS() {
   };
 
   const clearCart = () => {
+    setClearCartConfirmOpen(false);
     setCart([]);
     setCartDiscountAmount('0');
     setNotes('');
@@ -252,7 +255,7 @@ function POS() {
         <div className="pos-cart-header">
           <span className="card-title">Cart ({cart.length})</span>
           {cart.length > 0 && (
-            <button type="button" className="btn btn-ghost btn-sm" onClick={clearCart}>Clear Cart</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setClearCartConfirmOpen(true)}>Clear Cart</button>
           )}
         </div>
 
@@ -405,6 +408,15 @@ function POS() {
         <QRScanner onScan={handleScan} onError={() => setScanMessage('Could not access the camera.')} />
         {scanMessage && <p className="text-sm text-secondary mt-2">{scanMessage}</p>}
       </Modal>
+
+      <ConfirmDialog
+        open={clearCartConfirmOpen}
+        onClose={() => setClearCartConfirmOpen(false)}
+        onConfirm={clearCart}
+        title="Clear cart"
+        message={`Remove all ${cart.length} item${cart.length === 1 ? '' : 's'} from the cart? This cannot be undone.`}
+        confirmLabel="Clear Cart"
+      />
     </div>
   );
 }

@@ -98,6 +98,52 @@
   line-height: 0;
 }
 
+/* Semantic icon coloring, matched by the same aria-label wording already
+   used consistently for these actions app-wide (e.g. "Delete customer",
+   "Edit branch") — one rule set colors every occurrence instead of
+   touching every list page's action-icon markup individually. */
+.btn-ghost.btn-icon[aria-label^="Delete" i],
+.btn-ghost.btn-icon[aria-label^="Remove" i],
+.btn-ghost.btn-icon[aria-label^="Reject" i] {
+  color: var(--color-danger);
+}
+.btn-ghost.btn-icon[aria-label^="Delete" i]:hover:not(:disabled),
+.btn-ghost.btn-icon[aria-label^="Remove" i]:hover:not(:disabled),
+.btn-ghost.btn-icon[aria-label^="Reject" i]:hover:not(:disabled) {
+  background-color: var(--color-danger-bg);
+}
+
+.btn-ghost.btn-icon[aria-label^="Edit" i] {
+  color: var(--color-blue);
+}
+.btn-ghost.btn-icon[aria-label^="Edit" i]:hover:not(:disabled) {
+  background-color: var(--color-info-bg);
+}
+
+/* ^= (starts-with), not *= (contains) — "Deactivate customer" contains
+   "Activate" as a substring, so a *= match would wrongly color it green
+   too. Every real label here always starts with the verb ("Activate
+   customer", "Mark as read", "Approve return"). */
+.btn-ghost.btn-icon[aria-label^="Activate" i],
+.btn-ghost.btn-icon[aria-label^="Mark as read" i],
+.btn-ghost.btn-icon[aria-label^="Approve" i] {
+  color: var(--color-success);
+}
+.btn-ghost.btn-icon[aria-label^="Activate" i]:hover:not(:disabled),
+.btn-ghost.btn-icon[aria-label^="Mark as read" i]:hover:not(:disabled),
+.btn-ghost.btn-icon[aria-label^="Approve" i]:hover:not(:disabled) {
+  background-color: var(--color-success-bg);
+}
+
+.btn-ghost.btn-icon[aria-label^="Deactivate" i],
+.btn-ghost.btn-icon[aria-label^="Suspend" i] {
+  color: var(--color-warning);
+}
+.btn-ghost.btn-icon[aria-label^="Deactivate" i]:hover:not(:disabled),
+.btn-ghost.btn-icon[aria-label^="Suspend" i]:hover:not(:disabled) {
+  background-color: var(--color-warning-bg);
+}
+
 .btn-block {
   width: 100%;
 }

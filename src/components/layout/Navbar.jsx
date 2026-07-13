@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiMenu, FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut, FiInbox } from 'react-icons/fi';
+import { FiMenu, FiX, FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut, FiInbox } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompany } from '../../hooks/useCompany';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -112,7 +112,7 @@ function useGlobalSearch() {
   return { query, setQuery, results, open, setOpen };
 }
 
-function Navbar({ onMenuClick }) {
+function Navbar({ onMenuClick, menuOpen }) {
   const now = useClock();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -157,8 +157,19 @@ function Navbar({ onMenuClick }) {
 
   return (
     <header className="navbar">
-      <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label="Toggle sidebar">
-        <FiMenu />
+      <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={menuOpen ? 'close' : 'open'}
+            className="navbar-menu-btn-icon"
+            initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+            animate={{ rotate: 0, opacity: 1, scale: 1 }}
+            exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {menuOpen ? <FiX /> : <FiMenu />}
+          </motion.span>
+        </AnimatePresence>
       </button>
 
       {company?.logo_path && (

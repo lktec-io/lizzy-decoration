@@ -26,11 +26,11 @@ function MainLayout() {
       </AnimatePresence>
 
       <div className={mobileOpen ? 'app-sidebar app-sidebar-open' : 'app-sidebar'}>
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} onNavigate={closeMobile} />
+        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} onNavigate={closeMobile} mobileOpen={mobileOpen} />
       </div>
 
       <div className="app-navbar">
-        <Navbar onMenuClick={() => setMobileOpen((prev) => !prev)} />
+        <Navbar onMenuClick={() => setMobileOpen((prev) => !prev)} menuOpen={mobileOpen} />
       </div>
 
       <main className="app-main">

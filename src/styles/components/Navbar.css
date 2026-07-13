@@ -9,6 +9,8 @@
 
 .navbar-menu-btn {
   display: none;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   font-size: var(--font-size-xl);
@@ -16,6 +18,13 @@
   cursor: pointer;
   padding: var(--space-2);
   border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.navbar-menu-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Sidebar already carries the brand on desktop; the navbar logo exists for
@@ -28,6 +37,11 @@
 }
 
 .navbar-menu-btn:hover {
+  background-color: var(--color-gray-light);
+}
+
+.navbar-menu-btn:active {
+  transform: scale(0.92);
   background-color: var(--color-gray-light);
 }
 

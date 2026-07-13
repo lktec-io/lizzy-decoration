@@ -16,18 +16,30 @@
       'main';
   }
 
+  /* Mobile drawer docks to the right edge and slides in from off-screen
+     right (right: -100% -> 0), matching a native mobile-app drawer feel
+     rather than the desktop's permanent left rail. */
   .app-sidebar {
     position: fixed;
-    left: 0;
+    left: auto;
+    right: -100%;
     top: 0;
     width: var(--sidebar-width);
-    transform: translateX(-100%);
-    transition: transform var(--transition-base);
+    transition: right 0.35s ease;
   }
 
   .app-sidebar-open {
-    transform: translateX(0);
+    right: 0;
     box-shadow: var(--shadow-lg);
+  }
+
+  .app-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: calc(var(--z-sidebar) - 1);
   }
 
   .app-main {

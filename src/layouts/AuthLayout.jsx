@@ -1,5 +1,5 @@
-import { Outlet } from 'react-router-dom';
 import { useCompany } from '../hooks/useCompany';
+import PageTransition from '../components/common/PageTransition';
 import '../styles/pages/AuthLayout.css';
 
 function AuthLayout() {
@@ -17,7 +17,7 @@ function AuthLayout() {
           )}
           <span className="auth-brand-sub">Decoration &amp; Accessories</span>
         </div>
-        <Outlet />
+        <PageTransition />
       </div>
     </div>
   );

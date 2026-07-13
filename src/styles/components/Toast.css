@@ -1,45 +1,62 @@
+/* Centered on screen, large-format, gradient notification cards — a
+   deliberate "premium confirmation" moment rather than a discreet corner
+   toast. Does not block the page: the viewport itself ignores pointer
+   events, only the card underneath the cursor is interactive (its close
+   button), so users can keep working while it fades. */
 .toast-viewport {
   position: fixed;
-  top: var(--space-6);
-  right: var(--space-6);
+  inset: 0;
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: var(--space-3);
-  width: 340px;
-  max-width: calc(100vw - var(--space-6) * 2);
+  padding: var(--space-6);
   pointer-events: none;
 }
 
 .toast {
   position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 320px;
+  max-width: min(420px, calc(100vw - var(--space-8) * 2));
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   pointer-events: auto;
+  color: var(--color-white);
+}
+
+.toast-success { background-image: linear-gradient(135deg, var(--color-primary), var(--color-blue)); }
+.toast-warning { background-image: linear-gradient(135deg, #F59E0B, #F97316); }
+.toast-error { background-image: linear-gradient(135deg, #EF4444, #F97316); }
+.toast-info { background-image: linear-gradient(135deg, var(--color-primary), var(--color-gray-dark)); }
+
+.toast-icon-badge {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background-color: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toast-icon {
-  flex-shrink: 0;
-  font-size: var(--font-size-lg);
-  margin-top: 1px;
+  font-size: var(--font-size-xl);
+  color: var(--color-white);
 }
-
-.toast-success .toast-icon { color: var(--color-success); }
-.toast-warning .toast-icon { color: var(--color-warning); }
-.toast-error .toast-icon { color: var(--color-danger); }
-.toast-info .toast-icon { color: var(--color-info); }
 
 .toast-message {
   flex: 1;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-white);
   line-height: var(--line-height-base);
 }
 
@@ -47,7 +64,7 @@
   flex-shrink: 0;
   background: none;
   border: none;
-  color: var(--color-text-secondary);
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   padding: 2px;
   border-radius: var(--radius-sm);
@@ -55,7 +72,8 @@
 }
 
 .toast-close:hover {
-  background-color: var(--color-gray-light);
+  background-color: rgba(255, 255, 255, 0.18);
+  color: var(--color-white);
 }
 
 .toast-progress {
@@ -64,20 +82,17 @@
   left: 0;
   right: 0;
   height: 3px;
-  background-color: currentColor;
+  background-color: rgba(255, 255, 255, 0.5);
   transform-origin: left;
 }
 
-.toast-success .toast-progress { color: var(--color-success); }
-.toast-warning .toast-progress { color: var(--color-warning); }
-.toast-error .toast-progress { color: var(--color-danger); }
-.toast-info .toast-progress { color: var(--color-info); }
-
 @media (max-width: 480px) {
   .toast-viewport {
-    top: var(--space-4);
-    right: var(--space-4);
-    left: var(--space-4);
-    width: auto;
+    padding: var(--space-4);
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
   }
 }

@@ -31,13 +31,14 @@ const NAV_ITEMS = [
   { to: '/settings/company', label: 'Settings', icon: FiSettings },
 ];
 
-function Sidebar({ collapsed, onToggle }) {
+function Sidebar({ collapsed, onToggle, onNavigate }) {
   const { logout } = useAuth();
   const { company } = useCompany();
   const navigate = useNavigate();
   const companyName = company?.company_name || 'JOZZY';
 
   const handleLogout = async () => {
+    onNavigate?.();
     await logout();
     navigate(ROUTES.LOGIN, { replace: true });
   };
@@ -59,6 +60,7 @@ function Sidebar({ collapsed, onToggle }) {
             to={to}
             end={end}
             className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
+            onClick={onNavigate}
           >
             {({ isActive }) => (
               <>

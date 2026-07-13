@@ -19,14 +19,16 @@ function Toast({ id, variant = 'info', message, onDismiss }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: 32, scale: 0.95 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 32, scale: 0.95 }}
-      transition={{ duration: 0.18 }}
+      initial={{ opacity: 0, scale: 0.85, y: 12 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.85, y: -8 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       className={`toast toast-${variant}`}
       role="status"
     >
-      <Icon className="toast-icon" aria-hidden="true" />
+      <span className="toast-icon-badge">
+        <Icon className="toast-icon" aria-hidden="true" />
+      </span>
       <span className="toast-message">{message}</span>
       <button type="button" className="toast-close" onClick={() => onDismiss(id)} aria-label="Dismiss notification">
         <FiX />

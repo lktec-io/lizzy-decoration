@@ -1,15 +1,22 @@
 *, *::before, *::after {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body, #root {
   height: 100%;
 }
 
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   background-color: var(--color-page-bg);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 img { max-width: 100%; display: block; }
@@ -38,6 +45,19 @@ a[href],
 select,
 summary {
   cursor: pointer;
+}
+
+/* Baseline press feedback for any raw button/link that isn't already
+   covered by a more specific component transition (.btn, .sidebar-link,
+   .card-hover, etc. all define their own). Wrapped in :where() so this
+   contributes zero specificity — a single class on the same element
+   always wins, this only fills in where nothing else applies. */
+:where(button:not(:disabled), a[href], [role="button"]) {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color var(--transition-fast), color var(--transition-fast);
+}
+
+:where(button:not(:disabled), a[href], [role="button"]):active {
+  transform: scale(0.97);
 }
 
 /* Authenticated app shell */

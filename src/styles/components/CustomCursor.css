@@ -1,0 +1,91 @@
+.cursor-dot,
+.cursor-ring {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform;
+  transform: translate3d(-100px, -100px, 0);
+}
+
+/* Desktop/fine-pointer only — CustomCursor.jsx never adds this class on
+   touch devices, so mobile keeps the native cursor entirely untouched. */
+html.custom-cursor-active .cursor-dot,
+html.custom-cursor-active .cursor-ring {
+  display: block;
+}
+
+html.custom-cursor-active,
+html.custom-cursor-active * {
+  cursor: none !important;
+}
+
+/* Over inputs/iframes/canvas/contenteditable: give the native cursor back
+   and hide the custom one, instead of covering up the text caret or a
+   resize handle. */
+html.custom-cursor-active.cursor-hidden,
+html.custom-cursor-active.cursor-hidden * {
+  cursor: auto !important;
+}
+
+html.cursor-hidden .cursor-dot,
+html.cursor-hidden .cursor-ring {
+  opacity: 0;
+}
+
+.cursor-dot {
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.55);
+  /* No transform transition here — the dot must stay glued to the raw
+     mouse position every frame; only opacity (auto-hide) eases. */
+  transition: opacity 0.2s ease;
+}
+
+.cursor-ring {
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  margin-top: -17px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(96, 165, 250, 0.55);
+  background-color: rgba(96, 165, 250, 0.06);
+  transition: width 0.2s ease, height 0.2s ease, margin 0.2s ease, opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Hover: ring grows and shifts toward a gold/emerald blend. */
+html.cursor-hover-active .cursor-ring {
+  width: 48px;
+  height: 48px;
+  margin-left: -24px;
+  margin-top: -24px;
+  border-color: rgba(200, 155, 60, 0.7);
+  background-color: rgba(16, 185, 129, 0.12);
+}
+
+/* Click: brief compression on both layers, released on mouseup via the
+   class being removed — no separate "release" animation needed since the
+   transition above eases it back out naturally. */
+html.cursor-click-active .cursor-dot {
+  transform-origin: center;
+}
+
+html.cursor-click-active .cursor-ring {
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-dot,
+  .cursor-ring {
+    transition: none;
+  }
+}

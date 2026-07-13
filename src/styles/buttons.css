@@ -29,14 +29,17 @@
   transform: scale(0.98);
 }
 
-/* Primary — dark navy, per the premium SaaS redesign's Primary color */
+/* Primary — navy-to-green gradient, the brand's signature button treatment.
+   Stops are biased toward navy (green only appears near the far corner) so
+   white label text stays legible — a straight 50/50 navy/accent-green
+   gradient drops white-text contrast to ~2.3:1, well under WCAG. */
 .btn-primary {
-  background-color: var(--color-primary);
+  background-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 55%, var(--color-accent-hover) 100%);
   color: var(--color-white);
   box-shadow: var(--shadow-sm);
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background-image: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 45%, var(--color-accent) 100%);
   box-shadow: var(--shadow-md);
 }
 

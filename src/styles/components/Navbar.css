@@ -357,9 +357,16 @@
 
 @media (max-width: 768px) {
   .navbar-menu-btn { display: inline-flex; }
-  .navbar-logo { display: block; }
+  .navbar-logo { display: block; max-width: 96px; }
   .navbar-branch { display: none; }
   .navbar-datetime { display: none; }
   .navbar-search { display: none; }
-  .navbar-notification-panel { width: 300px; }
+  .navbar-user-name,
+  .navbar-user-caret { display: none; }
+  .navbar-notification-panel { width: calc(100vw - var(--space-6) * 2); max-width: 300px; }
+}
+
+@media (max-width: 360px) {
+  .navbar { gap: var(--space-3); padding: 0 var(--space-4); }
+  .navbar-logo { max-width: 72px; }
 }

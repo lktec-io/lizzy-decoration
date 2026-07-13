@@ -18,7 +18,7 @@ import '../../styles/components/Sidebar.css';
 // animate-in on every load.
 const NAV_STAGGER_CONTAINER = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } },
+  visible: { transition: { staggerChildren: 0.04, delayChildren: 0.12 } },
 };
 
 const NAV_ICON_VARIANT = {

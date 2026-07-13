@@ -1,6 +1,6 @@
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-5);
   margin-bottom: var(--space-6);
 }
@@ -24,6 +24,9 @@
   .dashboard-bottom-grid { grid-template-columns: 1fr; }
 }
 
+/* Cards stay 2-up even at phone widths per spec, rather than collapsing to
+   a single column — the KPI value/subtitle content is short enough to stay
+   readable at that width. */
 @media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }

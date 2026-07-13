@@ -38,11 +38,18 @@
 
 /* KPI card — dashboard */
 .kpi-card {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-6);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.kpi-card-main {
+  min-width: 0;
 }
 
 .kpi-card-icon {
@@ -71,6 +78,22 @@
   color: var(--color-text-primary);
 }
 
+.kpi-card-subtitle {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.kpi-card-accent-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background-color: var(--color-accent);
+  transform-origin: left;
+}
+
 .kpi-card-trend {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
@@ -79,6 +102,23 @@
 
 .kpi-card-trend-up { color: var(--color-success); }
 .kpi-card-trend-down { color: var(--color-danger); }
+
+@media (max-width: 480px) {
+  .kpi-card {
+    padding: var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .kpi-card-icon {
+    width: 36px;
+    height: 36px;
+    font-size: var(--font-size-md);
+  }
+
+  .kpi-card-value {
+    font-size: var(--font-size-xl);
+  }
+}
 
 /* Badge / status indicator */
 .badge {

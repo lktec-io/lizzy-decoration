@@ -28,3 +28,19 @@ export const BASE_FONT = {
   family: 'Poppins, sans-serif',
   size: 12,
 };
+
+// Dashboard doughnut-chart palette. Validated with the dataviz skill's
+// scripts/validate_palette.js against the dashboard's light background —
+// the requested navy (#0B1F4D) failed the lightness/chroma floor as a mark
+// color (reads as near-black on a light surface), so it's used for the
+// chart's track ring and text instead of a slice fill. Fixed order, never
+// cycled per-render; a category beyond this length folds into "Other".
+export const DOUGHNUT_PALETTE = [
+  '#2F6BFF', // Royal Blue
+  '#10B981', // Emerald
+  '#C89B3C', // Gold
+  '#60A5FA', // Sky
+  '#F59E0B', // Orange
+  '#8B5CF6', // Purple
+  '#14B8A6', // Teal
+];

@@ -1,26 +1,31 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiTrendingUp, FiAlertTriangle, FiDroplet } from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiAlertTriangle, FiDroplet, FiBarChart2 } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
 import ChartCard from '../../components/dashboard/ChartCard';
+import DashboardHero from '../../components/dashboard/DashboardHero';
 import Table from '../../components/common/Table';
-import BarChart from '../../components/charts/BarChart';
+import DoughnutChart from '../../components/charts/DoughnutChart';
 import * as dashboardService from '../../services/dashboardService';
 import * as saleService from '../../services/saleService';
 import * as inventoryService from '../../services/inventoryService';
 import { formatCurrency, formatNumber } from '../../utils/formatCurrency';
 import '../../styles/pages/Dashboard.css';
 
-// Exactly the 9 items in the signed proposal's "1. Main Dashboard" section:
-// Daily Sales, Monthly Sales, Business Profit Summary, Low Stock Alerts,
+// Exactly the items in the signed proposal's "1. Main Dashboard" section
+// (Daily Sales, Monthly Sales, Business Profit Summary, Low Stock Alerts,
 // Car Wash Activity Summary, Branch Performance Statistics, Top Selling
-// Products, Recent Transactions, Inventory Notifications. Nothing else.
+// Products, Recent Transactions, Inventory Notifications), plus a Branch
+// Summary card derived from the already-fetched branch-performance chart
+// data (branch count + top branch) rather than any new backend field.
+// Accent colors are fixed per card (never cycled) from the validated
+// dashboard chart palette.
 const KPI_DEFS = [
-  { key: 'todaySales', label: "Today's Sales", icon: FiDollarSign, money: true },
-  { key: 'monthlySales', label: 'Monthly Sales', icon: FiTrendingUp, money: true },
-  { key: 'todayProfit', label: 'Profit', icon: FiTrendingUp, money: true },
-  { key: 'lowStockCount', label: 'Low Stock', icon: FiAlertTriangle, money: false },
-  { key: 'carwashRevenue', label: 'Car Wash Today', icon: FiDroplet, money: true },
+  { key: 'todaySales', label: "Today's Sales", icon: FiDollarSign, money: true, subtitle: 'Across all branches', accent: '#2F6BFF' },
+  { key: 'monthlySales', label: 'Monthly Sales', icon: FiTrendingUp, money: true, subtitle: 'This calendar month', accent: '#10B981' },
+  { key: 'todayProfit', label: 'Profit', icon: FiTrendingUp, money: true, subtitle: 'Net of cost & expenses', accent: '#C89B3C' },
+  { key: 'lowStockCount', label: 'Low Stock', icon: FiAlertTriangle, money: false, subtitle: 'Products needing restock', accent: '#F59E0B' },
+  { key: 'carwashRevenue', label: 'Car Wash Today', icon: FiDroplet, money: true, subtitle: 'Service revenue', accent: '#60A5FA' },
 ];
 
 const CHART_TYPES = ['branch-performance', 'top-products'];
@@ -86,6 +91,9 @@ function Dashboard() {
 
   const branchPerformance = charts['branch-performance'] || [];
   const topProducts = charts['top-products'] || [];
+  const topBranch = branchPerformance.length
+    ? [...branchPerformance].sort((a, b) => Number(b.value) - Number(a.value))[0]
+    : null;
 
   const recentSalesColumns = [
     { key: 'sale_number', label: 'Sale #' },
@@ -103,35 +111,40 @@ function Dashboard() {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Overview of JOZZY Decoration &amp; Accessories</p>
-        </div>
-      </div>
+      <DashboardHero />
 
       {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
 
       <motion.div variants={STAGGER_CONTAINER} initial="hidden" animate="show">
         <motion.div className="kpi-grid" variants={STAGGER_ITEM}>
-          {KPI_DEFS.map(({ key, label, icon, money }) => (
+          {KPI_DEFS.map(({ key, label, icon, money, subtitle, accent }) => (
             <KPICard
               key={key}
               icon={icon}
               label={label}
               value={loading || !kpis ? 0 : kpis[key]}
               formatter={money ? (v) => formatCurrency(v) : (v) => formatNumber(v)}
+              subtitle={subtitle}
+              accent={accent}
             />
           ))}
+          <KPICard
+            icon={FiBarChart2}
+            label="Branch Summary"
+            value={loading ? 0 : branchPerformance.length}
+            formatter={(v) => formatNumber(v)}
+            subtitle={topBranch ? `Top: ${topBranch.name}` : 'No branch data yet'}
+            accent="#8B5CF6"
+          />
         </motion.div>
 
         <motion.div className="chart-grid" variants={STAGGER_ITEM}>
           <ChartCard title="Branch Performance" loading={loading} empty={branchPerformance.length === 0} emptyMessage="No branches yet">
-            <BarChart labels={branchPerformance.map((b) => b.name)} values={branchPerformance.map((b) => Number(b.value))} label="Monthly Sales" />
+            <DoughnutChart data={branchPerformance.map((b) => ({ label: b.name, value: Number(b.value) }))} valueFormatter={formatCurrency} />
           </ChartCard>
 
           <ChartCard title="Top Selling Products" loading={loading} empty={topProducts.length === 0} emptyMessage="No sales recorded yet">
-            <BarChart labels={topProducts.map((p) => p.name)} values={topProducts.map((p) => Number(p.quantity))} label="Units Sold" horizontal />
+            <DoughnutChart data={topProducts.map((p) => ({ label: p.name, value: Number(p.quantity) }))} valueFormatter={formatNumber} />
           </ChartCard>
         </motion.div>
 

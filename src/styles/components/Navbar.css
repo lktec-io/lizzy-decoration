@@ -21,10 +21,23 @@
   transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.navbar-menu-btn-icon {
+.hamburger-icon {
+  position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  width: 30px;
+  height: 21px;
+}
+
+.hamburger-bar {
+  display: block;
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background-color: currentColor;
 }
 
 /* Sidebar already carries the brand on desktop; the navbar logo exists for

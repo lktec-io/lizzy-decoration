@@ -16,26 +16,37 @@
       'main';
   }
 
-  /* Mobile drawer docks to the right edge and slides in from off-screen
-     right (right: -100% -> 0), matching a native mobile-app drawer feel
-     rather than the desktop's permanent left rail. Both the drawer and its
-     overlay sit above the sticky navbar (z-navbar) rather than the desktop
-     sidebar's z-sidebar tier — z-sidebar (300) is below z-navbar (400), so
-     without this the navbar bar would paint over the top of the sliding
-     drawer instead of the drawer covering the full screen height. */
+  /* Mobile drawer is a floating glass panel inset from the screen edges —
+     not attached edge-to-edge — sliding in from the left with a soft
+     scale+drop+fade (the actual transform/opacity is driven by MainLayout's
+     Framer Motion variants; this block only sets the static floating-panel
+     shape and positioning). Both the drawer and its overlay sit above the
+     sticky navbar (z-navbar) rather than the desktop sidebar's z-sidebar
+     tier — z-sidebar (300) is below z-navbar (400), so without this the
+     navbar bar would paint over the top of the panel instead of the panel
+     floating above the full screen height. pointer-events toggles with the
+     open state so an invisible-but-still-positioned closed panel never
+     blocks clicks to the page underneath. */
   .app-sidebar {
     position: fixed;
-    left: auto;
-    right: -100%;
-    top: 0;
+    left: 12px;
+    top: 16px;
+    bottom: 16px;
+    right: auto;
     width: var(--sidebar-width);
+    max-width: calc(100vw - 24px);
+    border-radius: 24px;
+    overflow: hidden;
+    background-color: rgba(17, 24, 39, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-lg);
     z-index: calc(var(--z-navbar) + 60);
-    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
   }
 
   .app-sidebar-open {
-    right: 0;
-    box-shadow: var(--shadow-lg);
+    pointer-events: auto;
   }
 
   .app-sidebar-overlay {

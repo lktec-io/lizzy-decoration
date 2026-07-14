@@ -11,54 +11,50 @@
   display: none;
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 44px;
   background: none;
   border: none;
-  font-size: var(--font-size-xl);
   color: var(--color-gray-dark);
   cursor: pointer;
-  padding: 6px;
+  padding: 0;
   border-radius: var(--radius-md);
   transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
-/* Both icons are always in the DOM, stacked exactly on top of each other
-   via position:absolute — only opacity/rotation differ, driven by the
-   single .is-open class (itself driven by nothing but `isOpen`). This
-   guarantees exactly one is ever visible: there's no mount/unmount
-   sequencing that could leave both, or neither, showing. */
-.navbar-menu-icon-stack {
+/* Custom three-bar hamburger — rounded caps, balanced spacing, and a
+   proper 44px touch target on the button itself (bars are visually 22px
+   wide, centered). All three bars stay permanently mounted; only their
+   transform/opacity change on open, so there's no mount/unmount race. */
+.navbar-hamburger {
   position: relative;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1em;
-  height: 1em;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 21px;
+  height: 15px;
 }
 
-.navbar-menu-icon {
-  position: absolute;
-  inset: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.navbar-hamburger-bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: var(--radius-full);
+  background-color: currentColor;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
 }
 
-.navbar-menu-icon-hamburger {
-  opacity: 1;
-  transform: rotate(0deg);
+.navbar-hamburger.is-open .navbar-hamburger-bar:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
 }
 
-.navbar-menu-icon-close {
+.navbar-hamburger.is-open .navbar-hamburger-bar:nth-child(2) {
   opacity: 0;
-  transform: rotate(-90deg);
+  transform: scaleX(0);
 }
 
-.navbar-menu-icon-stack.is-open .navbar-menu-icon-hamburger {
-  opacity: 0;
-  transform: rotate(90deg);
-}
-
-.navbar-menu-icon-stack.is-open .navbar-menu-icon-close {
-  opacity: 1;
-  transform: rotate(0deg);
+.navbar-hamburger.is-open .navbar-hamburger-bar:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
 }
 
 /* Sidebar already carries the brand on desktop; the navbar logo exists for
@@ -385,6 +381,42 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+  animation: navbar-badge-pulse 2.5s ease-in-out infinite;
+}
+
+/* A slow, soft "heartbeat" ring around the badge — long duration and low
+   opacity so it reads as alive without being distracting. */
+@keyframes navbar-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+}
+
+/* Bell rings briefly once every 5s (not continuously) — only while there's
+   an unread notification to draw attention to. Rotates from the top like a
+   real bell (transform-origin), swings a few times, then settles for the
+   rest of the 5s loop. */
+.navbar-bell {
+  display: inline-flex;
+  transform-origin: 50% 0%;
+}
+
+.navbar-bell-active {
+  animation: navbar-bell-ring 5s ease-in-out infinite;
+}
+
+@keyframes navbar-bell-ring {
+  0%, 92% { transform: rotate(0deg); }
+  93% { transform: rotate(13deg); }
+  94% { transform: rotate(-10deg); }
+  95% { transform: rotate(7deg); }
+  96% { transform: rotate(-4deg); }
+  97.5% { transform: rotate(2deg); }
+  99%, 100% { transform: rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar-notification-badge { animation: none; }
+  .navbar-bell-active { animation: none; }
 }
 
 .navbar-notification-panel {
@@ -406,10 +438,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
+}
+
+.navbar-notification-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.navbar-notification-clear-all {
+  color: var(--color-danger);
+}
+
+.navbar-notification-clear-all:hover:not(:disabled) {
+  background-color: var(--color-danger-bg);
 }
 
 .navbar-notification-list {
@@ -547,6 +596,15 @@
   .navbar-notification-item { padding: var(--space-3); gap: var(--space-2); }
   .navbar-notification-icon { width: 32px; height: 32px; font-size: 16px; }
   .navbar-user-panel { min-width: 220px; max-width: calc(100vw - var(--space-6) * 2); }
+}
+
+/* Below ~400px the "Notifications" label + both toolbar buttons no longer
+   fit on one row even wrapped — icon-only buttons keep both actions
+   reachable without the header wrapping to two lines. aria-label already
+   documents each button's purpose for assistive tech. */
+@media (max-width: 400px) {
+  .navbar-notification-action-label { display: none; }
+  .navbar-notification-header-actions .btn { padding: var(--space-2); }
 }
 
 @media (max-width: 360px) {

@@ -1,35 +1,70 @@
 .view-toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 2px;
+  padding: 3px;
   background-color: var(--color-gray-light);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   flex-shrink: 0;
 }
 
 .view-toggle-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 30px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  height: 38px;
   background: none;
   border: none;
-  border-radius: calc(var(--radius-md) - 2px);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: color var(--transition-fast);
+}
+
+.view-toggle-btn svg {
+  position: relative;
+  z-index: 1;
+  font-size: var(--font-size-lg);
+}
+
+.view-toggle-label {
+  position: relative;
+  z-index: 1;
 }
 
 .view-toggle-btn:hover {
   color: var(--color-text-primary);
 }
 
-.view-toggle-btn-active {
+/* The sliding active pill (a motion.span with a shared layoutId) sits
+   behind the icon/label via z-index, tinted per-button so List and Grid
+   each read with their own color instead of a single generic active
+   state. */
+.view-toggle-active-pill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--radius-md);
   background-color: var(--color-white);
-  color: var(--color-primary);
   box-shadow: var(--shadow-sm);
+}
+
+.view-toggle-btn-active.view-toggle-btn-list {
+  color: var(--color-info);
+}
+
+.view-toggle-btn-active.view-toggle-btn-grid {
+  color: #7C3AED;
+}
+
+@media (max-width: 480px) {
+  .view-toggle-label { display: none; }
+  .view-toggle-btn { padding: var(--space-2) var(--space-3); }
 }
 
 /* Generic card-grid used by management pages' grid view — each page

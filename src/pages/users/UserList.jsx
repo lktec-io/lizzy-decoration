@@ -5,12 +5,14 @@ import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import ViewToggle from '../../components/common/ViewToggle';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
 import SettingsTabs from '../../components/common/SettingsTabs';
 import * as userService from '../../services/userService';
 import '../../styles/pages/Notifications.css';
+import '../../styles/components/ViewToggle.css';
 
 const STATUS_BADGE = {
   active: 'badge-success',
@@ -27,6 +29,7 @@ function UserList() {
 
   const [pendingDelete, setPendingDelete] = useState(null);
   const [actionError, setActionError] = useState('');
+  const [view, setView] = useState('list');
 
   const fetchUsers = useCallback((params) => userService.listUsers(params), []);
   const { items, meta, loading, page, setPage, search, setSearch, refetch } = useTable(fetchUsers);
@@ -129,9 +132,62 @@ function UserList() {
       <div className="card">
         <div className="table-toolbar">
           <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email, username..." />
+          <ViewToggle view={view} onChange={setView} />
         </div>
 
-        <Table columns={columns} rows={items} loading={loading} emptyMessage="No users found" />
+        {view === 'list' ? (
+          <Table columns={columns} rows={items} loading={loading} emptyMessage="No users found" />
+        ) : (
+          <div className="management-grid">
+            {items.map((row) => (
+              <div className="card card-hover management-grid-card" key={row.id}>
+                <div className="management-grid-card-header">
+                  <span className="navbar-user-avatar" style={{ width: 44, height: 44, fontSize: 'var(--font-size-md)' }}>
+                    {row.first_name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className={`badge ${STATUS_BADGE[row.status]}`}>{row.status}</span>
+                </div>
+                <div>
+                  <div className="management-grid-card-title">{row.first_name} {row.last_name}</div>
+                  <div className="management-grid-card-subtitle">{row.email}</div>
+                </div>
+                <div className="management-grid-card-body">
+                  <span>{row.role_name}</span>
+                  <span>{row.branch_name || 'No branch assigned'}</span>
+                </div>
+                <div className="management-grid-card-footer">
+                  <div className="table-actions">
+                    {canEdit && (
+                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/settings/users/${row.id}/edit`)} aria-label="Edit user">
+                        <FiEdit2 />
+                      </button>
+                    )}
+                    {canEdit && row.status !== 'locked' && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon"
+                        onClick={() => handleToggleStatus(row)}
+                        aria-label={row.status === 'active' ? 'Suspend user' : 'Activate user'}
+                      >
+                        {row.status === 'active' ? <FiUserX /> : <FiUserCheck />}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete user">
+                        <FiTrash2 />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!loading && items.length === 0 && (
+              <div className="text-sm text-secondary" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 'var(--space-8)' }}>
+                No users found
+              </div>
+            )}
+          </div>
+        )}
 
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>

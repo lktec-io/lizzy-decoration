@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  FiMenu, FiX, FiSearch, FiBell, FiChevronDown, FiCheck, FiTrash2, FiUser, FiLogOut, FiInbox, FiSettings,
-  FiInfo, FiCheckCircle, FiAlertTriangle, FiAlertCircle,
+  FiSearch, FiBell, FiChevronDown, FiCheck, FiCheckCircle, FiTrash2, FiUser, FiLogOut, FiInbox, FiSettings,
+  FiInfo, FiAlertTriangle, FiAlertCircle,
 } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompany } from '../../hooks/useCompany';
@@ -97,7 +97,12 @@ function useNotifications() {
     });
   };
 
-  return { unreadCount, recent, open, setOpen, toggleOpen, loading, markRead, markAllRead, dismiss };
+  const dismissAll = () => {
+    setRecent([]);
+    setUnreadCount(0);
+  };
+
+  return { unreadCount, recent, open, setOpen, toggleOpen, loading, markRead, markAllRead, dismiss, dismissAll };
 }
 
 function useClock() {
@@ -171,6 +176,21 @@ function Navbar({ onMenuClick, isOpen }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- notifications.setOpen is stable across renders (useState setter)
   }, [setOpen]);
 
+  // Toggles a class on <html> instead of tracking scroll position in state —
+  // the navbar's elevated-glass shadow (layout.css) reads that class
+  // directly, so scrolling never triggers a React re-render.
+  useEffect(() => {
+    const handleScroll = () => {
+      document.documentElement.classList.toggle('is-scrolled', window.scrollY > 4);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.documentElement.classList.remove('is-scrolled');
+    };
+  }, []);
+
   const handleLogout = async () => {
     setUserMenuOpen(false);
     await logout();
@@ -185,17 +205,17 @@ function Navbar({ onMenuClick, isOpen }) {
         Single source of truth: `isOpen` is the exact same isSidebarOpen
         state MainLayout uses for the overlay and the drawer panel — this
         button doesn't own any state of its own, it only reads this prop.
-        Both icons are always mounted, absolutely stacked exactly on top
-        of each other, and only their opacity/rotation (driven by the
-        single `is-open` class below) changes — there is no mount/unmount
-        race and no way for both to render as visually distinct, stacked
-        glyphs, because neither one is ever added or removed from the DOM
-        after first render.
+        Three bars are always mounted; only their transform/opacity (driven
+        by the single `is-open` class below) changes — top and bottom bars
+        rotate into an X, the middle bar fades out. Nothing is ever added or
+        removed from the DOM after first render, so there's no mount/unmount
+        race.
       */}
       <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={isOpen ? 'Close menu' : 'Open menu'}>
-        <span className={`navbar-menu-icon-stack ${isOpen ? 'is-open' : ''}`}>
-          <FiMenu className="navbar-menu-icon navbar-menu-icon-hamburger" aria-hidden="true" />
-          <FiX className="navbar-menu-icon navbar-menu-icon-close" aria-hidden="true" />
+        <span className={`navbar-hamburger ${isOpen ? 'is-open' : ''}`}>
+          <span className="navbar-hamburger-bar" />
+          <span className="navbar-hamburger-bar" />
+          <span className="navbar-hamburger-bar" />
         </span>
       </button>
 
@@ -252,7 +272,12 @@ function Navbar({ onMenuClick, isOpen }) {
 
         <div className="navbar-notifications" ref={notificationsRef}>
           <button type="button" className="navbar-icon-btn" aria-label="Notifications" onClick={notifications.toggleOpen}>
-            <FiBell />
+            {/* Ringing only every ~5s (not continuously) and only while there's
+                something unread to draw attention to — see the CSS keyframe
+                for the idle/ring split. */}
+            <span className={`navbar-bell ${notifications.unreadCount > 0 ? 'navbar-bell-active' : ''}`}>
+              <FiBell />
+            </span>
             <AnimatePresence>
               {notifications.unreadCount > 0 && (
                 <motion.span
@@ -272,11 +297,18 @@ function Navbar({ onMenuClick, isOpen }) {
               <motion.div className="navbar-notification-panel" {...DROPDOWN_MOTION}>
                 <div className="navbar-notification-header">
                   <span>Notifications</span>
-                  {notifications.unreadCount > 0 && (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={notifications.markAllRead}>
-                      Mark All Read
-                    </button>
-                  )}
+                  <div className="navbar-notification-header-actions">
+                    {notifications.unreadCount > 0 && (
+                      <button type="button" className="btn btn-ghost btn-sm" aria-label="Mark all as read" onClick={notifications.markAllRead}>
+                        <FiCheckCircle aria-hidden="true" /> <span className="navbar-notification-action-label">Mark All Read</span>
+                      </button>
+                    )}
+                    {notifications.recent.length > 0 && (
+                      <button type="button" className="btn btn-ghost btn-sm navbar-notification-clear-all" aria-label="Delete all notifications" onClick={notifications.dismissAll}>
+                        <FiTrash2 aria-hidden="true" /> <span className="navbar-notification-action-label">Delete All</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="navbar-notification-list">
                   {notifications.loading ? (

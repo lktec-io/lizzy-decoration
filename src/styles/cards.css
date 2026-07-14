@@ -36,7 +36,12 @@
   border-top: 1px solid var(--color-border);
 }
 
-/* KPI card — dashboard */
+/* KPI card — dashboard. Each card carries its own --kpi-accent-rgb (set
+   inline by KPICard.jsx from its `accent` prop) which this file turns into
+   a subtle background wash and, on hover, a soft tinted glow + lift — the
+   "own visual identity per card" and "floating effect" without hardcoding
+   six separate color blocks here. Falls back to a plain white card when no
+   accent is supplied (--kpi-accent-rgb undefined). */
 .kpi-card {
   position: relative;
   display: flex;
@@ -46,6 +51,13 @@
   padding: var(--space-6);
   border-radius: 20px;
   overflow: hidden;
+  background-image: radial-gradient(circle at 100% 0%, rgba(var(--kpi-accent-rgb, 15, 23, 42), 0.07), transparent 60%);
+  transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+}
+
+.kpi-card.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -14px rgba(var(--kpi-accent-rgb, 15, 23, 42), 0.35), var(--shadow-md);
 }
 
 .kpi-card-main {

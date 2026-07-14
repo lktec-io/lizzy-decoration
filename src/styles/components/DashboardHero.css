@@ -11,9 +11,36 @@
   margin-bottom: var(--space-6);
   background-image:
     radial-gradient(circle at 90% 20%, rgba(200, 155, 60, 0.14), transparent 45%),
-    linear-gradient(135deg, #071A3D 0%, #123A73 55%, #0E7A57 100%);
+    linear-gradient(115deg, #071A3D 0%, #123A73 45%, #0E7A57 85%, #123A73 100%);
+  background-size: 220% 220%;
+  animation: hero-gradient-shift 16s ease-in-out infinite;
   box-shadow: var(--shadow-md);
   color: var(--color-white);
+}
+
+/* Very slow diagonal drift of the gradient stops — subtle enough that it
+   reads as "alive" rather than an obvious loop. */
+@keyframes hero-gradient-shift {
+  0%, 100% { background-position: 0% 30%; }
+  50% { background-position: 100% 70%; }
+}
+
+/* A soft diagonal light sweep, looping slowly across the full width — the
+   "animated shine" requested, kept subtle (low opacity, wide, slow) so it
+   reads as a premium surface highlight rather than a loading shimmer. */
+.dashboard-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(75deg, transparent 40%, rgba(255, 255, 255, 0.09) 50%, transparent 60%);
+  background-size: 300% 100%;
+  animation: hero-shine-sweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes hero-shine-sweep {
+  0% { background-position: 200% 0; }
+  55%, 100% { background-position: -50% 0; }
 }
 
 .dashboard-hero-orb {
@@ -25,6 +52,20 @@
   border-radius: 999px;
   background-color: rgba(255, 255, 255, 0.05);
   pointer-events: none;
+  animation: hero-orb-drift 9s ease-in-out infinite;
+}
+
+/* Slow drift + breathing scale — the "subtle moving glow" behind the
+   greeting text. */
+@keyframes hero-orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.05; }
+  50% { transform: translate(-18px, 14px) scale(1.18); opacity: 0.09; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-hero { animation: none; }
+  .dashboard-hero::after { animation: none; }
+  .dashboard-hero-orb { animation: none; }
 }
 
 .dashboard-hero-greeting-block {

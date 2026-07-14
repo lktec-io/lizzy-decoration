@@ -18,14 +18,15 @@ import '../../styles/pages/Dashboard.css';
 // Products, Recent Transactions, Inventory Notifications), plus a Branch
 // Summary card derived from the already-fetched branch-performance chart
 // data (branch count + top branch) rather than any new backend field.
-// Accent colors are fixed per card (never cycled) from the validated
-// dashboard chart palette.
+// Accent colors are fixed per card (never cycled), each a distinct hue so
+// every card reads with its own identity at a glance: blue, green,
+// emerald, amber, teal, purple.
 const KPI_DEFS = [
   { key: 'todaySales', label: "Today's Sales", icon: FiDollarSign, money: true, subtitle: 'Across all branches', accent: '#2F6BFF' },
   { key: 'monthlySales', label: 'Monthly Sales', icon: FiTrendingUp, money: true, subtitle: 'This calendar month', accent: '#10B981' },
-  { key: 'todayProfit', label: 'Profit', icon: FiTrendingUp, money: true, subtitle: 'Net of cost & expenses', accent: '#C89B3C' },
+  { key: 'todayProfit', label: 'Profit', icon: FiTrendingUp, money: true, subtitle: 'Net of cost & expenses', accent: '#059669' },
   { key: 'lowStockCount', label: 'Low Stock', icon: FiAlertTriangle, money: false, subtitle: 'Products needing restock', accent: '#F59E0B' },
-  { key: 'carwashRevenue', label: 'Car Wash Today', icon: FiDroplet, money: true, subtitle: 'Service revenue', accent: '#60A5FA' },
+  { key: 'carwashRevenue', label: 'Car Wash Today', icon: FiDroplet, money: true, subtitle: 'Service revenue', accent: '#14B8A6' },
 ];
 
 const CHART_TYPES = ['branch-performance', 'top-products'];
@@ -38,6 +39,22 @@ const STAGGER_CONTAINER = {
 const STAGGER_ITEM = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
+
+// Nested stagger for the KPI row specifically — each card fades/scales up
+// slightly after the previous one, rather than the whole row appearing as
+// one flat block (which is all STAGGER_ITEM alone would give it). Variant
+// names match STAGGER_CONTAINER/STAGGER_ITEM's ('hidden'/'show') so Framer
+// Motion's propagation carries the parent's animate="show" straight down
+// into this nested orchestration with no extra initial/animate props needed.
+const KPI_CARD_STAGGER = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+const KPI_CARD_ITEM = {
+  hidden: { opacity: 0, y: 16, scale: 0.96 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
 };
 
 function formatDate(isoString) {
@@ -116,26 +133,29 @@ function Dashboard() {
       {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
 
       <motion.div variants={STAGGER_CONTAINER} initial="hidden" animate="show">
-        <motion.div className="kpi-grid" variants={STAGGER_ITEM}>
+        <motion.div className="kpi-grid" variants={KPI_CARD_STAGGER}>
           {KPI_DEFS.map(({ key, label, icon, money, subtitle, accent }) => (
-            <KPICard
-              key={key}
-              icon={icon}
-              label={label}
-              value={loading || !kpis ? 0 : kpis[key]}
-              formatter={money ? (v) => formatCurrency(v) : (v) => formatNumber(v)}
-              subtitle={subtitle}
-              accent={accent}
-            />
+            <motion.div key={key} variants={KPI_CARD_ITEM}>
+              <KPICard
+                icon={icon}
+                label={label}
+                value={loading || !kpis ? 0 : kpis[key]}
+                formatter={money ? (v) => formatCurrency(v) : (v) => formatNumber(v)}
+                subtitle={subtitle}
+                accent={accent}
+              />
+            </motion.div>
           ))}
-          <KPICard
-            icon={FiBarChart2}
-            label="Branch Summary"
-            value={loading ? 0 : branchPerformance.length}
-            formatter={(v) => formatNumber(v)}
-            subtitle={topBranch ? `Top: ${topBranch.name}` : 'No branch data yet'}
-            accent="#8B5CF6"
-          />
+          <motion.div variants={KPI_CARD_ITEM}>
+            <KPICard
+              icon={FiBarChart2}
+              label="Branch Summary"
+              value={loading ? 0 : branchPerformance.length}
+              formatter={(v) => formatNumber(v)}
+              subtitle={topBranch ? `Top: ${topBranch.name}` : 'No branch data yet'}
+              accent="#8B5CF6"
+            />
+          </motion.div>
         </motion.div>
 
         <motion.div className="chart-grid" variants={STAGGER_ITEM}>

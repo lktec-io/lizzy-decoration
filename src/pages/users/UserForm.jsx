@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiUpload } from 'react-icons/fi';
+import { FiUpload, FiEye, FiEyeOff } from 'react-icons/fi';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import { useToast } from '../../hooks/useToast';
 import * as userService from '../../services/userService';
@@ -29,6 +29,9 @@ function UserForm() {
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resetPasswordError, setResetPasswordError] = useState('');
   const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const {
     register,
@@ -238,12 +241,22 @@ function UserForm() {
             {!isEdit && (
               <div className="form-group">
                 <label className="form-label form-label-required" htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  className={`form-control ${errors.password ? 'form-control-error' : ''}`}
-                  {...register('password', { required: 'Password is required', pattern: { value: PASSWORD_REGEX, message: PASSWORD_POLICY_MESSAGE } })}
-                />
+                <div className="form-password-field">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    className={`form-control ${errors.password ? 'form-control-error' : ''}`}
+                    {...register('password', { required: 'Password is required', pattern: { value: PASSWORD_REGEX, message: PASSWORD_POLICY_MESSAGE } })}
+                  />
+                  <button
+                    type="button"
+                    className="form-password-toggle"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
                 {errors.password ? <span className="form-error">{errors.password.message}</span> : <span className="form-help">{PASSWORD_POLICY_MESSAGE}</span>}
               </div>
             )}
@@ -299,13 +312,23 @@ function UserForm() {
           <div className="card-body">
             <div className="form-group">
               <label className="form-label" htmlFor="resetPassword">New Password</label>
-              <input
-                id="resetPassword"
-                type="password"
-                className={`form-control ${resetPasswordError ? 'form-control-error' : ''}`}
-                value={resetPasswordValue}
-                onChange={(event) => setResetPasswordValue(event.target.value)}
-              />
+              <div className="form-password-field">
+                <input
+                  id="resetPassword"
+                  type={showResetPassword ? 'text' : 'password'}
+                  className={`form-control ${resetPasswordError ? 'form-control-error' : ''}`}
+                  value={resetPasswordValue}
+                  onChange={(event) => setResetPasswordValue(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="form-password-toggle"
+                  onClick={() => setShowResetPassword((prev) => !prev)}
+                  aria-label={showResetPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showResetPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
               {resetPasswordError ? <span className="form-error">{resetPasswordError}</span> : <span className="form-help">{PASSWORD_POLICY_MESSAGE}</span>}
             </div>
             <button

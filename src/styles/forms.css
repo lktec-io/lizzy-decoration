@@ -65,6 +65,40 @@ textarea.form-control {
   resize: vertical;
 }
 
+/* Password field with a Show/Hide toggle — the input keeps its normal
+   .form-control styling, this just adds room on the right for the button. */
+.form-password-field {
+  position: relative;
+}
+
+.form-password-field .form-control {
+  padding-right: calc(var(--space-4) + 28px);
+}
+
+.form-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--space-2);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.form-password-toggle:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-gray-light);
+}
+
 .form-help {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);

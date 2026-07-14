@@ -99,15 +99,25 @@ summary {
 
 .app-navbar {
   grid-area: navbar;
-  background-color: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: var(--z-navbar);
   display: flex;
   align-items: center;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+/* Elevated glass shadow once the page has scrolled — toggled by a small
+   scroll listener in Navbar.jsx via a class on <html>, not by tracking
+   scroll position in component state (avoids a re-render on every
+   scroll tick). */
+html.is-scrolled .app-navbar {
+  box-shadow: 0 8px 30px -12px rgba(15, 23, 42, 0.18);
 }
 
 .app-main {

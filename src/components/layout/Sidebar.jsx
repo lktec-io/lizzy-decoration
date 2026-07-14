@@ -15,14 +15,14 @@ import '../../styles/components/Sidebar.css';
 // Staggered reveal, played only when the mobile drawer opens (see the
 // openKey/key-remount trick in Sidebar() below) — on desktop isOpen
 // never becomes true so this never triggers, avoiding an unwanted
-// animate-in on every load. Tuned so the LAST of 12 nav items finishes
-// fading in by ~450ms — verified via real browser screenshots that the
-// previous timing (40ms stagger + 120ms delay + 450ms label duration)
-// left items below the 6th still invisible a full second after opening,
-// which reads as broken/incomplete rather than premium.
+// animate-in on every load. Each label fades in and translates from
+// 24px right to its resting position over 500ms (mid-range of the
+// 400-600ms premium feel requested) — with 12 items, a 35ms stagger and
+// 50ms initial delay puts the LAST item's animation finishing at ~935ms,
+// which reads as an elegant cascade rather than a slow trickle.
 const NAV_STAGGER_CONTAINER = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.018, delayChildren: 0.04 } },
+  visible: { transition: { staggerChildren: 0.035, delayChildren: 0.05 } },
 };
 
 const NAV_ICON_VARIANT = {
@@ -31,8 +31,8 @@ const NAV_ICON_VARIANT = {
 };
 
 const NAV_LABEL_VARIANT = {
-  hidden: { opacity: 0, x: 25 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } },
+  hidden: { opacity: 0, x: 24 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
 };
 
 // Branches, Users, Roles, Categories, Brands, Notifications, and Profile

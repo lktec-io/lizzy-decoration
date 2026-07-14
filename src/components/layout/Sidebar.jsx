@@ -40,26 +40,42 @@ const NAV_LABEL_VARIANT = {
 // Settings, the Product form, or the Navbar (Profile, notification bell)
 // instead. Transfers has no UI at all anymore (backend untouched). Returns
 // is a full top-level module, matching the client's module list.
+//
+// `requiredPermission` (a single code, or an array checked with .some() for
+// items reachable via more than one gate) matches the same permission
+// vocabulary the backend's authorize() middleware and the route-level
+// RequirePermission guards use — a role only sees the modules its seeded
+// permissions actually unlock. Dashboard has no gate: every role is seeded
+// with dashboard.view.
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: FiGrid, end: true },
-  { to: '/customers', label: 'Customers', icon: FiUserCheck },
-  { to: '/suppliers', label: 'Suppliers', icon: FiTruck },
-  { to: '/products', label: 'Products', icon: FiBox },
-  { to: '/inventory', label: 'Inventory', icon: FiArchive },
-  { to: '/purchases', label: 'Purchases', icon: FiShoppingCart },
-  { to: '/pos', label: 'Sales (POS)', icon: FiDollarSign },
-  { to: '/returns', label: 'Returns', icon: FiRotateCcw },
-  { to: '/expenses', label: 'Expenses', icon: FiDollarSign },
-  { to: '/carwash', label: 'Car Wash', icon: FiDroplet },
-  { to: '/reports', label: 'Reports', icon: FiBarChart2 },
-  { to: '/settings/company', label: 'Settings', icon: FiSettings },
+  { to: '/customers', label: 'Customers', icon: FiUserCheck, requiredPermission: 'customers.view' },
+  { to: '/suppliers', label: 'Suppliers', icon: FiTruck, requiredPermission: 'suppliers.view' },
+  { to: '/products', label: 'Products', icon: FiBox, requiredPermission: 'products.view' },
+  { to: '/inventory', label: 'Inventory', icon: FiArchive, requiredPermission: 'inventory.view' },
+  { to: '/purchases', label: 'Purchases', icon: FiShoppingCart, requiredPermission: 'purchases.view' },
+  { to: '/pos', label: 'Sales (POS)', icon: FiDollarSign, requiredPermission: 'sales.view' },
+  { to: '/returns', label: 'Returns', icon: FiRotateCcw, requiredPermission: 'returns.view' },
+  { to: '/expenses', label: 'Expenses', icon: FiDollarSign, requiredPermission: 'expenses.view' },
+  { to: '/carwash', label: 'Car Wash', icon: FiDroplet, requiredPermission: 'carwash.view' },
+  { to: '/reports', label: 'Reports', icon: FiBarChart2, requiredPermission: 'reports.view' },
+  { to: '/settings/company', label: 'Settings', icon: FiSettings, requiredPermission: ['company.manage', 'settings.view'] },
 ];
 
 function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
-  const { logout } = useAuth();
+  const { logout, hasPermission } = useAuth();
   const { company } = useCompany();
   const navigate = useNavigate();
   const companyName = company?.company_name || 'JOZZY';
+
+  // Plain function call, not the usePermission() hook — this runs once per
+  // item inside a .filter() below, and hooks can't be called in a loop.
+  const isNavItemVisible = (item) => {
+    if (!item.requiredPermission) return true;
+    if (Array.isArray(item.requiredPermission)) return item.requiredPermission.some(hasPermission);
+    return hasPermission(item.requiredPermission);
+  };
+  const visibleNavItems = NAV_ITEMS.filter(isNavItemVisible);
 
   // Replays the label/icon stagger every time the mobile drawer opens: each
   // open increments openKey, which remounts the nav list so its "hidden"
@@ -116,7 +132,7 @@ function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
         initial={openKey === 0 ? false : 'hidden'}
         animate="visible"
       >
-        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+        {visibleNavItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}

@@ -1,0 +1,53 @@
+import { resolveConfig, humanize, formatCell } from './reportConfig.js';
+
+// UTF-8 BOM so Excel (which otherwise guesses the wrong encoding for
+// non-ASCII characters) opens the exported file cleanly.
+const BOM = String.fromCharCode(0xfeff);
+
+// Ported from src/utils/exportCsv.js's csvEscape — same escaping rules,
+// reimplemented here since that file is frontend-only.
+function csvEscape(value) {
+  const str = String(value ?? '');
+  if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  return str;
+}
+
+function rowsToCsv(rows, columns, headerLabels) {
+  return [
+    headerLabels.join(','),
+    ...rows.map((row) => columns.map((col) => csvEscape(row[col])).join(',')),
+  ].join('\n');
+}
+
+// Whole-report export (summary + every breakdown, each as its own labeled
+// section) — distinct from the frontend's existing per-breakdown-table CSV
+// button, which stays as a quick one-table-at-a-time option.
+export function buildReportCsv(type, report) {
+  const config = resolveConfig(type, report);
+  const sections = [`${config.title} Report`, ''];
+
+  if (report.summary && config.summaryLabels) {
+    sections.push('Summary');
+    sections.push('Metric,Value');
+    Object.entries(config.summaryLabels).forEach(([key, label]) => {
+      sections.push(`${csvEscape(label)},${csvEscape(formatCell(key, report.summary[key]))}`);
+    });
+    sections.push('');
+  }
+
+  config.breakdowns.forEach(({ key, title: breakdownTitle, labelHeader }) => {
+    const rows = report[key];
+    sections.push(breakdownTitle);
+    if (!rows || rows.length === 0) {
+      sections.push('No data for the selected filters.');
+      sections.push('');
+      return;
+    }
+    const columns = Object.keys(rows[0]).filter((c) => c !== 'id' && c !== 'code');
+    const headerLabels = columns.map((c) => (c === 'label' ? labelHeader : humanize(c)));
+    sections.push(rowsToCsv(rows, columns, headerLabels));
+    sections.push('');
+  });
+
+  return BOM + sections.join('\n');
+}

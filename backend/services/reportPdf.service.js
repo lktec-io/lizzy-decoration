@@ -1,6 +1,12 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
-import { formatCurrency } from '../utils/formatCurrency.js';
 import { logger } from '../config/logger.js';
+import { resolveConfig, formatCell, humanize, MONEY_KEYS } from './reportConfig.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
 
 const MM_TO_PT = 2.83465;
 const mm = (value) => value * MM_TO_PT;
@@ -8,104 +14,91 @@ const mm = (value) => value * MM_TO_PT;
 const PAGE_MARGIN = mm(15);
 const CONTENT_WIDTH = mm(210) - PAGE_MARGIN * 2;
 
-const MONEY_KEYS = new Set([
-  'value', 'totalRevenue', 'totalAmount', 'totalDiscount', 'averageSale', 'totalValue',
-  'salesRevenue', 'carwashRevenue', 'expenses', 'net', 'cogs', 'grossProfit', 'netProfit',
-]);
+// Brand palette — exact hex values from src/styles/colors.css, so the PDF
+// matches the app's actual palette instead of a set of generic grays.
+const COLOR_PRIMARY = '#0F172A';
+const COLOR_ACCENT = '#22C55E';
+const COLOR_MUTED = '#64748B';
+const COLOR_BORDER = '#E2E8F0';
+const COLOR_ROW_ALT = '#F8FAFC';
+const COLOR_WHITE = '#FFFFFF';
 
-// Mirrors src/pages/reports/ReportsCenter.jsx's REPORT_CONFIGS labels for
-// the 6 report types the UI actually exposes (Sales, Inventory, Expenses,
-// Profit, Car Wash, Branches — the proposal's report list). Presentation
-// labels only, not business logic — the underlying data comes from the
-// same unmodified reportService.getReport() every JSON/CSV consumer uses.
-const REPORT_PDF_CONFIGS = {
-  sales: {
-    title: 'Sales',
-    summaryLabels: { totalSales: 'Total Sales', totalRevenue: 'Total Revenue', totalDiscount: 'Total Discount', averageSale: 'Average Sale' },
-    breakdowns: [{ key: 'byDay', title: 'By Day', labelHeader: 'Date' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
-  },
-  inventory: {
-    title: 'Inventory',
-    summaryLabels: { totalRecords: 'Total Records', totalValue: 'Total Value', lowStock: 'Low Stock', outOfStock: 'Out of Stock' },
-    breakdowns: [{ key: 'byCategory', title: 'By Category', labelHeader: 'Category' }],
-  },
-  expenses: {
-    title: 'Expenses',
-    summaryLabels: { totalExpenses: 'Total Expenses', totalAmount: 'Total Amount' },
-    breakdowns: [{ key: 'byCategory', title: 'By Category', labelHeader: 'Category' }],
-  },
-  carwash: {
-    title: 'Car Wash',
-    summaryLabels: { totalTransactions: 'Total Transactions', totalRevenue: 'Total Revenue' },
-    breakdowns: [{ key: 'byService', title: 'Popular Services', labelHeader: 'Service' }],
-  },
-  profit: {
-    title: 'Profit',
-    summaryLabels: {
-      salesRevenue: 'Sales Revenue', carwashRevenue: 'Car Wash Revenue', totalRevenue: 'Total Revenue',
-      cogs: 'Cost of Goods Sold', grossProfit: 'Gross Profit', expenses: 'Expenses', netProfit: 'Net Profit',
-    },
-    breakdowns: [{ key: 'byDay', title: 'By Day', labelHeader: 'Date' }],
-  },
-  branches: {
-    title: 'Branches',
-    summaryLabels: null,
-    breakdowns: [{ key: 'byBranch', title: 'Branch Comparison', labelHeader: 'Branch' }],
-  },
-};
-
-function humanize(key) {
-  const result = key.replace(/([A-Z])/g, ' $1');
-  return result.charAt(0).toUpperCase() + result.slice(1);
-}
-
-function formatCell(key, value) {
-  if (typeof value !== 'number') return String(value ?? '');
-  return MONEY_KEYS.has(key) ? formatCurrency(value) : value.toLocaleString();
-}
-
-function divider(doc) {
+function divider(doc, color = COLOR_BORDER) {
   doc.moveDown(0.3);
-  doc.moveTo(PAGE_MARGIN, doc.y).lineTo(PAGE_MARGIN + CONTENT_WIDTH, doc.y).strokeColor('#E5E7EB').stroke();
+  doc.moveTo(PAGE_MARGIN, doc.y).lineTo(PAGE_MARGIN + CONTENT_WIDTH, doc.y).strokeColor(color).stroke();
   doc.moveDown(0.3);
 }
 
-// Falls back to a generic, fully-derived layout for any report type not in
-// REPORT_PDF_CONFIGS above (every other type reportService already
-// supports, just not exposed as a pill in the simplified Reports UI) —
-// humanized labels, one table per array-valued field on the report.
-function resolveConfig(type, report) {
-  const known = REPORT_PDF_CONFIGS[type];
-  if (known) return known;
-
-  const breakdowns = Object.keys(report)
-    .filter((key) => key !== 'summary' && Array.isArray(report[key]))
-    .map((key) => ({ key, title: humanize(key), labelHeader: 'Name' }));
-
-  return {
-    title: humanize(type),
-    summaryLabels: report.summary ? Object.fromEntries(Object.keys(report.summary).map((k) => [k, humanize(k)])) : null,
-    breakdowns,
-  };
+// Only handles a locally-stored logo (logo_path starting with "/uploads/");
+// a Cloudinary-hosted logo is a remote URL and would need an async fetch to
+// embed, which isn't worth the extra request/failure surface for a PDF
+// header image — those deployments simply get the text-only header, same
+// as if no logo were configured at all.
+function resolveLocalLogoPath(logoPath) {
+  if (!logoPath || !logoPath.startsWith('/uploads/')) return null;
+  const absPath = path.join(UPLOADS_ROOT, logoPath.replace('/uploads/', ''));
+  return fs.existsSync(absPath) ? absPath : null;
 }
 
-export function buildReportPdf(type, report, { dateFrom, dateTo } = {}) {
+function drawHeader(doc, { config, dateRangeLabel, company, generatedByName, filtersLabel }) {
+  const logoPath = resolveLocalLogoPath(company?.logo_path);
+  const textLeft = PAGE_MARGIN + (logoPath ? mm(22) : 0);
+
+  if (logoPath) {
+    try {
+      doc.image(logoPath, PAGE_MARGIN, doc.y, { width: mm(18) });
+    } catch (err) {
+      logger.warn('Report PDF: failed to embed company logo, falling back to text-only header', { error: err.message });
+    }
+  }
+
+  const headerTop = doc.y;
+  doc.fontSize(8).font('Helvetica-Bold').fillColor(COLOR_MUTED)
+    .text('JOZZY SALES MANAGEMENT SYSTEM', textLeft, headerTop, { width: CONTENT_WIDTH - (textLeft - PAGE_MARGIN) });
+  doc.fontSize(16).font('Helvetica-Bold').fillColor(COLOR_PRIMARY)
+    .text(`${config.title} Report`, textLeft, doc.y, { width: CONTENT_WIDTH - (textLeft - PAGE_MARGIN) });
+  doc.fontSize(9).font('Helvetica').fillColor(COLOR_MUTED)
+    .text(dateRangeLabel, textLeft, doc.y, { width: CONTENT_WIDTH - (textLeft - PAGE_MARGIN) });
+
+  doc.y = Math.max(doc.y, headerTop + mm(18));
+  doc.x = PAGE_MARGIN;
+
+  doc.fontSize(8).font('Helvetica').fillColor(COLOR_MUTED);
+  if (generatedByName) {
+    doc.text(`Generated by: ${generatedByName} on ${new Date().toLocaleString('en-TZ', { dateStyle: 'medium', timeStyle: 'short' })}`, { width: CONTENT_WIDTH });
+  }
+  if (filtersLabel) {
+    doc.text(`Filters: ${filtersLabel}`, { width: CONTENT_WIDTH });
+  }
+  doc.fillColor(COLOR_PRIMARY);
+
+  divider(doc, COLOR_ACCENT);
+}
+
+function drawFooters(doc) {
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i += 1) {
+    doc.switchToPage(range.start + i);
+    const bottom = doc.page.height - PAGE_MARGIN + mm(4);
+    doc.fontSize(8).font('Helvetica').fillColor(COLOR_MUTED)
+      .text(`Page ${i + 1} of ${range.count}`, PAGE_MARGIN, bottom, { width: CONTENT_WIDTH, align: 'center' });
+  }
+}
+
+export function buildReportPdf(type, report, { dateFrom, dateTo, company, generatedByName, filtersLabel } = {}) {
   const config = resolveConfig(type, report);
   const dateRangeLabel = dateFrom && dateTo ? `${dateFrom} to ${dateTo}` : 'All time';
 
-  const doc = new PDFDocument({ size: 'A4', margin: PAGE_MARGIN });
+  const doc = new PDFDocument({ size: 'A4', margin: PAGE_MARGIN, bufferPages: true });
   const chunks = [];
   doc.on('data', (chunk) => chunks.push(chunk));
 
-  doc.fontSize(16).font('Helvetica-Bold').text(`${config.title} Report`, { width: CONTENT_WIDTH });
-  doc.fontSize(9).font('Helvetica').fillColor('#6B7280').text(dateRangeLabel, { width: CONTENT_WIDTH });
-  doc.fillColor('#111111');
-  divider(doc);
+  drawHeader(doc, { config, dateRangeLabel, company, generatedByName, filtersLabel });
 
   if (report.summary && config.summaryLabels) {
-    doc.fontSize(11).font('Helvetica-Bold').text('Summary', { width: CONTENT_WIDTH });
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(COLOR_PRIMARY).text('Summary', { width: CONTENT_WIDTH });
     doc.moveDown(0.2);
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font('Helvetica').fillColor(COLOR_PRIMARY);
     Object.entries(config.summaryLabels).forEach(([key, label]) => {
       doc.text(`${label}: ${formatCell(key, report.summary[key])}`, { width: CONTENT_WIDTH });
     });
@@ -115,38 +108,65 @@ export function buildReportPdf(type, report, { dateFrom, dateTo } = {}) {
   config.breakdowns.forEach(({ key, title: breakdownTitle, labelHeader }) => {
     const rows = report[key];
 
-    doc.fontSize(11).font('Helvetica-Bold').text(breakdownTitle, { width: CONTENT_WIDTH });
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(COLOR_PRIMARY).text(breakdownTitle, { width: CONTENT_WIDTH });
     doc.moveDown(0.2);
 
     if (!rows || rows.length === 0) {
-      doc.fontSize(9).font('Helvetica').fillColor('#6B7280').text('No data for the selected filters.', { width: CONTENT_WIDTH });
-      doc.fillColor('#111111');
+      doc.fontSize(9).font('Helvetica').fillColor(COLOR_MUTED).text('No data for the selected filters.', { width: CONTENT_WIDTH });
+      doc.fillColor(COLOR_PRIMARY);
       divider(doc);
       return;
     }
 
     const columns = Object.keys(rows[0]).filter((c) => c !== 'id' && c !== 'code');
     const columnWidth = CONTENT_WIDTH / columns.length;
+    const rowHeight = mm(6);
 
-    doc.fontSize(8).font('Helvetica-Bold');
+    doc.fontSize(8).font('Helvetica-Bold').fillColor(COLOR_WHITE);
     let rowY = doc.y;
+    doc.rect(PAGE_MARGIN, rowY - 2, CONTENT_WIDTH, rowHeight).fill(COLOR_PRIMARY);
+    doc.fillColor(COLOR_WHITE);
     columns.forEach((c, index) => {
-      doc.text(c === 'label' ? labelHeader : humanize(c), PAGE_MARGIN + index * columnWidth, rowY, { width: columnWidth });
+      doc.text(c === 'label' ? labelHeader : humanize(c), PAGE_MARGIN + index * columnWidth + 2, rowY, { width: columnWidth - 4 });
     });
-    doc.moveDown(0.6);
+    doc.y = rowY + rowHeight;
     doc.font('Helvetica');
 
-    rows.forEach((row) => {
+    // A money-bearing column (if any) gets summed into a Grand Total row
+    // appended after the data — the first numeric column flagged as money
+    // in reportConfig's MONEY_KEYS, matching what the UI's own summary
+    // cards already treat as the report's headline currency figure.
+    const totalColumn = columns.find((c) => typeof rows[0][c] === 'number' && MONEY_KEYS.has(c));
+    let runningTotal = 0;
+
+    rows.forEach((row, index) => {
       rowY = doc.y;
-      columns.forEach((c, index) => {
-        doc.fontSize(8).text(formatCell(c, row[c]), PAGE_MARGIN + index * columnWidth, rowY, { width: columnWidth });
+      if (index % 2 === 1) {
+        doc.rect(PAGE_MARGIN, rowY - 1, CONTENT_WIDTH, rowHeight).fill(COLOR_ROW_ALT);
+      }
+      doc.fillColor(COLOR_PRIMARY);
+      columns.forEach((c, colIndex) => {
+        doc.fontSize(8).text(formatCell(c, row[c]), PAGE_MARGIN + colIndex * columnWidth + 2, rowY, { width: columnWidth - 4 });
       });
-      doc.moveDown(0.5);
+      if (totalColumn) runningTotal += Number(row[totalColumn]) || 0;
+      doc.y = rowY + rowHeight;
     });
+
+    if (totalColumn) {
+      rowY = doc.y;
+      doc.rect(PAGE_MARGIN, rowY - 1, CONTENT_WIDTH, rowHeight).fill(COLOR_ACCENT);
+      doc.fillColor(COLOR_WHITE).font('Helvetica-Bold');
+      const totalColIndex = columns.indexOf(totalColumn);
+      doc.text('Grand Total', PAGE_MARGIN + 2, rowY, { width: columnWidth * totalColIndex - 4 });
+      doc.text(formatCell(totalColumn, runningTotal), PAGE_MARGIN + totalColIndex * columnWidth + 2, rowY, { width: columnWidth - 4 });
+      doc.y = rowY + rowHeight;
+      doc.font('Helvetica').fillColor(COLOR_PRIMARY);
+    }
 
     divider(doc);
   });
 
+  drawFooters(doc);
   doc.end();
 
   return new Promise((resolve, reject) => {

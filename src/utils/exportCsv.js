@@ -7,6 +7,20 @@ function csvEscape(value) {
   return str;
 }
 
+// Shared by CSV/Excel exports — a blob response (e.g. from an
+// axios `responseType: 'blob'` call) can't be rendered inline the way a PDF
+// can via window.open, so both trigger an actual file download the same way.
+export function downloadBlob(filename, blob) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export function downloadCsv(filename, rows) {
   if (!rows?.length) return;
   const columns = Object.keys(rows[0]);
@@ -15,12 +29,5 @@ export function downloadCsv(filename, rows) {
     ...rows.map((row) => columns.map((col) => csvEscape(row[col])).join(',')),
   ];
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename.endsWith('.csv') ? filename : `${filename}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadBlob(filename.endsWith('.csv') ? filename : `${filename}.csv`, blob);
 }

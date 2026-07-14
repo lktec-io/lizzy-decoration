@@ -8,6 +8,8 @@ const router = Router();
 router.use(authenticate, authorize('reports.view'));
 
 router.get('/:type/export/pdf', authorize('reports.export'), reportController.exportPdf);
+router.get('/:type/export/excel', authorize('reports.export'), reportController.exportExcel);
+router.get('/:type/export/csv', authorize('reports.export'), reportController.exportCsv);
 router.get('/:type', reportController.getReport);
 
 export default router;

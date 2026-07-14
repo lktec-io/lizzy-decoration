@@ -8,11 +8,16 @@ function branchFilter(column, branchIds) {
   return { clause: `AND ${column} IN (?)`, params: [branchIds] };
 }
 
-export async function salesReport({ dateFrom, dateTo, branchId, cashierId, branchIds }) {
+export async function salesReport({ dateFrom, dateTo, branchId, cashierId, customerId, productId, branchIds }) {
   const conditions = ["s.status = 'completed'", 's.created_at >= ?', 's.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
   const params = [dateFrom, dateTo];
   if (branchId) { conditions.push('s.branch_id = ?'); params.push(branchId); }
   if (cashierId) { conditions.push('s.cashier_id = ?'); params.push(cashierId); }
+  if (customerId) { conditions.push('s.customer_id = ?'); params.push(customerId); }
+  if (productId) {
+    conditions.push('EXISTS (SELECT 1 FROM sale_items si WHERE si.sale_id = s.id AND si.product_id = ?)');
+    params.push(productId);
+  }
   const scope = branchFilter('s.branch_id', branchIds);
   const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
   const allParams = [...params, ...scope.params];
@@ -84,11 +89,16 @@ export async function inventoryReport({ branchId, categoryId, branchIds }) {
   };
 }
 
-export async function purchasesReport({ dateFrom, dateTo, branchId, supplierId, branchIds }) {
+export async function purchasesReport({ dateFrom, dateTo, branchId, supplierId, status, productId, branchIds }) {
   const conditions = ['po.created_at >= ?', 'po.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
   const params = [dateFrom, dateTo];
   if (branchId) { conditions.push('po.branch_id = ?'); params.push(branchId); }
   if (supplierId) { conditions.push('po.supplier_id = ?'); params.push(supplierId); }
+  if (status) { conditions.push('po.status = ?'); params.push(status); }
+  if (productId) {
+    conditions.push('EXISTS (SELECT 1 FROM purchase_items pi WHERE pi.purchase_order_id = po.id AND pi.product_id = ?)');
+    params.push(productId);
+  }
   const scope = branchFilter('po.branch_id', branchIds);
   const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
   const allParams = [...params, ...scope.params];
@@ -319,10 +329,16 @@ export async function suppliersReport() {
   return { bySupplier };
 }
 
-export async function returnsReport({ dateFrom, dateTo, branchId, branchIds }) {
+export async function returnsReport({ dateFrom, dateTo, branchId, status, customerId, productId, branchIds }) {
   const conditions = ['r.created_at >= ?', 'r.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
   const params = [dateFrom, dateTo];
   if (branchId) { conditions.push('s.branch_id = ?'); params.push(branchId); }
+  if (status) { conditions.push('r.status = ?'); params.push(status); }
+  if (customerId) { conditions.push('r.customer_id = ?'); params.push(customerId); }
+  if (productId) {
+    conditions.push('EXISTS (SELECT 1 FROM return_items ri JOIN sale_items si ON si.id = ri.sale_item_id WHERE ri.return_id = r.id AND si.product_id = ?)');
+    params.push(productId);
+  }
   const scope = branchFilter('s.branch_id', branchIds);
   const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
   const allParams = [...params, ...scope.params];
@@ -371,5 +387,48 @@ export async function transfersReport({ dateFrom, dateTo, branchId, branchIds })
   return {
     summary: { totalTransfers: Number(summary.totalTransfers) },
     byStatus,
+  };
+}
+
+export async function usersReport({ dateFrom, dateTo, branchId, branchIds }) {
+  const conditions = ['u.deleted_at IS NULL', 'u.created_at >= ?', 'u.created_at < DATE_ADD(?, INTERVAL 1 DAY)'];
+  const params = [dateFrom, dateTo];
+  if (branchId) { conditions.push('u.branch_id = ?'); params.push(branchId); }
+  const scope = branchFilter('u.branch_id', branchIds);
+  const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
+  const allParams = [...params, ...scope.params];
+
+  const [[summary]] = await pool.query(
+    `SELECT COUNT(*) AS totalUsers,
+            SUM(u.status = 'active') AS activeUsers,
+            SUM(u.status = 'suspended') AS suspendedUsers,
+            SUM(u.status = 'locked') AS lockedUsers
+     FROM users u ${where}`,
+    allParams,
+  );
+
+  const [byRole] = await pool.query(
+    `SELECT r.name AS label, COUNT(*) AS count
+     FROM users u JOIN roles r ON r.id = u.role_id
+     ${where} GROUP BY r.id, r.name ORDER BY count DESC`,
+    allParams,
+  );
+
+  const [byBranch] = await pool.query(
+    `SELECT COALESCE(b.name, 'Unassigned') AS label, COUNT(*) AS count
+     FROM users u LEFT JOIN branches b ON b.id = u.branch_id
+     ${where} GROUP BY b.id, b.name ORDER BY count DESC`,
+    allParams,
+  );
+
+  return {
+    summary: {
+      totalUsers: Number(summary.totalUsers),
+      activeUsers: Number(summary.activeUsers) || 0,
+      suspendedUsers: Number(summary.suspendedUsers) || 0,
+      lockedUsers: Number(summary.lockedUsers) || 0,
+    },
+    byRole,
+    byBranch,
   };
 }

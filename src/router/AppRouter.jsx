@@ -4,6 +4,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import MainLayout from '../layouts/MainLayout';
 import ErrorLayout from '../layouts/ErrorLayout';
 import ProtectedRoute from './ProtectedRoute';
+import RequirePermission from './RequirePermission';
 import { ROUTES } from '../constants/routes';
 
 // Route-level code splitting — every page below is its own chunk, fetched
@@ -47,6 +48,7 @@ const ExpenseCategorySettings = lazy(() => import('../pages/settings/ExpenseCate
 const CarwashServiceSettings = lazy(() => import('../pages/settings/CarwashServiceSettings'));
 const Profile = lazy(() => import('../pages/profile/Profile'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
+const Forbidden403 = lazy(() => import('../pages/errors/Forbidden403'));
 
 function RouteFallback() {
   return (
@@ -79,19 +81,19 @@ function AppRouter() {
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
-              <Route path={ROUTES.SETTINGS_COMPANY} element={<CompanySettings />} />
-              <Route path="/settings/branches" element={<BranchList />} />
-              <Route path="/settings/branches/new" element={<BranchForm />} />
-              <Route path="/settings/branches/:id/edit" element={<BranchForm />} />
-              <Route path="/settings/users" element={<UserList />} />
-              <Route path="/settings/users/new" element={<UserForm />} />
-              <Route path="/settings/users/:id/edit" element={<UserForm />} />
-              <Route path="/settings/permissions" element={<RoleList />} />
-              <Route path="/settings/permissions/matrix" element={<PermissionMatrix />} />
-              <Route path="/settings/expense-categories" element={<ExpenseCategorySettings />} />
-              <Route path="/settings/carwash-services" element={<CarwashServiceSettings />} />
-              <Route path="/settings/system" element={<SystemSettings />} />
-              <Route path="/settings/backups" element={<BackupSettings />} />
+              <Route path={ROUTES.SETTINGS_COMPANY} element={<RequirePermission permission="company.manage"><CompanySettings /></RequirePermission>} />
+              <Route path="/settings/branches" element={<RequirePermission permission="branches.view"><BranchList /></RequirePermission>} />
+              <Route path="/settings/branches/new" element={<RequirePermission permission="branches.view"><BranchForm /></RequirePermission>} />
+              <Route path="/settings/branches/:id/edit" element={<RequirePermission permission="branches.view"><BranchForm /></RequirePermission>} />
+              <Route path="/settings/users" element={<RequirePermission permission="users.view"><UserList /></RequirePermission>} />
+              <Route path="/settings/users/new" element={<RequirePermission permission="users.view"><UserForm /></RequirePermission>} />
+              <Route path="/settings/users/:id/edit" element={<RequirePermission permission="users.view"><UserForm /></RequirePermission>} />
+              <Route path="/settings/permissions" element={<RequirePermission permission="roles.view"><RoleList /></RequirePermission>} />
+              <Route path="/settings/permissions/matrix" element={<RequirePermission permission="roles.view"><PermissionMatrix /></RequirePermission>} />
+              <Route path="/settings/expense-categories" element={<RequirePermission permission="settings.manage"><ExpenseCategorySettings /></RequirePermission>} />
+              <Route path="/settings/carwash-services" element={<RequirePermission permission="settings.manage"><CarwashServiceSettings /></RequirePermission>} />
+              <Route path="/settings/system" element={<RequirePermission permission="settings.view"><SystemSettings /></RequirePermission>} />
+              <Route path="/settings/backups" element={<RequirePermission permission="settings.manage"><BackupSettings /></RequirePermission>} />
               <Route path="/profile" element={<Profile />} />
 
               {/* Bookmark-safety redirects — these pages moved under Settings. */}
@@ -104,31 +106,32 @@ function AppRouter() {
               <Route path="/branches/new" element={<Navigate to="/settings/branches/new" replace />} />
               <Route path="/branches/:id/edit" element={<RedirectWithId to="/settings/branches/:id/edit" />} />
 
-              <Route path="/products" element={<ProductList />} />
-              <Route path="/products/new" element={<ProductForm />} />
-              <Route path="/products/:id/edit" element={<ProductForm />} />
-              <Route path="/inventory" element={<InventoryOverview />} />
-              <Route path="/inventory/movements" element={<StockMovements />} />
-              <Route path="/suppliers" element={<SupplierList />} />
-              <Route path="/suppliers/:id" element={<SupplierDetail />} />
-              <Route path="/purchases" element={<PurchaseList />} />
-              <Route path="/purchases/new" element={<PurchaseForm />} />
-              <Route path="/purchases/:id" element={<PurchaseDetail />} />
-              <Route path="/customers" element={<CustomerList />} />
-              <Route path="/customers/:id" element={<CustomerDetail />} />
-              <Route path="/pos" element={<POS />} />
-              <Route path="/pos/sales" element={<SaleList />} />
-              <Route path="/pos/sales/:id" element={<SaleDetail />} />
-              <Route path="/returns" element={<ReturnList />} />
-              <Route path="/returns/new" element={<ReturnForm />} />
-              <Route path="/returns/:id" element={<ReturnDetail />} />
-              <Route path="/expenses" element={<ExpenseList />} />
-              <Route path="/carwash" element={<CarWash />} />
-              <Route path="/reports" element={<ReportsCenter />} />
+              <Route path="/products" element={<RequirePermission permission="products.view"><ProductList /></RequirePermission>} />
+              <Route path="/products/new" element={<RequirePermission permission="products.view"><ProductForm /></RequirePermission>} />
+              <Route path="/products/:id/edit" element={<RequirePermission permission="products.view"><ProductForm /></RequirePermission>} />
+              <Route path="/inventory" element={<RequirePermission permission="inventory.view"><InventoryOverview /></RequirePermission>} />
+              <Route path="/inventory/movements" element={<RequirePermission permission="inventory.view"><StockMovements /></RequirePermission>} />
+              <Route path="/suppliers" element={<RequirePermission permission="suppliers.view"><SupplierList /></RequirePermission>} />
+              <Route path="/suppliers/:id" element={<RequirePermission permission="suppliers.view"><SupplierDetail /></RequirePermission>} />
+              <Route path="/purchases" element={<RequirePermission permission="purchases.view"><PurchaseList /></RequirePermission>} />
+              <Route path="/purchases/new" element={<RequirePermission permission="purchases.view"><PurchaseForm /></RequirePermission>} />
+              <Route path="/purchases/:id" element={<RequirePermission permission="purchases.view"><PurchaseDetail /></RequirePermission>} />
+              <Route path="/customers" element={<RequirePermission permission="customers.view"><CustomerList /></RequirePermission>} />
+              <Route path="/customers/:id" element={<RequirePermission permission="customers.view"><CustomerDetail /></RequirePermission>} />
+              <Route path="/pos" element={<RequirePermission permission="sales.view"><POS /></RequirePermission>} />
+              <Route path="/pos/sales" element={<RequirePermission permission="sales.view"><SaleList /></RequirePermission>} />
+              <Route path="/pos/sales/:id" element={<RequirePermission permission="sales.view"><SaleDetail /></RequirePermission>} />
+              <Route path="/returns" element={<RequirePermission permission="returns.view"><ReturnList /></RequirePermission>} />
+              <Route path="/returns/new" element={<RequirePermission permission="returns.view"><ReturnForm /></RequirePermission>} />
+              <Route path="/returns/:id" element={<RequirePermission permission="returns.view"><ReturnDetail /></RequirePermission>} />
+              <Route path="/expenses" element={<RequirePermission permission="expenses.view"><ExpenseList /></RequirePermission>} />
+              <Route path="/carwash" element={<RequirePermission permission="carwash.view"><CarWash /></RequirePermission>} />
+              <Route path="/reports" element={<RequirePermission permission="reports.view"><ReportsCenter /></RequirePermission>} />
             </Route>
           </Route>
 
           <Route element={<ErrorLayout />}>
+            <Route path={ROUTES.FORBIDDEN} element={<Forbidden403 />} />
             <Route path={ROUTES.NOT_FOUND} element={<NotFound404 />} />
             <Route path="*" element={<Navigate to={ROUTES.NOT_FOUND} replace />} />
           </Route>

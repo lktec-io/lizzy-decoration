@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FiPrinter, FiDownload, FiFileText, FiBarChart2 } from 'react-icons/fi';
+import { FiPrinter, FiDownload, FiFileText, FiBarChart2, FiGrid } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
 import EmptyState from '../../components/common/EmptyState';
 import Skeleton from '../../components/common/Skeleton';
@@ -7,6 +7,8 @@ import { usePermission } from '../../hooks/usePermission';
 import * as reportService from '../../services/reportService';
 import * as branchService from '../../services/branchService';
 import * as categoryService from '../../services/categoryService';
+import * as customerService from '../../services/customerService';
+import * as productService from '../../services/productService';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { downloadCsv } from '../../utils/exportCsv';
 import '../../styles/pages/Reports.css';
@@ -15,10 +17,34 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function yesterdayIso() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// Monday-based week start, matching regional convention (no other date-range
+// widget in the app currently defines a week start, so this is the first).
+function startOfWeekIso() {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  return monday.toISOString().slice(0, 10);
+}
+
 function firstOfMonthIso() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 }
+
+const DATE_PRESETS = {
+  today: () => [todayIso(), todayIso()],
+  yesterday: () => [yesterdayIso(), yesterdayIso()],
+  week: () => [startOfWeekIso(), todayIso()],
+  month: () => [firstOfMonthIso(), todayIso()],
+};
 
 const MONEY_KEYS = new Set([
   'value', 'totalRevenue', 'totalAmount', 'totalDiscount', 'averageSale', 'totalValue',
@@ -29,16 +55,48 @@ const MONEY_KEYS = new Set([
 // section (Sales, Inventory, Financial/Profit, Car Wash, Branch Reports) —
 // the backend still supports the other report types (Purchases, Products,
 // Customers, Suppliers, Returns, Transfers), they're just not surfaced here.
+const PURCHASE_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'received', label: 'Received' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const RETURN_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
 const REPORT_CONFIGS = {
   sales: {
-    label: 'Sales', filters: ['dateFrom', 'dateTo', 'branchId'],
+    label: 'Sales', filters: ['dateFrom', 'dateTo', 'branchId', 'customerId', 'productId'],
     summary: { totalSales: 'Total Sales', totalRevenue: 'Total Revenue', totalDiscount: 'Total Discount', averageSale: 'Average Sale' },
     breakdowns: [{ key: 'byDay', title: 'By Day', labelHeader: 'Date' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
+  },
+  customers: {
+    label: 'Customers', filters: ['dateFrom', 'dateTo', 'branchId'],
+    breakdowns: [{ key: 'topCustomers', title: 'Top Customers', labelHeader: 'Customer' }],
   },
   inventory: {
     label: 'Inventory', filters: ['branchId', 'categoryId'],
     summary: { totalRecords: 'Total Records', totalValue: 'Total Value', lowStock: 'Low Stock', outOfStock: 'Out of Stock' },
     breakdowns: [{ key: 'byCategory', title: 'By Category', labelHeader: 'Category' }],
+  },
+  products: {
+    label: 'Products', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
+    breakdowns: [{ key: 'topProducts', title: 'Top Products', labelHeader: 'Product' }],
+  },
+  purchases: {
+    label: 'Purchases', filters: ['dateFrom', 'dateTo', 'branchId', 'status', 'productId'],
+    statusOptions: PURCHASE_STATUS_OPTIONS,
+    summary: { totalPurchases: 'Total Purchases', totalAmount: 'Total Amount' },
+    breakdowns: [{ key: 'bySupplier', title: 'By Supplier', labelHeader: 'Supplier' }],
+  },
+  returns: {
+    label: 'Returns', filters: ['dateFrom', 'dateTo', 'branchId', 'status', 'customerId', 'productId'],
+    statusOptions: RETURN_STATUS_OPTIONS,
+    summary: { totalReturns: 'Total Returns', totalRefund: 'Total Refund' },
+    breakdowns: [{ key: 'byReason', title: 'By Reason', labelHeader: 'Reason' }],
   },
   expenses: {
     label: 'Expenses', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
@@ -61,6 +119,11 @@ const REPORT_CONFIGS = {
   branches: {
     label: 'Branches', filters: ['dateFrom', 'dateTo'],
     breakdowns: [{ key: 'byBranch', title: 'Branch Comparison', labelHeader: 'Branch' }],
+  },
+  users: {
+    label: 'Users', filters: ['dateFrom', 'dateTo', 'branchId'],
+    summary: { totalUsers: 'Total Users', activeUsers: 'Active', suspendedUsers: 'Suspended', lockedUsers: 'Locked' },
+    breakdowns: [{ key: 'byRole', title: 'By Role', labelHeader: 'Role' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
   },
 };
 
@@ -93,7 +156,7 @@ function BreakdownTable({ title, labelHeader, rows, onExport, canExport }) {
       <div className="card-header">
         <span className="card-title">{title}</span>
         {canExport && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onExport(title, rows)}>
+          <button type="button" className="btn btn-ghost btn-sm no-print" onClick={() => onExport(title, rows)}>
             <FiDownload aria-hidden="true" /> CSV
           </button>
         )}
@@ -121,18 +184,34 @@ function ReportsCenter() {
   const [reportType, setReportType] = useState('sales');
   const [branches, setBranches] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState({ dateFrom: firstOfMonthIso(), dateTo: todayIso(), branchId: '', categoryId: '' });
+  const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [datePreset, setDatePreset] = useState('month');
+  const [filters, setFilters] = useState({
+    dateFrom: firstOfMonthIso(), dateTo: todayIso(), branchId: '', categoryId: '', status: '', customerId: '', productId: '',
+  });
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   const config = REPORT_CONFIGS[reportType];
 
   useEffect(() => {
     branchService.listActiveBranches().then(setBranches);
     categoryService.listActiveCategories().then(setCategories);
+    customerService.listActiveCustomers().then(setCustomers);
+    productService.listProducts({ limit: 200 }).then((result) => setProducts(result.items || []));
   }, []);
+
+  const applyDatePreset = (preset) => {
+    setDatePreset(preset);
+    if (preset === 'custom') return;
+    const [from, to] = DATE_PRESETS[preset]();
+    setFilters((prev) => ({ ...prev, dateFrom: from, dateTo: to }));
+  };
 
   const loadReport = () => {
     setLoading(true);
@@ -152,25 +231,51 @@ function ReportsCenter() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetching the selected report on filter/type change is standard data-fetching, not derived state
     loadReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- config is derived from reportType, individual filter fields tracked explicitly below
-  }, [reportType, filters.dateFrom, filters.dateTo, filters.branchId, filters.categoryId]);
+  }, [reportType, filters.dateFrom, filters.dateTo, filters.branchId, filters.categoryId, filters.status, filters.customerId, filters.productId]);
 
   const summaryEntries = useMemo(() => {
     if (!report?.summary || !config.summary) return [];
     return Object.entries(config.summary).map(([key, label]) => ({ key, label, value: report.summary[key] }));
   }, [report, config]);
 
+  const buildExportParams = () => {
+    const params = {};
+    config.filters.forEach((key) => {
+      if (filters[key]) params[key] = filters[key];
+    });
+    return params;
+  };
+
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      const params = {};
-      config.filters.forEach((key) => {
-        if (filters[key]) params[key] = filters[key];
-      });
-      await reportService.exportReportPdf(reportType, params);
+      await reportService.exportReportPdf(reportType, buildExportParams());
     } catch {
       setError('Failed to export PDF.');
     } finally {
       setExportingPdf(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await reportService.exportReportExcel(reportType, buildExportParams());
+    } catch {
+      setError('Failed to export Excel.');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      await reportService.exportReportCsv(reportType, buildExportParams());
+    } catch {
+      setError('Failed to export CSV.');
+    } finally {
+      setExportingCsv(false);
     }
   };
 
@@ -188,6 +293,12 @@ function ReportsCenter() {
             </button>
             <button type="button" className={`btn btn-secondary ${exportingPdf ? 'btn-loading' : ''}`} onClick={handleExportPdf} disabled={exportingPdf}>
               <FiFileText aria-hidden="true" /> Export PDF
+            </button>
+            <button type="button" className={`btn btn-secondary ${exportingExcel ? 'btn-loading' : ''}`} onClick={handleExportExcel} disabled={exportingExcel}>
+              <FiGrid aria-hidden="true" /> Export Excel
+            </button>
+            <button type="button" className={`btn btn-secondary ${exportingCsv ? 'btn-loading' : ''}`} onClick={handleExportCsv} disabled={exportingCsv}>
+              <FiDownload aria-hidden="true" /> Export CSV
             </button>
           </div>
         )}
@@ -210,14 +321,26 @@ function ReportsCenter() {
         <div className="card-body reports-filter-bar">
           {config.filters.includes('dateFrom') && (
             <div className="form-group">
+              <label className="form-label" htmlFor="datePreset">Quick Range</label>
+              <select id="datePreset" className="form-control" value={datePreset} onChange={(e) => applyDatePreset(e.target.value)}>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+          )}
+          {config.filters.includes('dateFrom') && (
+            <div className="form-group">
               <label className="form-label" htmlFor="dateFrom">From</label>
-              <input id="dateFrom" type="date" className="form-control" value={filters.dateFrom} onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))} />
+              <input id="dateFrom" type="date" className="form-control" value={filters.dateFrom} onChange={(e) => { setDatePreset('custom'); setFilters((prev) => ({ ...prev, dateFrom: e.target.value })); }} />
             </div>
           )}
           {config.filters.includes('dateTo') && (
             <div className="form-group">
               <label className="form-label" htmlFor="dateTo">To</label>
-              <input id="dateTo" type="date" className="form-control" value={filters.dateTo} onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))} />
+              <input id="dateTo" type="date" className="form-control" value={filters.dateTo} onChange={(e) => { setDatePreset('custom'); setFilters((prev) => ({ ...prev, dateTo: e.target.value })); }} />
             </div>
           )}
           {config.filters.includes('branchId') && (
@@ -235,6 +358,33 @@ function ReportsCenter() {
               <select id="categoryId" className="form-control" value={filters.categoryId} onChange={(e) => setFilters((prev) => ({ ...prev, categoryId: e.target.value }))}>
                 <option value="">All Categories</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
+          {config.filters.includes('status') && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="status">Status</label>
+              <select id="status" className="form-control" value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}>
+                <option value="">All Statuses</option>
+                {config.statusOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
+          )}
+          {config.filters.includes('customerId') && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="customerId">Customer</label>
+              <select id="customerId" className="form-control" value={filters.customerId} onChange={(e) => setFilters((prev) => ({ ...prev, customerId: e.target.value }))}>
+                <option value="">All Customers</option>
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>)}
+              </select>
+            </div>
+          )}
+          {config.filters.includes('productId') && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="productId">Product</label>
+              <select id="productId" className="form-control" value={filters.productId} onChange={(e) => setFilters((prev) => ({ ...prev, productId: e.target.value }))}>
+                <option value="">All Products</option>
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
           )}

@@ -43,7 +43,7 @@ function expiresInToMs(expiresIn) {
   return value * unit;
 }
 
-async function issueTokensForUser(user, { rememberMe, ipAddress, userAgent, deviceLabel }) {
+async function issueTokensForUser(user, { rememberMe, ipAddress, userAgent, deviceLabel }, permissions) {
   const refreshExpiresIn = rememberMe ? REFRESH_TOKEN_EXPIRES_IN_REMEMBER : REFRESH_TOKEN_EXPIRES_IN_DEFAULT;
   const refreshExpiresAt = new Date(Date.now() + expiresInToMs(refreshExpiresIn));
 
@@ -68,7 +68,16 @@ async function issueTokensForUser(user, { rememberMe, ipAddress, userAgent, devi
     expiresAt: refreshExpiresAt,
   });
 
-  const accessToken = signAccessToken({ sub: user.id, roleId: user.role_id, role: user.role_name, branchId: user.branch_id });
+  // `permissions` is embedded in the access token as a convenience for the
+  // frontend (so it can read user.permissions off the decoded/response-body
+  // user without a separate round trip) — it is NOT what authorize()
+  // trusts for enforcement. That middleware keeps querying
+  // permissionRepository.getCodesForRole() (with its own short-lived cache)
+  // on every request, so a permission revoked mid-session still takes
+  // effect within that cache window instead of only at token expiry.
+  const accessToken = signAccessToken({
+    sub: user.id, roleId: user.role_id, role: user.role_name, branchId: user.branch_id, permissions,
+  });
 
   return { accessToken, refreshToken, refreshExpiresAt };
 }
@@ -103,9 +112,10 @@ export async function login({ identifier, password, rememberMe, ipAddress, userA
     referenceId: user.id,
   });
 
-  const tokens = await issueTokensForUser(user, { rememberMe, ipAddress, userAgent, deviceLabel });
+  const userWithPermissions = await withPermissions(user);
+  const tokens = await issueTokensForUser(user, { rememberMe, ipAddress, userAgent, deviceLabel }, userWithPermissions.permissions);
 
-  return { ...tokens, user: await withPermissions(user) };
+  return { ...tokens, user: userWithPermissions };
 }
 
 export async function refresh({ refreshToken }) {
@@ -146,9 +156,17 @@ export async function refresh({ refreshToken }) {
     expiresAt: refreshExpiresAt,
   });
 
-  const accessToken = signAccessToken({ sub: user.id, roleId: user.role_id, role: user.role_name, branchId: user.branch_id });
+  // Recomputed fresh from the DB on every refresh (not carried over from the
+  // old access token's claim) so a permission change made mid-session is
+  // reflected in the new token within one refresh cycle, same as the login
+  // path — see the comment in issueTokensForUser() for why authorize()
+  // still doesn't trust this claim directly.
+  const userWithPermissions = await withPermissions(user);
+  const accessToken = signAccessToken({
+    sub: user.id, roleId: user.role_id, role: user.role_name, branchId: user.branch_id, permissions: userWithPermissions.permissions,
+  });
 
-  return { accessToken, refreshToken: newRefreshToken, user: await withPermissions(user) };
+  return { accessToken, refreshToken: newRefreshToken, user: userWithPermissions };
 }
 
 export async function logout({ refreshToken }) {

@@ -82,6 +82,21 @@ function Sidebar({ collapsed, onToggle, onNavigate, mobileOpen }) {
     navigate(ROUTES.LOGIN, { replace: true });
   };
 
+  // Explicit close-before-navigate: intercept the NavLink's own navigation,
+  // close the drawer synchronously, then navigate on the next animation
+  // frame so the close is guaranteed to be the first visible effect of the
+  // tap rather than something that merely happens to be scheduled
+  // alongside routing. NavLink is kept (not swapped for a plain button)
+  // purely for its automatic isActive styling — the current route still
+  // drives that regardless of how navigation was triggered.
+  const handleNavClick = (event, to) => {
+    event.preventDefault();
+    onNavigate?.();
+    requestAnimationFrame(() => {
+      navigate(to);
+    });
+  };
+
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-brand">
@@ -98,7 +113,6 @@ function Sidebar({ collapsed, onToggle, onNavigate, mobileOpen }) {
         variants={NAV_STAGGER_CONTAINER}
         initial={openKey === 0 ? false : 'hidden'}
         animate="visible"
-        onClickCapture={onNavigate}
       >
         {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
           <NavLink
@@ -106,7 +120,7 @@ function Sidebar({ collapsed, onToggle, onNavigate, mobileOpen }) {
             to={to}
             end={end}
             className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
-            onClick={onNavigate}
+            onClick={(event) => handleNavClick(event, to)}
           >
             {({ isActive }) => (
               <>

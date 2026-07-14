@@ -157,19 +157,20 @@ function Navbar({ onMenuClick, menuOpen }) {
 
   return (
     <header className="navbar">
+      {/*
+        Single source of truth: `menuOpen` alone decides which icon is
+        visible. Both icons are always mounted, absolutely stacked exactly
+        on top of each other, and only their opacity/rotation (driven by
+        the single `is-open` class below) changes — there is no mount/
+        unmount race and no way for both to render as visually distinct,
+        stacked glyphs, because neither one is ever added or removed from
+        the DOM after first render.
+      */}
       <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span
-            key={menuOpen ? 'close' : 'open'}
-            className="navbar-menu-btn-icon"
-            initial={{ rotate: -90, opacity: 0 }}
-            animate={{ rotate: 0, opacity: 1 }}
-            exit={{ rotate: 90, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-          >
-            {menuOpen ? <FiX /> : <FiMenu />}
-          </motion.span>
-        </AnimatePresence>
+        <span className={`navbar-menu-icon-stack ${menuOpen ? 'is-open' : ''}`}>
+          <FiMenu className="navbar-menu-icon navbar-menu-icon-hamburger" aria-hidden="true" />
+          <FiX className="navbar-menu-icon navbar-menu-icon-close" aria-hidden="true" />
+        </span>
       </button>
 
       {company?.logo_path && (

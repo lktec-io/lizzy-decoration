@@ -21,10 +21,44 @@
   transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.navbar-menu-btn-icon {
+/* Both icons are always in the DOM, stacked exactly on top of each other
+   via position:absolute — only opacity/rotation differ, driven by the
+   single .is-open class (itself driven by nothing but `menuOpen`). This
+   guarantees exactly one is ever visible: there's no mount/unmount
+   sequencing that could leave both, or neither, showing. */
+.navbar-menu-icon-stack {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 1em;
+  height: 1em;
+}
+
+.navbar-menu-icon {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.navbar-menu-icon-hamburger {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+.navbar-menu-icon-close {
+  opacity: 0;
+  transform: rotate(-90deg);
+}
+
+.navbar-menu-icon-stack.is-open .navbar-menu-icon-hamburger {
+  opacity: 0;
+  transform: rotate(90deg);
+}
+
+.navbar-menu-icon-stack.is-open .navbar-menu-icon-close {
+  opacity: 1;
+  transform: rotate(0deg);
 }
 
 /* Sidebar already carries the brand on desktop; the navbar logo exists for

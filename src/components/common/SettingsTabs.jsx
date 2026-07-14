@@ -5,7 +5,7 @@ const TABS = [
   { to: '/settings/company', label: 'Company', icon: FiBriefcase },
   { to: '/settings/branches', label: 'Branches', icon: FiMapPin },
   { to: '/settings/users', label: 'Users', icon: FiUsers },
-  { to: '/settings/permissions', label: 'Permissions', icon: FiShield },
+  { to: '/settings/permissions', label: 'Roles', icon: FiShield },
   { to: '/settings/expense-categories', label: 'Expense Categories', icon: FiTag },
   { to: '/settings/carwash-services', label: 'Car Wash Packages', icon: FiDroplet },
   { to: '/settings/system', label: 'Tax & Email', icon: FiPercent },

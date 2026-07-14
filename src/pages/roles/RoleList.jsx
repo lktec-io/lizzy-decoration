@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FiPlus, FiEdit2, FiTrash2, FiShield } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -11,12 +10,13 @@ import { useToast } from '../../hooks/useToast';
 import * as roleService from '../../services/roleService';
 import '../../styles/pages/Notifications.css';
 
+// Permissions are fixed per system role (seeded server-side) rather than
+// hand-edited through a UI — this page is role bookkeeping (name/description)
+// only, not a permission-assignment tool.
 function RoleList() {
-  const navigate = useNavigate();
   const canCreate = usePermission('roles.create');
   const canEdit = usePermission('roles.edit');
   const canDelete = usePermission('roles.delete');
-  const canManagePermissions = usePermission('roles.manage');
   const toast = useToast();
 
   const [roles, setRoles] = useState([]);
@@ -98,11 +98,6 @@ function RoleList() {
       label: '',
       render: (row) => (
         <div className="table-actions">
-          {canManagePermissions && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate('/settings/permissions/matrix')} aria-label="Manage permissions">
-              <FiShield />
-            </button>
-          )}
           {canEdit && (
             <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit role">
               <FiEdit2 />

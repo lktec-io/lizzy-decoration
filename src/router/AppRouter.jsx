@@ -19,7 +19,6 @@ const CompanySettings = lazy(() => import('../pages/company/CompanySettings'));
 const UserList = lazy(() => import('../pages/users/UserList'));
 const UserForm = lazy(() => import('../pages/users/UserForm'));
 const RoleList = lazy(() => import('../pages/roles/RoleList'));
-const PermissionMatrix = lazy(() => import('../pages/roles/PermissionMatrix'));
 const BranchList = lazy(() => import('../pages/branches/BranchList'));
 const BranchForm = lazy(() => import('../pages/branches/BranchForm'));
 const ProductList = lazy(() => import('../pages/products/ProductList'));
@@ -89,7 +88,6 @@ function AppRouter() {
               <Route path="/settings/users/new" element={<RequirePermission permission="users.view"><UserForm /></RequirePermission>} />
               <Route path="/settings/users/:id/edit" element={<RequirePermission permission="users.view"><UserForm /></RequirePermission>} />
               <Route path="/settings/permissions" element={<RequirePermission permission="roles.view"><RoleList /></RequirePermission>} />
-              <Route path="/settings/permissions/matrix" element={<RequirePermission permission="roles.view"><PermissionMatrix /></RequirePermission>} />
               <Route path="/settings/expense-categories" element={<RequirePermission permission="settings.manage"><ExpenseCategorySettings /></RequirePermission>} />
               <Route path="/settings/carwash-services" element={<RequirePermission permission="settings.manage"><CarwashServiceSettings /></RequirePermission>} />
               <Route path="/settings/system" element={<RequirePermission permission="settings.view"><SystemSettings /></RequirePermission>} />
@@ -101,7 +99,7 @@ function AppRouter() {
               <Route path="/users/new" element={<Navigate to="/settings/users/new" replace />} />
               <Route path="/users/:id/edit" element={<RedirectWithId to="/settings/users/:id/edit" />} />
               <Route path="/roles" element={<Navigate to="/settings/permissions" replace />} />
-              <Route path="/roles/:id/permissions" element={<Navigate to="/settings/permissions/matrix" replace />} />
+              <Route path="/roles/:id/permissions" element={<Navigate to="/settings/permissions" replace />} />
               <Route path="/branches" element={<Navigate to="/settings/branches" replace />} />
               <Route path="/branches/new" element={<Navigate to="/settings/branches/new" replace />} />
               <Route path="/branches/:id/edit" element={<RedirectWithId to="/settings/branches/:id/edit" />} />

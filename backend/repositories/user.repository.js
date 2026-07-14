@@ -133,8 +133,28 @@ export async function updateAvatarPath(id, avatarPath) {
   return findById(id);
 }
 
+// Mangles email/username/phone at delete time, not just marks deleted_at —
+// those three columns each carry a plain UNIQUE KEY at the schema level
+// (see 002_create_branches_users.sql) with no awareness of deleted_at, so
+// a soft-deleted row's original values permanently block recreating an
+// account with the same email/username/phone: assertNoConflict() (the
+// app-level check) correctly filters deleted_at IS NULL and finds nothing,
+// but the raw INSERT then hits the DB's own unique index and fails with
+// ER_DUP_ENTRY — surfacing to the client as a 409 on an account that looks,
+// from the UI, like it was already deleted. Using the row's own id keeps
+// every mangled value both deterministic and permanently unique (ids are
+// never reused), and each generated value comfortably fits its column's
+// width (email VARCHAR(150), username VARCHAR(50), phone VARCHAR(20)).
 export async function softDelete(id, userId) {
-  await pool.query('UPDATE users SET deleted_at = NOW(), updated_by = ? WHERE id = ?', [userId, id]);
+  await pool.query(
+    `UPDATE users
+     SET deleted_at = NOW(), updated_by = ?,
+         email = CONCAT('deleted_user_', id, '@deleted.invalid'),
+         username = CONCAT('deleted_user_', id),
+         phone = CONCAT('deleted', id)
+     WHERE id = ?`,
+    [userId, id],
+  );
 }
 
 export async function getBranchIds(userId) {

@@ -9,9 +9,16 @@ import PageTransition from '../components/common/PageTransition';
 // responsive.css forces the desktop rail to stay opacity:1/transform:none
 // regardless of this, since isSidebarOpen never becomes true there (the
 // hamburger that would toggle it is hidden on desktop).
+// Close is intentionally faster than open (0.2s vs 0.3s) and matches the
+// hamburger icon's own 0.2s CSS transition (Navbar.css) exactly — with
+// mismatched durations the icon used to finish reverting to hamburger
+// ~150ms before the (82%-opaque, blurred) drawer panel finished fading
+// out, so a screenshot taken in that window showed a "hamburger already
+// back, but panel still ghosted over the page" frame that read as stuck
+// even though it was actively animating closed.
 const SIDEBAR_DRAWER_VARIANTS = {
-  closed: { opacity: 0, x: -25, y: 12, scale: 0.98 },
-  open: { opacity: 1, x: 0, y: 0, scale: 1 },
+  closed: { opacity: 0, x: -25, y: 12, scale: 0.98, transition: { duration: 0.2, ease: 'easeIn' } },
+  open: { opacity: 1, x: 0, y: 0, scale: 1, transition: { duration: 0.3, ease: 'easeOut' } },
 };
 
 function MainLayout() {
@@ -70,9 +77,8 @@ function MainLayout() {
           <motion.div
             className="app-sidebar-overlay"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            animate={{ opacity: 1, transition: { duration: 0.25 } }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
             onClick={closeSidebar}
           />
         )}
@@ -83,7 +89,6 @@ function MainLayout() {
         variants={SIDEBAR_DRAWER_VARIANTS}
         initial={false}
         animate={isSidebarOpen ? 'open' : 'closed'}
-        transition={{ duration: 0.35, ease: 'easeInOut' }}
       >
         <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} onNavigate={closeSidebar} isOpen={isSidebarOpen} />
       </motion.div>

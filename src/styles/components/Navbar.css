@@ -23,7 +23,7 @@
 
 /* Both icons are always in the DOM, stacked exactly on top of each other
    via position:absolute — only opacity/rotation differ, driven by the
-   single .is-open class (itself driven by nothing but `menuOpen`). This
+   single .is-open class (itself driven by nothing but `isOpen`). This
    guarantees exactly one is ever visible: there's no mount/unmount
    sequencing that could leave both, or neither, showing. */
 .navbar-menu-icon-stack {

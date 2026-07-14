@@ -13,7 +13,7 @@ import { ROUTES } from '../../constants/routes';
 import '../../styles/components/Sidebar.css';
 
 // Staggered reveal, played only when the mobile drawer opens (see the
-// openKey/key-remount trick in Sidebar() below) — on desktop mobileOpen
+// openKey/key-remount trick in Sidebar() below) — on desktop isOpen
 // never becomes true so this never triggers, avoiding an unwanted
 // animate-in on every load. Tuned so the LAST of 12 nav items finishes
 // fading in by ~450ms — verified via real browser screenshots that the
@@ -55,7 +55,7 @@ const NAV_ITEMS = [
   { to: '/settings/company', label: 'Settings', icon: FiSettings },
 ];
 
-function Sidebar({ collapsed, onToggle, onNavigate, mobileOpen }) {
+function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
   const { logout } = useAuth();
   const { company } = useCompany();
   const navigate = useNavigate();
@@ -63,17 +63,19 @@ function Sidebar({ collapsed, onToggle, onNavigate, mobileOpen }) {
 
   // Replays the label/icon stagger every time the mobile drawer opens: each
   // open increments openKey, which remounts the nav list so its "hidden"
-  // initial state applies fresh. Desktop never toggles mobileOpen (the
+  // initial state applies fresh. Desktop never toggles isOpen (the
   // hamburger button that would is hidden there), so openKey stays 0
   // forever and initial={false} below keeps desktop's instant, unanimated
   // rendering exactly as it was. Derived directly during render (not an
   // effect) per React's "adjusting state when a prop changes" pattern —
-  // this is a prop-driven derivation, not a side effect.
+  // this is a prop-driven derivation, not a side effect. `isOpen` is the
+  // SAME state MainLayout uses for the overlay, the drawer panel, and
+  // Navbar's icon — this component never tracks its own copy of it.
   const [openKey, setOpenKey] = useState(0);
-  const [prevMobileOpen, setPrevMobileOpen] = useState(mobileOpen);
-  if (mobileOpen !== prevMobileOpen) {
-    setPrevMobileOpen(mobileOpen);
-    if (mobileOpen) setOpenKey((key) => key + 1);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) setOpenKey((key) => key + 1);
   }
 
   const handleLogout = async () => {

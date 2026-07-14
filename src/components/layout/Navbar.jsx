@@ -112,7 +112,7 @@ function useGlobalSearch() {
   return { query, setQuery, results, open, setOpen };
 }
 
-function Navbar({ onMenuClick, menuOpen }) {
+function Navbar({ onMenuClick, isOpen }) {
   const now = useClock();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -158,16 +158,18 @@ function Navbar({ onMenuClick, menuOpen }) {
   return (
     <header className="navbar">
       {/*
-        Single source of truth: `menuOpen` alone decides which icon is
-        visible. Both icons are always mounted, absolutely stacked exactly
-        on top of each other, and only their opacity/rotation (driven by
-        the single `is-open` class below) changes — there is no mount/
-        unmount race and no way for both to render as visually distinct,
-        stacked glyphs, because neither one is ever added or removed from
-        the DOM after first render.
+        Single source of truth: `isOpen` is the exact same isSidebarOpen
+        state MainLayout uses for the overlay and the drawer panel — this
+        button doesn't own any state of its own, it only reads this prop.
+        Both icons are always mounted, absolutely stacked exactly on top
+        of each other, and only their opacity/rotation (driven by the
+        single `is-open` class below) changes — there is no mount/unmount
+        race and no way for both to render as visually distinct, stacked
+        glyphs, because neither one is ever added or removed from the DOM
+        after first render.
       */}
-      <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>
-        <span className={`navbar-menu-icon-stack ${menuOpen ? 'is-open' : ''}`}>
+      <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={isOpen ? 'Close menu' : 'Open menu'}>
+        <span className={`navbar-menu-icon-stack ${isOpen ? 'is-open' : ''}`}>
           <FiMenu className="navbar-menu-icon navbar-menu-icon-hamburger" aria-hidden="true" />
           <FiX className="navbar-menu-icon navbar-menu-icon-close" aria-hidden="true" />
         </span>

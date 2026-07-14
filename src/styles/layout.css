@@ -88,7 +88,7 @@ summary {
 
 /* Safety net: the mobile drawer's Framer Motion opacity/transform variants
    (MainLayout.jsx) must never affect the desktop rail, which stays
-   permanently visible and unanimated regardless of the mobileOpen state
+   permanently visible and unanimated regardless of the isSidebarOpen state
    that drives them. */
 @media (min-width: 769px) {
   .app-sidebar {

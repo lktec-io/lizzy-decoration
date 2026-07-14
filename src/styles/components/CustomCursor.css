@@ -89,3 +89,80 @@ html.cursor-click-active .cursor-ring {
     transition: none;
   }
 }
+
+/* Mobile counterpart to the dot/ring pair: a soft glow that follows the
+   finger while it's on the glass, plus a short-lived expanding ripple
+   spawned on tap targets (buttons, cards, menu items, icons). Coarse-pointer
+   only — CustomCursor.jsx never adds `custom-touch-active` on fine-pointer
+   (mouse) devices, so desktop is completely unaffected. */
+.touch-glow {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 72px;
+  height: 72px;
+  margin-left: -36px;
+  margin-top: -36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.32) 0%, rgba(16, 185, 129, 0.1) 55%, rgba(16, 185, 129, 0) 78%);
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: opacity 0.28s ease;
+}
+
+html.custom-touch-active .touch-glow {
+  display: block;
+}
+
+html.custom-touch-active.touch-glow-active .touch-glow {
+  opacity: 1;
+}
+
+.touch-ripple-layer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+
+html.custom-touch-active .touch-ripple-layer {
+  display: block;
+}
+
+.touch-ripple {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.32);
+  border: 1.5px solid rgba(16, 185, 129, 0.6);
+  animation: touch-ripple-expand 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes touch-ripple-expand {
+  0% {
+    transform: scale(0);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(7);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .touch-glow {
+    transition: none;
+  }
+  .touch-ripple {
+    animation: none;
+    display: none;
+  }
+}

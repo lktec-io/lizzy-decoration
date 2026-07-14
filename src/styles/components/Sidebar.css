@@ -104,7 +104,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   flex-shrink: 0;
 }
 
@@ -150,6 +150,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  font-size: var(--font-size-lg);
 }
 
 .sidebar-collapse-toggle:hover {

@@ -95,7 +95,15 @@
 .btn-icon {
   padding: var(--space-2);
   border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
   line-height: 0;
+}
+
+/* Pagination's prev/next arrows combine .btn-sm with .btn-icon — keep those
+   a size down from the standalone icon-button default above so they stay
+   proportional to the small button's tighter padding. */
+.btn-sm.btn-icon {
+  font-size: var(--font-size-md);
 }
 
 /* Semantic icon coloring, matched by the same aria-label wording already

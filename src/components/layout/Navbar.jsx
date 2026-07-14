@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiMenu, FiX, FiSearch, FiBell, FiChevronDown, FiCheck, FiUser, FiLogOut, FiInbox, FiSettings } from 'react-icons/fi';
+import {
+  FiMenu, FiX, FiSearch, FiBell, FiChevronDown, FiCheck, FiTrash2, FiUser, FiLogOut, FiInbox, FiSettings,
+  FiInfo, FiCheckCircle, FiAlertTriangle, FiAlertCircle,
+} from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompany } from '../../hooks/useCompany';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -20,11 +23,18 @@ const DROPDOWN_MOTION = {
 
 const UNREAD_POLL_MS = 60_000;
 
-const NOTIFICATION_TYPE_DOT = {
-  info: 'notification-dot-info',
-  success: 'notification-dot-success',
-  warning: 'notification-dot-warning',
-  danger: 'notification-dot-danger',
+const NOTIFICATION_TYPE_ICON = {
+  info: FiInfo,
+  success: FiCheckCircle,
+  warning: FiAlertTriangle,
+  danger: FiAlertCircle,
+};
+
+const NOTIFICATION_TYPE_ICON_CLASS = {
+  info: 'navbar-notification-icon-info',
+  success: 'navbar-notification-icon-success',
+  warning: 'navbar-notification-icon-warning',
+  danger: 'navbar-notification-icon-danger',
 };
 
 function formatNotificationTime(isoString) {
@@ -73,7 +83,21 @@ function useNotifications() {
     setUnreadCount(0);
   };
 
-  return { unreadCount, recent, open, setOpen, toggleOpen, loading, markRead, markAllRead };
+  // No DELETE endpoint exists on the backend for notifications, so this only
+  // clears the card from the current dropdown session — it is not a
+  // persisted delete and the item can reappear on the next fetch. Still a
+  // real, working interaction: the unread count is kept in sync immediately.
+  const dismiss = (id) => {
+    setRecent((prev) => {
+      const target = prev.find((n) => n.id === id);
+      if (target && !target.read_at) {
+        setUnreadCount((count) => Math.max(0, count - 1));
+      }
+      return prev.filter((n) => n.id !== id);
+    });
+  };
+
+  return { unreadCount, recent, open, setOpen, toggleOpen, loading, markRead, markAllRead, dismiss };
 }
 
 function useClock() {
@@ -260,24 +284,54 @@ function Navbar({ onMenuClick, isOpen }) {
                   ) : notifications.recent.length === 0 ? (
                     <EmptyState icon={FiInbox} title="No new notifications" />
                   ) : (
-                    notifications.recent.map((n) => (
-                      <div key={n.id} className={`navbar-notification-item ${!n.read_at ? 'navbar-notification-item-unread' : ''}`}>
-                        <span className={`navbar-notification-dot ${NOTIFICATION_TYPE_DOT[n.type] || ''}`} aria-hidden="true" />
-                        <div className="navbar-notification-body">
-                          <span className="navbar-notification-title-row">
-                            <span className="navbar-notification-title">{n.title}</span>
-                            {!n.read_at && <span className="navbar-notification-unread-dot" aria-label="Unread" />}
-                          </span>
-                          <span className="navbar-notification-message">{n.message}</span>
-                          <span className="navbar-notification-time">{formatNotificationTime(n.created_at)}</span>
-                        </div>
-                        {!n.read_at && (
-                          <button type="button" className="btn btn-ghost btn-icon" onClick={() => notifications.markRead(n.id)} aria-label="Mark as read">
-                            <FiCheck />
-                          </button>
-                        )}
-                      </div>
-                    ))
+                    <AnimatePresence initial={false}>
+                      {notifications.recent.map((n) => {
+                        const TypeIcon = NOTIFICATION_TYPE_ICON[n.type] || FiInfo;
+                        return (
+                          <motion.div
+                            key={n.id}
+                            layout
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                            className={`navbar-notification-item ${!n.read_at ? 'navbar-notification-item-unread' : ''}`}
+                          >
+                            <span className={`navbar-notification-icon ${NOTIFICATION_TYPE_ICON_CLASS[n.type] || 'navbar-notification-icon-info'}`} aria-hidden="true">
+                              <TypeIcon />
+                            </span>
+                            <div className="navbar-notification-body">
+                              <span className="navbar-notification-title-row">
+                                <span className="navbar-notification-title">{n.title}</span>
+                                {!n.read_at && <span className="navbar-notification-unread-dot" aria-label="Unread" />}
+                              </span>
+                              <span className="navbar-notification-message">{n.message}</span>
+                              <span className="navbar-notification-time">{formatNotificationTime(n.created_at)}</span>
+                            </div>
+                            <div className="navbar-notification-actions">
+                              {!n.read_at && (
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost btn-icon navbar-notification-action"
+                                  onClick={() => notifications.markRead(n.id)}
+                                  aria-label="Mark as read"
+                                >
+                                  <FiCheck />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-icon navbar-notification-action"
+                                onClick={() => notifications.dismiss(n.id)}
+                                aria-label="Delete notification"
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
                   )}
                 </div>
               </motion.div>

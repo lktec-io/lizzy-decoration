@@ -25,11 +25,11 @@ export async function findById(id) {
   return rows[0] || null;
 }
 
-export async function create({ firstName, lastName, gender, phone, email, username, passwordHash, roleId, branchId }) {
+export async function create({ firstName, lastName, gender, phone, email, username, passwordHash, roleId, branchId, status }) {
   const [result] = await pool.query(
-    `INSERT INTO users (first_name, last_name, gender, phone, email, username, password_hash, role_id, branch_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [firstName, lastName, gender || null, phone, email, username, passwordHash, roleId, branchId || null],
+    `INSERT INTO users (first_name, last_name, gender, phone, email, username, password_hash, role_id, branch_id, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [firstName, lastName, gender || null, phone, email, username, passwordHash, roleId, branchId || null, status || 'active'],
   );
   return findById(result.insertId);
 }

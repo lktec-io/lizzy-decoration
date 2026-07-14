@@ -18,6 +18,7 @@ export const createUserValidator = [
   body('password')
     .custom((value) => isStrongPassword(value))
     .withMessage(PASSWORD_POLICY_MESSAGE),
+  body('status').optional({ values: 'falsy' }).isIn(['active', 'suspended', 'locked']).withMessage('Invalid status'),
 ];
 
 export const updateUserValidator = [...baseFields];

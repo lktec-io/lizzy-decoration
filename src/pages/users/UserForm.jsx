@@ -12,6 +12,17 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
 const PASSWORD_POLICY_MESSAGE =
   'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number and a symbol.';
 
+// A single name field is friendlier for a cashier/store-keeper-facing admin
+// form; the users table still stores first_name/last_name separately, so
+// this splits on the first space right before submit and rejoins them back
+// into one field when loading an existing user for edit.
+function splitFullName(fullName) {
+  const trimmed = fullName.trim();
+  const spaceIndex = trimmed.indexOf(' ');
+  if (spaceIndex === -1) return { firstName: trimmed, lastName: '' };
+  return { firstName: trimmed.slice(0, spaceIndex), lastName: trimmed.slice(spaceIndex + 1).trim() };
+}
+
 function UserForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -31,17 +42,19 @@ function UserForm() {
   const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      firstName: '', lastName: '', gender: '', phone: '', email: '', username: '',
-      password: '', roleId: '', branchId: '', branchIds: [],
+      fullName: '', phone: '', email: '', username: '',
+      password: '', confirmPassword: '', roleId: '', branchId: '', status: 'active',
     },
   });
 
@@ -59,16 +72,15 @@ function UserForm() {
     userService.getUser(id).then((user) => {
       if (cancelled) return;
       reset({
-        firstName: user.first_name,
-        lastName: user.last_name,
-        gender: user.gender || '',
+        fullName: `${user.first_name} ${user.last_name}`.trim(),
         phone: user.phone,
         email: user.email,
         username: user.username,
         password: '',
+        confirmPassword: '',
         roleId: String(user.role_id),
         branchId: user.branch_id ? String(user.branch_id) : '',
-        branchIds: (user.branchIds || []).map(String),
+        status: user.status,
       });
       setAvatarPath(user.avatar_path || null);
       setLoading(false);
@@ -82,20 +94,23 @@ function UserForm() {
   const onSubmit = async (values) => {
     setFormError('');
 
+    const { firstName, lastName } = splitFullName(values.fullName);
     const payload = {
-      ...values,
+      firstName,
+      lastName,
+      phone: values.phone,
+      email: values.email,
+      username: values.username,
       roleId: Number(values.roleId),
       branchId: values.branchId ? Number(values.branchId) : null,
-      branchIds: (values.branchIds || []).map(Number),
     };
 
     try {
       if (isEdit) {
-        delete payload.password;
         await userService.updateUser(id, payload);
         toast.success('User updated successfully.');
       } else {
-        const created = await userService.createUser(payload);
+        const created = await userService.createUser({ ...payload, password: values.password, status: values.status });
         toast.success('User created successfully.');
         navigate(`/settings/users/${created.id}/edit`, { replace: true });
       }
@@ -188,25 +203,9 @@ function UserForm() {
           <div className="card-body">
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="firstName">First Name</label>
-                <input id="firstName" className={`form-control ${errors.firstName ? 'form-control-error' : ''}`} {...register('firstName', { required: 'First name is required' })} />
-                {errors.firstName && <span className="form-error">{errors.firstName.message}</span>}
-              </div>
-              <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="lastName">Last Name</label>
-                <input id="lastName" className={`form-control ${errors.lastName ? 'form-control-error' : ''}`} {...register('lastName', { required: 'Last name is required' })} />
-                {errors.lastName && <span className="form-error">{errors.lastName.message}</span>}
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label" htmlFor="gender">Gender</label>
-                <select id="gender" className="form-control" {...register('gender')}>
-                  <option value="">Not specified</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
+                <label className="form-label form-label-required" htmlFor="fullName">Full Name</label>
+                <input id="fullName" className={`form-control ${errors.fullName ? 'form-control-error' : ''}`} {...register('fullName', { required: 'Full name is required' })} />
+                {errors.fullName && <span className="form-error">{errors.fullName.message}</span>}
               </div>
               <div className="form-group">
                 <label className="form-label form-label-required" htmlFor="phone">Phone Number</label>
@@ -239,25 +238,50 @@ function UserForm() {
             </div>
 
             {!isEdit && (
-              <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="password">Password</label>
-                <div className="form-password-field">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    className={`form-control ${errors.password ? 'form-control-error' : ''}`}
-                    {...register('password', { required: 'Password is required', pattern: { value: PASSWORD_REGEX, message: PASSWORD_POLICY_MESSAGE } })}
-                  />
-                  <button
-                    type="button"
-                    className="form-password-toggle"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <FiEyeOff /> : <FiEye />}
-                  </button>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label form-label-required" htmlFor="password">Password</label>
+                  <div className="form-password-field">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      className={`form-control ${errors.password ? 'form-control-error' : ''}`}
+                      {...register('password', { required: 'Password is required', pattern: { value: PASSWORD_REGEX, message: PASSWORD_POLICY_MESSAGE } })}
+                    />
+                    <button
+                      type="button"
+                      className="form-password-toggle"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                  </div>
+                  {errors.password ? <span className="form-error">{errors.password.message}</span> : <span className="form-help">{PASSWORD_POLICY_MESSAGE}</span>}
                 </div>
-                {errors.password ? <span className="form-error">{errors.password.message}</span> : <span className="form-help">{PASSWORD_POLICY_MESSAGE}</span>}
+                <div className="form-group">
+                  <label className="form-label form-label-required" htmlFor="confirmPassword">Confirm Password</label>
+                  <div className="form-password-field">
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className={`form-control ${errors.confirmPassword ? 'form-control-error' : ''}`}
+                      {...register('confirmPassword', {
+                        required: 'Please confirm the password',
+                        validate: (value) => value === watch('password') || 'Passwords do not match',
+                      })}
+                    />
+                    <button
+                      type="button"
+                      className="form-password-toggle"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <span className="form-error">{errors.confirmPassword.message}</span>}
+                </div>
               </div>
             )}
           </div>
@@ -276,9 +300,10 @@ function UserForm() {
                   ))}
                 </select>
                 {errors.roleId && <span className="form-error">{errors.roleId.message}</span>}
+                <span className="form-help">The role determines exactly what this user can see and do — there is no separate permission assignment step.</span>
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="branchId">Primary Branch</label>
+                <label className="form-label" htmlFor="branchId">Branch</label>
                 <select id="branchId" className="form-control" {...register('branchId')}>
                   <option value="">None (Super Admin / unassigned)</option>
                   {branches.map((branch) => (
@@ -287,14 +312,15 @@ function UserForm() {
                 </select>
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="branchIds">Additional Branches (for Managers overseeing multiple branches)</label>
-              <select id="branchIds" multiple className="form-control" style={{ minHeight: 96 }} {...register('branchIds')}>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>{branch.name}</option>
-                ))}
-              </select>
-            </div>
+            {!isEdit && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="status">Status</label>
+                <select id="status" className="form-control" {...register('status')}>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 

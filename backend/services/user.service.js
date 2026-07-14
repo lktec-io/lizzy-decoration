@@ -63,6 +63,7 @@ export async function createUser(data, actorId) {
     passwordHash,
     roleId: data.roleId,
     branchId: data.branchId || null,
+    status: data.status,
   });
 
   if (data.branchIds?.length) {

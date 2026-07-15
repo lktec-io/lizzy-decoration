@@ -10,5 +10,6 @@ router.use(authenticate, authorize('dashboard.view'));
 router.get('/kpis', dashboardController.getKpis);
 router.get('/charts/:type', dashboardController.getChart);
 router.get('/activity', dashboardController.getActivity);
+router.get('/system-status', dashboardController.getSystemStatus);
 
 export default router;

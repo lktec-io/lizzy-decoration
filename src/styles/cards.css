@@ -51,13 +51,49 @@
   padding: var(--space-6);
   border-radius: 20px;
   overflow: hidden;
-  background-image: radial-gradient(circle at 100% 0%, rgba(var(--kpi-accent-rgb, 15, 23, 42), 0.07), transparent 60%);
+  background-color: rgba(255, 255, 255, 0.7);
+  background-image: radial-gradient(circle at 100% 0%, rgba(var(--kpi-accent-rgb, 15, 23, 42), 0.1), transparent 60%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(var(--kpi-accent-rgb, 226, 232, 240), 0.18);
   transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
 }
 
 .kpi-card.card-hover:hover {
   transform: translateY(-4px);
   box-shadow: 0 16px 32px -14px rgba(var(--kpi-accent-rgb, 15, 23, 42), 0.35), var(--shadow-md);
+}
+
+/* A soft pulsing ring around the card's own accent color — subtle enough to
+   read as "alive", not a loading state. Runs continuously but very slowly. */
+.kpi-card-glow {
+  animation: kpi-card-glow-pulse 5s ease-in-out infinite;
+}
+
+@keyframes kpi-card-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--kpi-accent-rgb, 15, 23, 42), 0); }
+  50% { box-shadow: 0 0 0 3px rgba(var(--kpi-accent-rgb, 15, 23, 42), 0.08); }
+}
+
+/* One slow diagonal light sweep across the card surface — the "live
+   shimmer" — independent of (and much subtler than) the loading skeleton's
+   shimmer in animations.css. */
+.kpi-card-shimmer {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: kpi-card-shimmer-sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes kpi-card-shimmer-sweep {
+  0% { background-position: 200% 0; }
+  60%, 100% { background-position: -50% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card-glow, .kpi-card-shimmer { animation: none; }
 }
 
 .kpi-card-main {
@@ -88,6 +124,12 @@
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+  /* A long formatted currency value (e.g. "TSh 2,350,000") is one unbroken
+     "word" with no natural break point — without this, a narrow 6-up card
+     lets it overflow instead of wrapping, and .kpi-card's overflow:hidden
+     (needed for the shimmer sweep) silently clips it rather than showing
+     the overflow. */
+  overflow-wrap: anywhere;
 }
 
 .kpi-card-subtitle {

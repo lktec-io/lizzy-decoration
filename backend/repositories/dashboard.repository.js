@@ -82,6 +82,18 @@ export async function getKpis(branchIds) {
     carwash.params,
   );
 
+  const [[todayOrders]] = await pool.query(
+    `SELECT COUNT(*) AS value FROM sales
+     WHERE status = 'completed' AND DATE(created_at) = CURDATE() ${sales.clause}`,
+    sales.params,
+  );
+
+  const [[todayCarwashCount]] = await pool.query(
+    `SELECT COUNT(*) AS value FROM carwash_transactions
+     WHERE DATE(created_at) = CURDATE() ${carwash.clause}`,
+    carwash.params,
+  );
+
   const [[pendingTransfers]] = await pool.query(
     `SELECT COUNT(*) AS value FROM stock_transfer_requests WHERE status = 'pending' ${transfers.clause}`,
     transfers.params,
@@ -104,6 +116,8 @@ export async function getKpis(branchIds) {
     todayExpenses: Number(todayExpenses.value),
     monthlyExpenses: Number(monthlyExpenses.value),
     carwashRevenue: Number(carwashRevenue.value),
+    todayOrders: Number(todayOrders.value),
+    todayCarwashCount: Number(todayCarwashCount.value),
     pendingTransfers: Number(pendingTransfers.value),
     pendingPurchases: Number(pendingPurchases.value),
   };
@@ -111,14 +125,37 @@ export async function getKpis(branchIds) {
 
 const DAYS_BACK = 14;
 
-export async function getSalesTrend(branchIds) {
+// Today/Week/Month/Year filter tabs on the Sales Trend chart — each needs a
+// different bucket grain (hour vs day vs month) and a different lookback
+// window, not just a different LIMIT on the same daily query.
+const SALES_TREND_RANGES = {
+  today: {
+    bucket: "DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00')",
+    where: 'DATE(created_at) = CURDATE()',
+  },
+  week: {
+    bucket: 'DATE(created_at)',
+    where: 'created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)',
+  },
+  month: {
+    bucket: 'DATE(created_at)',
+    where: 'created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)',
+  },
+  year: {
+    bucket: "DATE_FORMAT(created_at, '%Y-%m-01')",
+    where: 'created_at >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)',
+  },
+};
+
+export async function getSalesTrend(branchIds, range = 'week') {
+  const config = SALES_TREND_RANGES[range] || SALES_TREND_RANGES.week;
   const filter = branchFilter('branch_id', branchIds);
   const [rows] = await pool.query(
-    `SELECT DATE(created_at) AS date, COALESCE(SUM(total_amount), 0) AS value
+    `SELECT ${config.bucket} AS date, COALESCE(SUM(total_amount), 0) AS value, COUNT(*) AS count
      FROM sales
-     WHERE status = 'completed' AND created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) ${filter.clause}
-     GROUP BY DATE(created_at) ORDER BY date`,
-    [DAYS_BACK, ...filter.params],
+     WHERE status = 'completed' AND ${config.where} ${filter.clause}
+     GROUP BY date ORDER BY date`,
+    filter.params,
   );
   return rows;
 }
@@ -172,7 +209,9 @@ export async function getProfitTrend(branchIds) {
 export async function getTopProducts(branchIds, limit = 5) {
   const filter = branchFilter('s.branch_id', branchIds);
   const [rows] = await pool.query(
-    `SELECT p.id, p.name, SUM(si.quantity) AS quantity
+    `SELECT p.id, p.name, SUM(si.quantity) AS quantity, SUM(si.line_total) AS revenue,
+            (SELECT pi.image_path FROM product_images pi
+             WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order LIMIT 1) AS image_path
      FROM sale_items si
      JOIN sales s ON s.id = si.sale_id
      JOIN products p ON p.id = si.product_id
@@ -229,4 +268,83 @@ export async function getCarwashSummary(branchIds) {
     filter.params,
   );
   return rows;
+}
+
+// sales.payment_method is ENUM('cash','mpesa','airtel_money','bank_transfer',
+// 'card') — there is no "credit" method anywhere in the schema, so it is
+// deliberately not invented here. mpesa+airtel_money fold into "Mobile
+// Money"; card is labeled "Card" (the closest honest match to a
+// non-cash/non-bank/non-mobile payment) rather than fabricated as "Credit".
+const PAYMENT_METHOD_LABELS = {
+  cash: 'Cash',
+  bank_transfer: 'Bank',
+  mpesa: 'Mobile Money',
+  airtel_money: 'Mobile Money',
+  card: 'Card',
+};
+
+export async function getPaymentStatus(branchIds) {
+  const filter = branchFilter('branch_id', branchIds);
+  const [rows] = await pool.query(
+    `SELECT payment_method, COALESCE(SUM(total_amount), 0) AS value
+     FROM sales
+     WHERE status = 'completed' ${filter.clause}
+     GROUP BY payment_method`,
+    filter.params,
+  );
+  const totals = new Map();
+  rows.forEach((row) => {
+    const label = PAYMENT_METHOD_LABELS[row.payment_method] || row.payment_method;
+    totals.set(label, (totals.get(label) || 0) + Number(row.value));
+  });
+  return Array.from(totals, ([name, value]) => ({ name, value }));
+}
+
+export async function getRevenueVsExpenses(branchIds) {
+  const salesFilter = branchFilter('branch_id', branchIds);
+  const carwashFilter = branchFilter('branch_id', branchIds);
+  const expenseFilter = branchFilter('branch_id', branchIds);
+  const [rows] = await pool.query(
+    `SELECT date, SUM(revenue) AS revenue, SUM(expenses) AS expenses FROM (
+       SELECT DATE(created_at) AS date, COALESCE(SUM(total_amount), 0) AS revenue, 0 AS expenses
+       FROM sales WHERE status = 'completed' AND created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) ${salesFilter.clause}
+       GROUP BY DATE(created_at)
+       UNION ALL
+       SELECT DATE(created_at) AS date, COALESCE(SUM(amount), 0) AS revenue, 0 AS expenses
+       FROM carwash_transactions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) ${carwashFilter.clause}
+       GROUP BY DATE(created_at)
+       UNION ALL
+       SELECT expense_date AS date, 0 AS revenue, COALESCE(SUM(amount), 0) AS expenses
+       FROM expenses WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY) ${expenseFilter.clause}
+       GROUP BY expense_date
+     ) combined
+     GROUP BY date ORDER BY date`,
+    [DAYS_BACK, ...salesFilter.params, DAYS_BACK, ...carwashFilter.params, DAYS_BACK, ...expenseFilter.params],
+  );
+  return rows.map((row) => ({
+    date: row.date,
+    revenue: Number(row.revenue),
+    expenses: Number(row.expenses),
+    profit: Number(row.revenue) - Number(row.expenses),
+  }));
+}
+
+// Every figure here is a real, currently-true fact — nothing is simulated.
+// "Online users" is approximated as accounts with a non-revoked, unexpired
+// session row (sessions table, backend/database/migrations/
+// 003_create_settings_sessions.sql) — a real proxy for "currently signed
+// in", not literal live presence, since there is no heartbeat/presence
+// tracking in this schema.
+export async function getSystemStatus() {
+  const [[lastBackup]] = await pool.query(
+    'SELECT created_at, status FROM system_backups ORDER BY created_at DESC LIMIT 1',
+  );
+  const [[onlineUsers]] = await pool.query(
+    'SELECT COUNT(DISTINCT user_id) AS value FROM sessions WHERE revoked_at IS NULL AND expires_at > NOW()',
+  );
+  return {
+    lastBackupAt: lastBackup?.created_at || null,
+    lastBackupStatus: lastBackup?.status || null,
+    onlineUsers: Number(onlineUsers.value) || 0,
+  };
 }

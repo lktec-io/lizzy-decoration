@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import AnimatedCounter from './AnimatedCounter';
 
 // Turns a "#RRGGBB" accent into an "r, g, b" triple so CSS can build
@@ -13,26 +14,41 @@ function hexToRgbTriple(hex) {
   return `${r}, ${g}, ${b}`;
 }
 
-function KPICard({ icon: Icon, label, value, formatter, subtitle, accent }) {
+// `trend` is optional and deliberately not defaulted to 0 — a KPI with no
+// real day-over-day (or period-over-period) comparison available should
+// show no trend at all rather than a fabricated "0%" or invented direction.
+function KPICard({ icon: Icon, label, value, formatter, subtitle, accent, trend }) {
   const gradientStyle = accent ? { backgroundImage: `linear-gradient(135deg, var(--color-primary), ${accent})` } : undefined;
   // Each card gets its own identity via one CSS custom property — the
   // background wash, hover glow, and accent bar in cards.css all derive
   // from this single source instead of three separate inline styles.
-  const cardStyle = accent ? { '--kpi-accent-rgb': hexToRgbTriple(accent) } : undefined;
+  const cardStyle = accent ? { '--kpi-accent-rgb': hexToRgbTriple(accent), '--kpi-accent': accent } : undefined;
+  const TrendIcon = trend?.direction === 'down' ? FiArrowDown : FiArrowUp;
 
   return (
-    <div className="card card-hover kpi-card" style={cardStyle}>
+    <div className="card card-hover kpi-card kpi-card-glow" style={cardStyle}>
+      <span className="kpi-card-shimmer" aria-hidden="true" />
       <div className="kpi-card-main">
         <div className="kpi-card-label">{label}</div>
         <div className="kpi-card-value">
           <AnimatedCounter value={value} formatter={formatter || ((v) => v)} />
         </div>
         {subtitle && <div className="kpi-card-subtitle">{subtitle}</div>}
+        {trend && (
+          <div className={`kpi-card-trend ${trend.direction === 'down' ? 'kpi-card-trend-down' : 'kpi-card-trend-up'}`}>
+            <TrendIcon aria-hidden="true" /> {Math.abs(trend.percent).toFixed(1)}% vs yesterday
+          </div>
+        )}
       </div>
       {Icon && (
-        <div className="kpi-card-icon" style={gradientStyle}>
+        <motion.div
+          className="kpi-card-icon"
+          style={gradientStyle}
+          animate={{ y: [0, -3, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+        >
           <Icon aria-hidden="true" />
-        </div>
+        </motion.div>
       )}
       <motion.span
         className="kpi-card-accent-bar"

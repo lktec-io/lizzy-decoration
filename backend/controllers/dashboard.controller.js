@@ -8,11 +8,16 @@ export const getKpis = asyncHandler(async (req, res) => {
 });
 
 export const getChart = asyncHandler(async (req, res) => {
-  const data = await dashboardService.getChart(req.user, req.params.type);
+  const data = await dashboardService.getChart(req.user, req.params.type, req.query);
   return success(res, { data });
 });
 
 export const getActivity = asyncHandler(async (req, res) => {
   const activity = await dashboardService.getActivity(Number(req.query.limit) || 20);
   return success(res, { data: activity });
+});
+
+export const getSystemStatus = asyncHandler(async (req, res) => {
+  const status = await dashboardService.getSystemStatus();
+  return success(res, { data: status });
 });

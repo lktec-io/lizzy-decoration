@@ -21,7 +21,7 @@ const DROPDOWN_MOTION = {
   transition: { duration: 0.15 },
 };
 
-const UNREAD_POLL_MS = 60_000;
+const UNREAD_POLL_MS = 30_000;
 
 const NOTIFICATION_TYPE_ICON = {
   info: FiInfo,

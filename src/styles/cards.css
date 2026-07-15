@@ -48,6 +48,11 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
+  /* Fills its grid cell's full (stretched) height — the motion.div wrapper
+     Dashboard.jsx renders each card in stretches to the row's tallest card
+     by CSS Grid's default align-items:stretch, but a plain unstyled div
+     doesn't pass that height down to its child on its own. */
+  height: 100%;
   padding: var(--space-6);
   border-radius: 20px;
   overflow: hidden;

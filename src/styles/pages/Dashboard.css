@@ -1,18 +1,17 @@
-/* minmax(0, 1fr) rather than a bare 1fr on every grid here — a plain 1fr
-   track has an implicit min size of "auto" (its content's min-content), so
-   a card with a long formatted value/label can force the whole grid wider
-   than its container. Because .app-main clips overflow-x, that showed up
-   as cards silently cut off at the right edge (no scrollbar) instead of a
-   visible layout bug — minmax(0, 1fr) lets tracks actually shrink to fit. */
-/* 3 columns (2 rows of 3), not 6-across, even at very wide desktop widths —
-   tried a 6-up single row first, but TZS currency values ("TSh 8,213,000")
-   still wrapped onto 2-3 lines even at 1920px because 6 columns just don't
-   leave enough width per card for a 7-digit amount at a readable size.
-   3-up is the widest layout that stays wrap-free across the full tested
-   range (320-1920px). */
+/* auto-fit + minmax, no manual breakpoint column counts: the browser
+   computes how many 1fr columns actually fit at the current width using
+   280px as a floor, so it reflows naturally at every width instead of
+   snapping between hardcoded 3/2/1-column rules. 280px isn't arbitrary —
+   a plain `1fr` track (or a low floor like 220px) let long TZS currency
+   values ("TSh 8,213,000") wrap or clip at some widths when this was
+   tested earlier; 280px is the smallest floor that kept every value on
+   one line at every width actually screenshotted (320-1920px). Because
+   auto-fit distributes leftover space across whatever columns DO fit,
+   actual card width is usually noticeably above this floor, not pinned to
+   it — cards stay comfortably wide even when only 1-2 fit per row. */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--space-5);
   margin-bottom: var(--space-6);
 }
@@ -40,19 +39,7 @@
 }
 
 @media (max-width: 1024px) {
-  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-bottom-grid { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* Cards stay 2-up even at phone widths per spec, rather than collapsing to
-   a single column — the KPI value/subtitle content is short enough to stay
-   readable at that width. */
-@media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 360px) {
-  .kpi-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Sales Trend range filter tabs (Today/Week/Month/Year) */

@@ -434,6 +434,27 @@
   overflow: hidden;
 }
 
+/* Below 768px, .navbar-notification-panel's `right: 0` anchors to the bell
+   button's own wrapper (.navbar-notifications), not the viewport — on a
+   narrow screen the bell sits well left of the viewport's right edge, so a
+   300-340px-wide panel anchored there pushed its own left edge 14-40px off
+   the LEFT of the screen (confirmed by measuring getBoundingClientRect at
+   320-414px: left was consistently negative). Switching to `position: fixed`
+   with explicit left/right viewport margins removes the anchor entirely —
+   the panel is pinned to the screen's own edges regardless of where the
+   bell button happens to sit. */
+@media (max-width: 768px) {
+  .navbar-notification-panel {
+    position: fixed;
+    top: calc(var(--navbar-height) + var(--space-2));
+    left: var(--space-4);
+    right: var(--space-4);
+    width: auto;
+    max-width: none;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 .navbar-notification-header {
   display: flex;
   align-items: center;
@@ -577,6 +598,20 @@
   padding: 6px;
 }
 
+/* 6px padding around an ~18px icon measures to ~30px total — comfortably
+   below the 44px minimum touch target on mobile. Desktop keeps the
+   tighter, mouse-appropriate size; this only grows the hit area on
+   touch-primary widths. */
+@media (max-width: 768px) {
+  .navbar-notification-action {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .navbar-notification-footer {
   padding: var(--space-2) var(--space-4);
   border-top: 1px solid var(--color-border);
@@ -592,19 +627,31 @@
   .navbar-search { display: none; }
   .navbar-user-name,
   .navbar-user-caret { display: none; }
-  .navbar-notification-panel { width: calc(100vw - var(--space-6) * 2); max-width: 340px; }
   .navbar-notification-item { padding: var(--space-3); gap: var(--space-2); }
   .navbar-notification-icon { width: 32px; height: 32px; font-size: 16px; }
   .navbar-user-panel { min-width: 220px; max-width: calc(100vw - var(--space-6) * 2); }
+  /* Mark All Read / Delete All: .btn-sm's padding alone measures well under
+     44px tall on a touch-primary width — this doesn't touch btn-sm anywhere
+     else in the app (list-page pagination, etc.), only inside the mobile
+     notification panel. */
+  .navbar-notification-header-actions .btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
-/* Below ~400px the "Notifications" label + both toolbar buttons no longer
-   fit on one row even wrapped — icon-only buttons keep both actions
-   reachable without the header wrapping to two lines. aria-label already
-   documents each button's purpose for assistive tech. */
-@media (max-width: 400px) {
+/* Below ~480px the "Notifications" label + both full-text toolbar buttons
+   no longer fit on one row — icon-only buttons keep both actions reachable
+   without the header wrapping to two cramped lines. Raised from 400px to
+   480px after measuring the real breakpoint: at 414px with 44px-tall touch
+   targets, "Mark All Read"/"Delete All" still had their text labels and
+   wrapped the actions group onto two rows, pushing "Notifications" out of
+   its expected position. aria-label already documents each button's
+   purpose for assistive tech, so hiding the visible label earlier is safe. */
+@media (max-width: 480px) {
   .navbar-notification-action-label { display: none; }
-  .navbar-notification-header-actions .btn { padding: var(--space-2); }
+  .navbar-notification-header-actions .btn { padding: var(--space-2); min-width: 44px; }
 }
 
 @media (max-width: 360px) {

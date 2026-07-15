@@ -270,8 +270,13 @@ export async function getCarwashSummary(branchIds) {
   return rows;
 }
 
-// sales.payment_method is ENUM('cash','mpesa','airtel_money','bank_transfer',
-// 'card') — there is no "credit" method anywhere in the schema, so it is
+// payment_method does NOT live on `sales` — it's on `sale_payments`, a
+// separate one-row-per-payment table joined via sale_id (see
+// 006_create_sales_pos.sql). A sale can have more than one payment row
+// (split payments), so summing sp.amount per method — not s.total_amount —
+// is both the only column that actually exists and the semantically
+// correct figure. ENUM values: cash/mpesa/airtel_money/bank_transfer/card
+// — there is no "credit" method anywhere in the schema, so it is
 // deliberately not invented here. mpesa+airtel_money fold into "Mobile
 // Money"; card is labeled "Card" (the closest honest match to a
 // non-cash/non-bank/non-mobile payment) rather than fabricated as "Credit".
@@ -284,12 +289,13 @@ const PAYMENT_METHOD_LABELS = {
 };
 
 export async function getPaymentStatus(branchIds) {
-  const filter = branchFilter('branch_id', branchIds);
+  const filter = branchFilter('s.branch_id', branchIds);
   const [rows] = await pool.query(
-    `SELECT payment_method, COALESCE(SUM(total_amount), 0) AS value
-     FROM sales
-     WHERE status = 'completed' ${filter.clause}
-     GROUP BY payment_method`,
+    `SELECT sp.payment_method, COALESCE(SUM(sp.amount), 0) AS value
+     FROM sale_payments sp
+     JOIN sales s ON s.id = sp.sale_id
+     WHERE s.status = 'completed' ${filter.clause}
+     GROUP BY sp.payment_method`,
     filter.params,
   );
   const totals = new Map();

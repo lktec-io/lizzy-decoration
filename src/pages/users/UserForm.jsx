@@ -23,6 +23,21 @@ function splitFullName(fullName) {
   return { firstName: trimmed.slice(0, spaceIndex), lastName: trimmed.slice(spaceIndex + 1).trim() };
 }
 
+// The backend's validateRequest middleware sends { message: 'Validation
+// failed', errors: [{ field, message }] } for a 400 — the generic top-level
+// message alone (what this used to show) told the user nothing. A 409
+// conflict (duplicate username/email/phone) has no errors array and its
+// specific message is already in the top-level `message`, so that path is
+// unchanged.
+function extractErrorMessage(err, fallback) {
+  const responseData = err.response?.data;
+  const fieldErrors = responseData?.errors;
+  if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+    return fieldErrors.map((fieldError) => fieldError.message).join(' ');
+  }
+  return responseData?.message || fallback;
+}
+
 function UserForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -115,7 +130,7 @@ function UserForm() {
         navigate(`/settings/users/${created.id}/edit`, { replace: true });
       }
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Failed to save user.');
+      setFormError(extractErrorMessage(err, 'Failed to save user.'));
     }
   };
 

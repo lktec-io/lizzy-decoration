@@ -8,11 +8,14 @@ import SearchInput from '../../components/common/SearchInput';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import ViewToggle from '../../components/common/ViewToggle';
+import SupplierFormFields from '../../components/forms/SupplierFormFields';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
 import * as supplierService from '../../services/supplierService';
 import '../../styles/components/ViewToggle.css';
+
+const DEFAULT_VALUES = { name: '', phone: '', email: '', address: '', notes: '' };
 
 function SupplierList() {
   const navigate = useNavigate();
@@ -36,11 +39,11 @@ function SupplierList() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm({ defaultValues: { name: '', phone: '', email: '', address: '', tinNumber: '', status: 'active' } });
+  } = useForm({ defaultValues: DEFAULT_VALUES });
 
   const openCreate = () => {
     setEditing(null);
-    reset({ name: '', phone: '', email: '', address: '', tinNumber: '', status: 'active' });
+    reset(DEFAULT_VALUES);
     setError('');
     setModalOpen(true);
   };
@@ -52,8 +55,7 @@ function SupplierList() {
       phone: supplier.phone || '',
       email: supplier.email || '',
       address: supplier.address || '',
-      tinNumber: supplier.tin_number || '',
-      status: supplier.status,
+      notes: supplier.notes || '',
     });
     setError('');
     setModalOpen(true);
@@ -227,7 +229,7 @@ function SupplierList() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? 'Edit Supplier' : 'New Supplier'}
-        size="sm"
+        size="md"
         footer={
           <>
             <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
@@ -239,42 +241,7 @@ function SupplierList() {
       >
         {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
         <form id="supplier-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="name">Supplier Name</label>
-            <input id="name" className={`form-control ${errors.name ? 'form-control-error' : ''}`} {...register('name', { required: 'Supplier name is required' })} />
-            {errors.name && <span className="form-error">{errors.name.message}</span>}
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="phone">Phone</label>
-              <input id="phone" className="form-control" {...register('phone')} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                className={`form-control ${errors.email ? 'form-control-error' : ''}`}
-                {...register('email', { pattern: { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' } })}
-              />
-              {errors.email && <span className="form-error">{errors.email.message}</span>}
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="address">Address</label>
-            <input id="address" className="form-control" {...register('address')} />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="tinNumber">TIN (Optional)</label>
-            <input id="tinNumber" className="form-control" {...register('tinNumber')} />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="status">Status</label>
-            <select id="status" className="form-control" {...register('status')}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+          <SupplierFormFields register={register} errors={errors} />
         </form>
       </Modal>
 

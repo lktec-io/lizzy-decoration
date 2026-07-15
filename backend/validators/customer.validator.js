@@ -15,6 +15,7 @@ export const customerValidator = [
   body('tinNumber').optional({ values: 'falsy' }).isLength({ max: 50 }),
   body('customerType').optional({ values: 'falsy' }).isIn(CUSTOMER_TYPES).withMessage('Invalid customer type'),
   body('status').optional({ values: 'falsy' }).isIn(['active', 'inactive']),
+  body('notes').optional({ values: 'falsy' }).isLength({ max: 1000 }).withMessage('Notes must be 1000 characters or fewer'),
 ];
 
 export const changeStatusValidator = [

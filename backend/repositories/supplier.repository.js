@@ -38,18 +38,22 @@ export async function findAll({ page = 1, limit = 20, search, status }) {
   return { rows, total: countRows[0].total };
 }
 
-export async function create({ name, phone, email, address, tinNumber, status, userId }) {
+export async function create({ name, phone, email, address, notes, tinNumber, status, userId }) {
   const [result] = await pool.query(
-    'INSERT INTO suppliers (name, phone, email, address, tin_number, status, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [name, phone || null, email || null, address || null, tinNumber || null, status || 'active', userId, userId],
+    'INSERT INTO suppliers (name, phone, email, address, notes, tin_number, status, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [name, phone || null, email || null, address || null, notes || null, tinNumber || null, status || 'active', userId, userId],
   );
   return findById(result.insertId);
 }
 
-export async function update(id, { name, phone, email, address, tinNumber, status, userId }) {
+// status is NOT NULL with a DB default, but this UPDATE (unlike create())
+// has no fallback — the simplified supplier form no longer sends status at
+// all. COALESCE(?, status) preserves the existing value instead of writing
+// NULL into a NOT NULL column.
+export async function update(id, { name, phone, email, address, notes, tinNumber, status, userId }) {
   await pool.query(
-    'UPDATE suppliers SET name = ?, phone = ?, email = ?, address = ?, tin_number = ?, status = ?, updated_by = ? WHERE id = ?',
-    [name, phone || null, email || null, address || null, tinNumber || null, status, userId, id],
+    'UPDATE suppliers SET name = ?, phone = ?, email = ?, address = ?, notes = ?, tin_number = ?, status = COALESCE(?, status), updated_by = ? WHERE id = ?',
+    [name, phone || null, email || null, address || null, notes || null, tinNumber || null, status || null, userId, id],
   );
   return findById(id);
 }

@@ -45,35 +45,42 @@ export async function findAll({ page = 1, limit = 20, search, customerType, stat
 
 export async function create({
   customerCode, firstName, lastName, businessName, phone, altPhone, email,
-  address, region, district, tinNumber, customerType, status, userId,
+  address, notes, region, district, tinNumber, customerType, status, userId,
 }) {
   const [result] = await pool.query(
     `INSERT INTO customers
        (customer_code, first_name, last_name, business_name, phone, alt_phone, email,
-        address, region, district, tin_number, customer_type, status, created_by, updated_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        address, notes, region, district, tin_number, customer_type, status, created_by, updated_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       customerCode, firstName, lastName, businessName || null, phone, altPhone || null, email || null,
-      address || null, region || null, district || null, tinNumber || null,
+      address || null, notes || null, region || null, district || null, tinNumber || null,
       customerType || 'walk_in', status || 'active', userId, userId,
     ],
   );
   return findById(result.insertId);
 }
 
+// customerType/status are NOT NULL columns with a DB default, but this
+// UPDATE (unlike create()) has no default to fall back to — the simplified
+// customer form no longer sends either field at all. COALESCE(?, column)
+// keeps the existing value in place when the caller omits it, rather than
+// writing NULL into a NOT NULL column (which the previous plain `= ?`
+// would have done the moment this form stopped sending customerType/status).
 export async function update(id, {
   firstName, lastName, businessName, phone, altPhone, email,
-  address, region, district, tinNumber, customerType, status, userId,
+  address, notes, region, district, tinNumber, customerType, status, userId,
 }) {
   await pool.query(
     `UPDATE customers SET
        first_name = ?, last_name = ?, business_name = ?, phone = ?, alt_phone = ?, email = ?,
-       address = ?, region = ?, district = ?, tin_number = ?, customer_type = ?, status = ?, updated_by = ?
+       address = ?, notes = ?, region = ?, district = ?, tin_number = ?,
+       customer_type = COALESCE(?, customer_type), status = COALESCE(?, status), updated_by = ?
      WHERE id = ?`,
     [
       firstName, lastName, businessName || null, phone, altPhone || null, email || null,
-      address || null, region || null, district || null, tinNumber || null,
-      customerType, status, userId, id,
+      address || null, notes || null, region || null, district || null, tinNumber || null,
+      customerType || null, status || null, userId, id,
     ],
   );
   return findById(id);

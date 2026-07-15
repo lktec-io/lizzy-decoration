@@ -17,5 +17,6 @@ router.get('/:id/returns', authorize('customers.view'), customerController.retur
 router.post('/', authorize('customers.create'), customerValidator, validateRequest, customerController.create);
 router.put('/:id', authorize('customers.edit'), customerValidator, validateRequest, customerController.update);
 router.patch('/:id/status', authorize('customers.edit'), changeStatusValidator, validateRequest, customerController.changeStatus);
+router.delete('/:id', authorize('customers.delete'), customerController.remove);
 
 export default router;

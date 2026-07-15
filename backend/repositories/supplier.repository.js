@@ -59,6 +59,16 @@ export async function updateStatus(id, status, userId) {
   return findById(id);
 }
 
+// A real DELETE. Unlike customers, purchase_orders.supplier_id and
+// supplier_payments.supplier_id are both ON DELETE RESTRICT (see
+// 005_create_purchases_suppliers.sql) — deleting a supplier with any
+// purchase history throws ER_ROW_IS_REFERENCED_2, which the service layer
+// converts into a clear 409 instead of a raw SQL error.
+export async function hardDelete(id) {
+  const [result] = await pool.query('DELETE FROM suppliers WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+}
+
 export async function findPurchaseHistory(supplierId, { page = 1, limit = 20 }) {
   const offset = (page - 1) * limit;
   const [rows] = await pool.query(

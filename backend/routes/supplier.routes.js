@@ -16,5 +16,6 @@ router.get('/:id/purchases', authorize('suppliers.view'), supplierController.pur
 router.post('/', authorize('suppliers.create'), supplierValidator, validateRequest, supplierController.create);
 router.put('/:id', authorize('suppliers.edit'), supplierValidator, validateRequest, supplierController.update);
 router.patch('/:id/status', authorize('suppliers.edit'), changeStatusValidator, validateRequest, supplierController.changeStatus);
+router.delete('/:id', authorize('suppliers.delete'), supplierController.remove);
 
 export default router;

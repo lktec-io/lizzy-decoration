@@ -1,32 +1,97 @@
+/* minmax(0, 1fr) rather than a bare 1fr on every grid here — a plain 1fr
+   track has an implicit min size of "auto" (its content's min-content), so
+   a card with a long formatted value/label can force the whole grid wider
+   than its container. Because .app-main clips overflow-x, that showed up
+   as cards silently cut off at the right edge (no scrollbar) instead of a
+   visible layout bug — minmax(0, 1fr) lets tracks actually shrink to fit. */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--space-5);
   margin-bottom: var(--space-6);
 }
 
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-5);
   margin-bottom: var(--space-6);
 }
 
 .dashboard-bottom-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.dashboard-bottom-grid:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-trend-card {
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1024px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .chart-grid { grid-template-columns: 1fr; }
-  .dashboard-bottom-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-bottom-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Cards stay 2-up even at phone widths per spec, rather than collapsing to
    a single column — the KPI value/subtitle content is short enough to stay
    readable at that width. */
 @media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 360px) {
+  .kpi-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.activity-feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.activity-feed-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background-color: var(--color-primary);
+}
+
+.activity-feed-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.activity-feed-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.activity-feed-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }

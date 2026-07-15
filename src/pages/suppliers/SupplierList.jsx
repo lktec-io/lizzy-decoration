@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FiPlus, FiEdit2, FiEye, FiToggleLeft, FiToggleRight, FiTruck } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiEye, FiToggleLeft, FiToggleRight, FiTruck, FiTrash2 } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import ViewToggle from '../../components/common/ViewToggle';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
@@ -17,6 +18,7 @@ function SupplierList() {
   const navigate = useNavigate();
   const canCreate = usePermission('suppliers.create');
   const canEdit = usePermission('suppliers.edit');
+  const canDelete = usePermission('suppliers.delete');
   const toast = useToast();
 
   const fetchSuppliers = useCallback((params) => supplierService.listSuppliers(params), []);
@@ -27,6 +29,7 @@ function SupplierList() {
   const [view, setView] = useState('list');
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const {
     register,
@@ -85,6 +88,16 @@ function SupplierList() {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await supplierService.deleteSupplier(pendingDelete.id);
+      toast.success('Supplier permanently deleted.');
+      refetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete supplier.');
+    }
+  };
+
   const columns = [
     { key: 'name', label: 'Supplier Name' },
     { key: 'phone', label: 'Phone', render: (row) => row.phone || '—' },
@@ -117,6 +130,11 @@ function SupplierList() {
                 {row.status === 'active' ? <FiToggleRight /> : <FiToggleLeft />}
               </button>
             </>
+          )}
+          {canDelete && (
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete supplier">
+              <FiTrash2 />
+            </button>
           )}
         </div>
       ),
@@ -186,6 +204,11 @@ function SupplierList() {
                       </button>
                     </div>
                   )}
+                  {canDelete && (
+                    <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete supplier">
+                      <FiTrash2 />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -254,6 +277,15 @@ function SupplierList() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete Supplier?"
+        message="This action cannot be undone."
+        confirmLabel="Delete"
+      />
     </div>
   );
 }

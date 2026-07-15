@@ -39,3 +39,7 @@ export async function changeCustomerStatus(id, status) {
   const { data } = await apiClient.patch(`/customers/${id}/status`, { status });
   return data.data;
 }
+
+export async function deleteCustomer(id) {
+  await apiClient.delete(`/customers/${id}`);
+}

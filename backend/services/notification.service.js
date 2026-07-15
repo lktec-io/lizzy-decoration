@@ -22,3 +22,12 @@ export async function markRead(id, userId) {
 export async function markAllRead(userId) {
   await notificationRepository.markAllRead(userId);
 }
+
+export async function deleteOne(id, userId) {
+  const deleted = await notificationRepository.deleteOne(id, userId);
+  if (!deleted) throw new ApiError(404, 'Notification not found');
+}
+
+export async function deleteAllForUser(userId) {
+  await notificationRepository.deleteAllForUser(userId);
+}

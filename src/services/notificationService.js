@@ -17,3 +17,11 @@ export async function markNotificationRead(id) {
 export async function markAllNotificationsRead() {
   await apiClient.patch('/notifications/read-all');
 }
+
+export async function deleteNotification(id) {
+  await apiClient.delete(`/notifications/${id}`);
+}
+
+export async function deleteAllNotifications() {
+  await apiClient.delete('/notifications/all');
+}

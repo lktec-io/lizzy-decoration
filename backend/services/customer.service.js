@@ -97,3 +97,25 @@ export async function changeStatus(id, status, actorId) {
 
   return customer;
 }
+
+export async function deleteCustomer(id, actorId) {
+  const existing = await customerRepository.findById(id);
+  if (!existing) throw new ApiError(404, 'Customer not found');
+
+  try {
+    await customerRepository.hardDelete(id);
+  } catch (err) {
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      throw new ApiError(409, 'Cannot delete this customer — related records still reference them.');
+    }
+    throw err;
+  }
+
+  await activityLogRepository.create({
+    userId: actorId,
+    branchId: null,
+    description: `Customer "${existing.customer_code}" (${existing.first_name} ${existing.last_name}) permanently deleted`,
+    referenceType: 'customer',
+    referenceId: id,
+  });
+}

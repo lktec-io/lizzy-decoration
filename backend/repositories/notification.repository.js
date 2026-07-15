@@ -56,3 +56,14 @@ export async function markRead(id, userId) {
 export async function markAllRead(userId) {
   await pool.query('UPDATE notifications SET read_at = NOW() WHERE user_id = ? AND read_at IS NULL', [userId]);
 }
+
+// Real DELETEs, scoped to user_id so a user can only ever delete their own
+// notifications (never someone else's, even by guessing an id).
+export async function deleteOne(id, userId) {
+  const [result] = await pool.query('DELETE FROM notifications WHERE id = ? AND user_id = ?', [id, userId]);
+  return result.affectedRows > 0;
+}
+
+export async function deleteAllForUser(userId) {
+  await pool.query('DELETE FROM notifications WHERE user_id = ?', [userId]);
+}

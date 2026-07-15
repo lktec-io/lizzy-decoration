@@ -73,3 +73,25 @@ export async function changeStatus(id, status, actorId) {
   });
   return supplier;
 }
+
+export async function deleteSupplier(id, actorId) {
+  const existing = await supplierRepository.findById(id);
+  if (!existing) throw new ApiError(404, 'Supplier not found');
+
+  try {
+    await supplierRepository.hardDelete(id);
+  } catch (err) {
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      throw new ApiError(409, 'Cannot delete this supplier — they have existing purchase orders or payments on record.');
+    }
+    throw err;
+  }
+
+  await activityLogRepository.create({
+    userId: actorId,
+    branchId: null,
+    description: `Supplier "${existing.name}" permanently deleted`,
+    referenceType: 'supplier',
+    referenceId: id,
+  });
+}

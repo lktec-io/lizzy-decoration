@@ -84,6 +84,16 @@ export async function updateStatus(id, status, userId) {
   return findById(id);
 }
 
+// A real DELETE, not a status/deleted_at change — sales.customer_id and
+// returns.customer_id are both ON DELETE SET NULL (see
+// 006_create_sales_pos.sql), so this always succeeds even for a customer
+// with transaction history; those rows just lose the customer link instead
+// of blocking the delete.
+export async function hardDelete(id) {
+  const [result] = await pool.query('DELETE FROM customers WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+}
+
 export async function findPurchaseHistory(customerId, { page = 1, limit = 20 }) {
   const offset = (page - 1) * limit;
   const [rows] = await pool.query(

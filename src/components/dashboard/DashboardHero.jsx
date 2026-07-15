@@ -43,6 +43,7 @@ function DashboardHero() {
       <motion.div className="dashboard-hero-greeting-block" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <span className="dashboard-hero-eyebrow">{greeting}</span>
         <h1 className="dashboard-hero-title">Welcome back, {firstName}</h1>
+        <p className="dashboard-hero-subtitle">Here&apos;s what&apos;s happening across your business today.</p>
       </motion.div>
 
       <div className="dashboard-hero-meta">

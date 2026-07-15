@@ -37,3 +37,8 @@ export const changeStatus = asyncHandler(async (req, res) => {
   const supplier = await supplierService.changeStatus(Number(req.params.id), req.body.status, req.user.id);
   return success(res, { message: 'Supplier status updated', data: supplier });
 });
+
+export const remove = asyncHandler(async (req, res) => {
+  await supplierService.deleteSupplier(Number(req.params.id), req.user.id);
+  return success(res, { message: 'Supplier deleted' });
+});

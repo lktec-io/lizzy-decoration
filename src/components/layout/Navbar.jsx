@@ -83,23 +83,34 @@ function useNotifications() {
     setUnreadCount(0);
   };
 
-  // No DELETE endpoint exists on the backend for notifications, so this only
-  // clears the card from the current dropdown session — it is not a
-  // persisted delete and the item can reappear on the next fetch. Still a
-  // real, working interaction: the unread count is kept in sync immediately.
-  const dismiss = (id) => {
-    setRecent((prev) => {
-      const target = prev.find((n) => n.id === id);
-      if (target && !target.read_at) {
-        setUnreadCount((count) => Math.max(0, count - 1));
-      }
-      return prev.filter((n) => n.id !== id);
-    });
+  // Permanent: DELETE /notifications/:id actually removes the row, so this
+  // survives a refresh. Optimistic UI update first (removes the card and
+  // adjusts the badge immediately), then the real request — on failure the
+  // list is re-synced from the server so the UI can't drift from what's
+  // actually in the database.
+  const dismiss = async (id) => {
+    const target = recent.find((n) => n.id === id);
+    setRecent((prev) => prev.filter((n) => n.id !== id));
+    if (target && !target.read_at) {
+      setUnreadCount((count) => Math.max(0, count - 1));
+    }
+    try {
+      await notificationService.deleteNotification(id);
+    } catch {
+      refreshUnreadCount();
+      notificationService.listNotifications({ limit: 8 }).then((result) => setRecent(result.items));
+    }
   };
 
-  const dismissAll = () => {
+  const dismissAll = async () => {
     setRecent([]);
     setUnreadCount(0);
+    try {
+      await notificationService.deleteAllNotifications();
+    } catch {
+      refreshUnreadCount();
+      notificationService.listNotifications({ limit: 8 }).then((result) => setRecent(result.items));
+    }
   };
 
   return { unreadCount, recent, open, setOpen, toggleOpen, loading, markRead, markAllRead, dismiss, dismissAll };

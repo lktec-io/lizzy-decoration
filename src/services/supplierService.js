@@ -34,3 +34,7 @@ export async function changeSupplierStatus(id, status) {
   const { data } = await apiClient.patch(`/suppliers/${id}/status`, { status });
   return data.data;
 }
+
+export async function deleteSupplier(id) {
+  await apiClient.delete(`/suppliers/${id}`);
+}

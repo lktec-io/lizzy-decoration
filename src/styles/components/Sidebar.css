@@ -15,8 +15,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .sidebar-brand-mark {
@@ -30,10 +33,36 @@
   max-width: 100%;
 }
 
+/* Height-constrained (not width-constrained) so a landscape logo renders
+   wide and a square logo renders as a clean square — object-fit: contain
+   preserves whatever the source aspect ratio actually is either way,
+   this just sets the box it has to fit inside. Kept within
+   --navbar-height (64px) rather than growing .sidebar-brand taller, since
+   .sidebar spans the full app-shell height while .app-navbar only owns
+   the top row (layout.css) — a taller brand block would visibly misalign
+   the sidebar's nav-list border against the navbar's own bottom border. */
 .sidebar-brand-logo {
-  max-height: 36px;
-  max-width: 85%;
+  height: 52px;
+  width: auto;
+  max-width: 140px;
   object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar-collapsed .sidebar-brand-logo {
+  height: 34px;
+  max-width: 100%;
+}
+
+.sidebar-brand-name {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  color: var(--color-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .sidebar-nav {

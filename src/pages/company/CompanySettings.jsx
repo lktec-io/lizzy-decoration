@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { FiUpload } from 'react-icons/fi';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
+import { useCompany } from '../../hooks/useCompany';
 import SettingsTabs from '../../components/common/SettingsTabs';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import * as companyService from '../../services/companyService';
@@ -33,6 +34,7 @@ const EMPTY_FORM = {
 function CompanySettings() {
   const canManage = usePermission('company.manage');
   const toast = useToast();
+  const { updateCompany: updateCompanyBrand } = useCompany();
   const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,8 @@ function CompanySettings() {
   const onSubmit = async (values) => {
     setFormError('');
     try {
-      await companyService.updateCompany(values);
+      const profile = await companyService.updateCompany(values);
+      updateCompanyBrand(profile);
       toast.success('Company profile saved successfully.');
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to save company profile.');
@@ -109,6 +112,10 @@ function CompanySettings() {
     try {
       const profile = await companyService.uploadLogo(file);
       setLogoPath(profile.logo_path);
+      // Pushes the new logo into every branding consumer (Login, Sidebar,
+      // Navbar, Reports) immediately — they all read from this same
+      // CompanyContext, which otherwise only fetches once at app mount.
+      updateCompanyBrand(profile);
       toast.success('Logo updated successfully.');
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to upload logo.');

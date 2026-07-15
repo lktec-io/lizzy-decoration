@@ -88,8 +88,8 @@ function Profile() {
 
       <div className="card mb-5">
         <div className="card-body flex items-center gap-4">
-          <div className="company-logo-preview">
-            {avatarPath ? <img src={avatarPath} alt="Avatar" /> : <span className="company-logo-placeholder">{user?.first_name?.charAt(0).toUpperCase()}</span>}
+          <div className="avatar-preview">
+            {avatarPath ? <img src={avatarPath} alt="Avatar" loading="lazy" /> : <span className="company-logo-placeholder">{user?.first_name?.charAt(0).toUpperCase()}</span>}
           </div>
           <div>
             <input

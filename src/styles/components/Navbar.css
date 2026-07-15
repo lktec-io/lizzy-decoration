@@ -265,6 +265,12 @@
   flex-shrink: 0;
 }
 
+.navbar-user-panel-avatar-img {
+  object-fit: cover;
+  border: 2px solid var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
 .navbar-user-panel-info {
   min-width: 0;
 }
@@ -338,8 +344,9 @@
 }
 
 .navbar-user-avatar {
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
   border-radius: var(--radius-full);
   background-color: var(--color-primary);
   color: var(--color-white);
@@ -348,6 +355,28 @@
   justify-content: center;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+}
+
+/* object-fit: cover (not contain) is deliberate for a face photo — contain
+   would letterbox a non-square upload inside the circle, cover crops it to
+   fill instead, which is what every real app does with profile photos. */
+.navbar-user-avatar-img {
+  object-fit: cover;
+  border: 2px solid var(--color-white);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.navbar-user:hover .navbar-user-avatar-img {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 768px) {
+  .navbar-user-avatar {
+    width: 38px;
+    height: 38px;
+  }
 }
 
 .navbar-user-name {

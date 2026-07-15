@@ -14,10 +14,41 @@
   color: var(--color-black);
 }
 
+/* A soft "glass card" behind the logo — .auth-card sits on a plain flat
+   background (see .auth-shell in layout.css), so backdrop-filter alone
+   would have nothing colorful to blur; the translucent fill + radial glow
+   + border + shadow together are what actually read as "premium glass"
+   here, with backdrop-filter kept for the rare case a future page puts
+   this behind something with texture. */
+.auth-brand-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 140px;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: rgba(255, 255, 255, 0.55);
+  background-image: radial-gradient(circle at 30% 20%, rgba(200, 155, 60, 0.12), transparent 65%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-lg);
+  margin-bottom: var(--space-2);
+}
+
 .auth-brand-logo {
-  max-height: 56px;
-  max-width: 180px;
+  max-height: 100%;
+  max-width: 100%;
   object-fit: contain;
+}
+
+@media (max-width: 480px) {
+  .auth-brand-logo-wrap {
+    width: 110px;
+    height: 110px;
+    padding: var(--space-3);
+  }
 }
 
 .auth-brand-sub {

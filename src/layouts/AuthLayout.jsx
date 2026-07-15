@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useCompany } from '../hooks/useCompany';
 import PageTransition from '../components/common/PageTransition';
 import '../styles/pages/AuthLayout.css';
@@ -11,7 +12,20 @@ function AuthLayout() {
       <div className="auth-card fade-in">
         <div className="auth-brand">
           {company?.logo_path ? (
-            <img src={company.logo_path} alt={companyName} className="auth-brand-logo" />
+            <motion.div
+              className="auth-brand-logo-wrap"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <motion.img
+                src={company.logo_path}
+                alt={companyName}
+                className="auth-brand-logo"
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </motion.div>
           ) : (
             <span className="auth-brand-mark">{companyName}</span>
           )}

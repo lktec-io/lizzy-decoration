@@ -37,8 +37,43 @@
   min-width: 160px;
 }
 
+/* Screen-hidden, print-only masthead — the on-screen page already has the
+   sidebar/navbar branding, but both get hidden for print (below), so a
+   printed report needs its own company identity at the top of the page. */
+.reports-print-header {
+  display: none;
+}
+
+.reports-print-logo {
+  height: 40px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+.reports-print-mark {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+.reports-print-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
 @media print {
   .sidebar, .navbar, .page-actions, .reports-type-pills, .reports-filter-bar {
     display: none !important;
+  }
+
+  .reports-print-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 2px solid var(--color-border);
   }
 }

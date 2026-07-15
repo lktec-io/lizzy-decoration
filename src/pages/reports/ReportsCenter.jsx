@@ -4,6 +4,7 @@ import KPICard from '../../components/dashboard/KPICard';
 import EmptyState from '../../components/common/EmptyState';
 import Skeleton from '../../components/common/Skeleton';
 import { usePermission } from '../../hooks/usePermission';
+import { useCompany } from '../../hooks/useCompany';
 import * as reportService from '../../services/reportService';
 import * as branchService from '../../services/branchService';
 import * as categoryService from '../../services/categoryService';
@@ -181,6 +182,7 @@ function BreakdownTable({ title, labelHeader, rows, onExport, canExport }) {
 
 function ReportsCenter() {
   const canExport = usePermission('reports.export');
+  const { company } = useCompany();
   const [reportType, setReportType] = useState('sales');
   const [branches, setBranches] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -281,6 +283,15 @@ function ReportsCenter() {
 
   return (
     <div className="reports-page">
+      <div className="reports-print-header">
+        {company?.logo_path ? (
+          <img src={company.logo_path} alt={company.company_name || 'Company logo'} className="reports-print-logo" />
+        ) : (
+          <span className="reports-print-mark">{company?.company_name || 'JOZZY'}</span>
+        )}
+        <span className="reports-print-name">{company?.company_name || 'JOZZY Decoration & Accessories'}</span>
+      </div>
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Reports Center</h1>

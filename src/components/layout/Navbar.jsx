@@ -384,7 +384,11 @@ function Navbar({ onMenuClick, isOpen }) {
 
         <div className="navbar-user-menu" ref={userMenuRef}>
           <button type="button" className="navbar-user" onClick={() => setUserMenuOpen((prev) => !prev)}>
-            <span className="navbar-user-avatar">{initial}</span>
+            {user?.avatar_path ? (
+              <img src={user.avatar_path} alt={displayName} className="navbar-user-avatar navbar-user-avatar-img" loading="lazy" />
+            ) : (
+              <span className="navbar-user-avatar">{initial}</span>
+            )}
             <span className="navbar-user-name">{displayName}</span>
             <FiChevronDown className="navbar-user-caret" />
           </button>
@@ -392,7 +396,11 @@ function Navbar({ onMenuClick, isOpen }) {
             {userMenuOpen && (
               <motion.div className="navbar-user-panel" {...DROPDOWN_MOTION}>
                 <div className="navbar-user-panel-header">
-                  <span className="navbar-user-panel-avatar">{initial}</span>
+                  {user?.avatar_path ? (
+                    <img src={user.avatar_path} alt={displayName} className="navbar-user-panel-avatar navbar-user-panel-avatar-img" loading="lazy" />
+                  ) : (
+                    <span className="navbar-user-panel-avatar">{initial}</span>
+                  )}
                   <div className="navbar-user-panel-info">
                     <div className="navbar-user-panel-name">{displayName}</div>
                     <div className="navbar-user-panel-role">{user?.role_name || user?.email || ''}</div>

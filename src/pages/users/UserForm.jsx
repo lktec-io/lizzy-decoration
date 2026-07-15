@@ -7,6 +7,7 @@ import { useToast } from '../../hooks/useToast';
 import * as userService from '../../services/userService';
 import * as roleService from '../../services/roleService';
 import * as branchService from '../../services/branchService';
+import '../../styles/pages/CompanySettings.css';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 const PASSWORD_POLICY_MESSAGE =
@@ -188,8 +189,8 @@ function UserForm() {
       {isEdit && (
         <div className="card mb-5">
           <div className="card-body flex items-center gap-4">
-            <div className="company-logo-preview" style={{ borderRadius: 'var(--radius-full)' }}>
-              {avatarPath ? <img src={avatarPath} alt="User avatar" /> : <span className="company-logo-placeholder">No Photo</span>}
+            <div className="avatar-preview">
+              {avatarPath ? <img src={avatarPath} alt="User avatar" loading="lazy" /> : <span className="company-logo-placeholder">No Photo</span>}
             </div>
             <div>
               <input

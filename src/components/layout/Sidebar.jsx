@@ -119,7 +119,10 @@ function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-brand">
         {company?.logo_path ? (
-          <img src={company.logo_path} alt={companyName} className="sidebar-brand-logo" />
+          <>
+            <img src={company.logo_path} alt={companyName} className="sidebar-brand-logo" />
+            {!collapsed && <span className="sidebar-brand-name">{companyName}</span>}
+          </>
         ) : (
           <span className="sidebar-brand-mark">{collapsed ? companyName.charAt(0) : companyName}</span>
         )}

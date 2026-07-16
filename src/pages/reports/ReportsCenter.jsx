@@ -49,7 +49,7 @@ const DATE_PRESETS = {
 
 const MONEY_KEYS = new Set([
   'value', 'totalRevenue', 'totalAmount', 'totalDiscount', 'averageSale', 'totalValue',
-  'salesRevenue', 'carwashRevenue', 'expenses', 'net', 'cogs', 'grossProfit', 'netProfit',
+  'salesRevenue', 'carwashRevenue', 'expenses', 'totalExpenses', 'net', 'cogs', 'grossProfit', 'netProfit',
 ]);
 
 // Exactly the reports named in the signed proposal's "12. Reporting Module"
@@ -125,6 +125,27 @@ const REPORT_CONFIGS = {
     label: 'Users', filters: ['dateFrom', 'dateTo', 'branchId'],
     summary: { totalUsers: 'Total Users', activeUsers: 'Active', suspendedUsers: 'Suspended', lockedUsers: 'Locked' },
     breakdowns: [{ key: 'byRole', title: 'By Role', labelHeader: 'Role' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
+  },
+  // Combined business-summary report — backend/services/report.service.js's
+  // buildAllReport() flattens Sales/Products/Customers/Expenses/Car Wash/
+  // Profit into this exact shape, so it renders through the same summary
+  // cards + BreakdownTable components every other report type already
+  // uses. `analysis` is the one field that isn't a breakdown table — it's
+  // rendered separately, right below the summary cards.
+  all: {
+    label: 'All Reports', filters: ['dateFrom', 'dateTo', 'branchId'],
+    summary: {
+      totalSales: 'Total Sales', totalRevenue: 'Total Revenue', totalExpenses: 'Total Expenses',
+      carwashRevenue: 'Car Wash Revenue', netProfit: 'Net Profit',
+    },
+    breakdowns: [
+      { key: 'salesByDay', title: 'Sales By Day', labelHeader: 'Date' },
+      { key: 'salesByBranch', title: 'Sales By Branch', labelHeader: 'Branch' },
+      { key: 'topProducts', title: 'Top Products', labelHeader: 'Product' },
+      { key: 'topCustomers', title: 'Top Customers', labelHeader: 'Customer' },
+      { key: 'expensesByCategory', title: 'Expenses By Category', labelHeader: 'Category' },
+      { key: 'carwashByService', title: 'Car Wash By Service', labelHeader: 'Service' },
+    ],
   },
 };
 
@@ -251,7 +272,7 @@ function ReportsCenter() {
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      await reportService.exportReportPdf(reportType, buildExportParams());
+      await reportService.exportReportPdf(reportType, buildExportParams(), config.label);
     } catch {
       setError('Failed to export PDF.');
     } finally {
@@ -262,7 +283,7 @@ function ReportsCenter() {
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
-      await reportService.exportReportExcel(reportType, buildExportParams());
+      await reportService.exportReportExcel(reportType, buildExportParams(), config.label);
     } catch {
       setError('Failed to export Excel.');
     } finally {
@@ -273,7 +294,7 @@ function ReportsCenter() {
   const handleExportCsv = async () => {
     setExportingCsv(true);
     try {
-      await reportService.exportReportCsv(reportType, buildExportParams());
+      await reportService.exportReportCsv(reportType, buildExportParams(), config.label);
     } catch {
       setError('Failed to export CSV.');
     } finally {
@@ -422,6 +443,17 @@ function ReportsCenter() {
               {summaryEntries.map((entry) => (
                 <KPICard key={entry.key} label={entry.label} value={entry.value} formatter={MONEY_KEYS.has(entry.key) ? (v) => formatCurrency(v) : undefined} />
               ))}
+            </div>
+          )}
+
+          {Array.isArray(report?.analysis) && report.analysis.length > 0 && (
+            <div className="card mb-5">
+              <div className="card-header"><span className="card-title">Business Summary</span></div>
+              <div className="card-body">
+                <ul className="reports-analysis-list">
+                  {report.analysis.map((line) => <li key={line}>{line}</li>)}
+                </ul>
+              </div>
             </div>
           )}
 

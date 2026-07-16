@@ -6,19 +6,29 @@ export async function getReport(type, params) {
   return data.data;
 }
 
-export async function exportReportPdf(type, params) {
+// "Sales_Report_2026-07-15.pdf" — matches backend/services/reportConfig.js's
+// buildReportFilename() exactly, so the name shown while downloading and
+// the name the file actually saves as (the <a download> attribute wins
+// over the server's Content-Disposition filename) agree with each other.
+function buildFilename(label, extension) {
+  const datePart = new Date().toISOString().slice(0, 10);
+  return `${label.replace(/\s+/g, '_')}_Report_${datePart}.${extension}`;
+}
+
+// Was window.open(blobUrl) — opened the PDF in a new browser tab/preview
+// instead of downloading it. downloadBlob (an <a download> click, same as
+// Excel/CSV below) triggers an actual direct download with no preview tab.
+export async function exportReportPdf(type, params, label) {
   const { data } = await apiClient.get(`/reports/${type}/export/pdf`, { params, responseType: 'blob' });
-  const url = URL.createObjectURL(data);
-  window.open(url, '_blank');
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  downloadBlob(buildFilename(label, 'pdf'), data);
 }
 
-export async function exportReportExcel(type, params) {
+export async function exportReportExcel(type, params, label) {
   const { data } = await apiClient.get(`/reports/${type}/export/excel`, { params, responseType: 'blob' });
-  downloadBlob(`${type}-report.xlsx`, data);
+  downloadBlob(buildFilename(label, 'xlsx'), data);
 }
 
-export async function exportReportCsv(type, params) {
+export async function exportReportCsv(type, params, label) {
   const { data } = await apiClient.get(`/reports/${type}/export/csv`, { params, responseType: 'blob' });
-  downloadBlob(`${type}-report.csv`, data);
+  downloadBlob(buildFilename(label, 'csv'), data);
 }

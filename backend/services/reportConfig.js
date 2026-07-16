@@ -9,7 +9,7 @@ import { formatCurrency } from '../utils/formatCurrency.js';
 // reportService.getReport() every consumer uses).
 export const MONEY_KEYS = new Set([
   'value', 'totalRevenue', 'totalAmount', 'totalDiscount', 'averageSale', 'totalValue',
-  'salesRevenue', 'carwashRevenue', 'expenses', 'net', 'cogs', 'grossProfit', 'netProfit', 'totalRefund',
+  'salesRevenue', 'carwashRevenue', 'expenses', 'totalExpenses', 'net', 'cogs', 'grossProfit', 'netProfit', 'totalRefund',
 ]);
 
 export const REPORT_CONFIGS = {
@@ -71,6 +71,28 @@ export const REPORT_CONFIGS = {
     summaryLabels: { totalUsers: 'Total Users', activeUsers: 'Active', suspendedUsers: 'Suspended', lockedUsers: 'Locked' },
     breakdowns: [{ key: 'byRole', title: 'By Role', labelHeader: 'Role' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
   },
+  // The business-summary report — report.service.js's buildAllReport()
+  // flattens sales/products/customers/expenses/carwash/profit into this
+  // same { summary, ...arrays } shape every other report already uses, so
+  // nothing here (or in the PDF/Excel/CSV renderers) needs special-casing
+  // beyond naming which flattened keys to show. report.analysis (a plain
+  // string array, not a breakdown table) is handled separately by each
+  // renderer since it isn't tabular.
+  all: {
+    title: 'All Reports',
+    summaryLabels: {
+      totalSales: 'Total Sales', totalRevenue: 'Total Revenue', totalExpenses: 'Total Expenses',
+      carwashRevenue: 'Car Wash Revenue', netProfit: 'Net Profit',
+    },
+    breakdowns: [
+      { key: 'salesByDay', title: 'Sales By Day', labelHeader: 'Date' },
+      { key: 'salesByBranch', title: 'Sales By Branch', labelHeader: 'Branch' },
+      { key: 'topProducts', title: 'Top Products', labelHeader: 'Product' },
+      { key: 'topCustomers', title: 'Top Customers', labelHeader: 'Customer' },
+      { key: 'expensesByCategory', title: 'Expenses By Category', labelHeader: 'Category' },
+      { key: 'carwashByService', title: 'Car Wash By Service', labelHeader: 'Service' },
+    ],
+  },
 };
 
 export function humanize(key) {
@@ -100,4 +122,14 @@ export function resolveConfig(type, report) {
     summaryLabels: report.summary ? Object.fromEntries(Object.keys(report.summary).map((k) => [k, humanize(k)])) : null,
     breakdowns,
   };
+}
+
+// "Sales_Report_2026-07-15.pdf", not "sales-report.pdf" — one function so
+// the download's actual filename (frontend downloadBlob's `download`
+// attribute wins over whatever Content-Disposition suggests) and the
+// header both agree.
+export function buildReportFilename(type, report, extension) {
+  const { title } = resolveConfig(type, report);
+  const datePart = new Date().toISOString().slice(0, 10);
+  return `${title.replace(/\s+/g, '_')}_Report_${datePart}.${extension}`;
 }

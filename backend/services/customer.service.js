@@ -50,6 +50,16 @@ export async function getReturnHistory(id, query) {
 }
 
 export async function createCustomer(data, actorId) {
+  // Checked BEFORE generateCode() — generateCode() atomically consumes the
+  // next CUST-YYYY-NNNNN number the moment it's called, so a duplicate-phone
+  // attempt that only fails afterward (at the repository INSERT's UNIQUE
+  // constraint) still permanently burns that number, producing gaps like
+  // "the counter jumped to 00021" after far fewer real customers. This also
+  // gives a specific, friendly message instead of the generic 409 the raw
+  // DB constraint violation would otherwise surface as.
+  const existing = await customerRepository.findByPhone(data.phone);
+  if (existing) throw new ApiError(409, 'A customer with this phone number already exists');
+
   const customerCode = await generateCode('CUSTOMER', 'CUST');
   const customer = await customerRepository.create({ ...data, customerCode, userId: actorId });
 
@@ -67,6 +77,11 @@ export async function createCustomer(data, actorId) {
 export async function updateCustomer(id, data, actorId) {
   const existing = await customerRepository.findById(id);
   if (!existing) throw new ApiError(404, 'Customer not found');
+
+  if (data.phone) {
+    const phoneConflict = await customerRepository.findByPhone(data.phone, id);
+    if (phoneConflict) throw new ApiError(409, 'A customer with this phone number already exists');
+  }
 
   const customer = await customerRepository.update(id, { ...data, userId: actorId });
 

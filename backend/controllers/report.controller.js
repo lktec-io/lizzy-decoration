@@ -4,6 +4,7 @@ import * as reportService from '../services/report.service.js';
 import { buildReportPdf } from '../services/reportPdf.service.js';
 import { buildReportExcel } from '../services/reportExcel.service.js';
 import { buildReportCsv } from '../services/reportCsv.service.js';
+import { buildReportFilename } from '../services/reportConfig.js';
 import * as companyRepository from '../repositories/company.repository.js';
 import * as userRepository from '../repositories/user.repository.js';
 import * as branchRepository from '../repositories/branch.repository.js';
@@ -60,8 +61,12 @@ export const exportPdf = asyncHandler(async (req, res) => {
   const report = await reportService.getReport(req.params.type, req.query, req.user);
   const context = await buildExportContext(req);
   const pdf = await buildReportPdf(req.params.type, report, { ...req.query, ...context });
+  const filename = buildReportFilename(req.params.type, report, 'pdf');
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `inline; filename="${req.params.type}-report.pdf"`);
+  // Was "inline" — the browser opened the PDF in a new tab instead of
+  // downloading it. "attachment" is what actually triggers a direct
+  // download, matching how Excel/CSV already behaved.
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(pdf);
 });
 
@@ -69,8 +74,9 @@ export const exportExcel = asyncHandler(async (req, res) => {
   const report = await reportService.getReport(req.params.type, req.query, req.user);
   const context = await buildExportContext(req);
   const workbook = await buildReportExcel(req.params.type, report, { ...req.query, ...context });
+  const filename = buildReportFilename(req.params.type, report, 'xlsx');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', `attachment; filename="${req.params.type}-report.xlsx"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   await workbook.xlsx.write(res);
   res.end();
 });
@@ -78,7 +84,8 @@ export const exportExcel = asyncHandler(async (req, res) => {
 export const exportCsv = asyncHandler(async (req, res) => {
   const report = await reportService.getReport(req.params.type, req.query, req.user);
   const csv = buildReportCsv(req.params.type, report);
+  const filename = buildReportFilename(req.params.type, report, 'csv');
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="${req.params.type}-report.csv"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(csv);
 });

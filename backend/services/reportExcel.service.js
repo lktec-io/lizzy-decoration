@@ -90,6 +90,17 @@ export async function buildReportExcel(type, report, { dateFrom, dateTo, company
     currentRow += 1;
   }
 
+  if (Array.isArray(report.analysis) && report.analysis.length > 0) {
+    sheet.getCell(`A${currentRow}`).value = 'Business Summary';
+    sheet.getCell(`A${currentRow}`).font = { bold: true, size: 12, color: { argb: COLOR_PRIMARY } };
+    currentRow += 1;
+    report.analysis.forEach((line) => {
+      sheet.getCell(`A${currentRow}`).value = `•  ${line}`;
+      currentRow += 1;
+    });
+    currentRow += 1;
+  }
+
   config.breakdowns.forEach(({ key, title: breakdownTitle, labelHeader }) => {
     const rows = report[key];
 

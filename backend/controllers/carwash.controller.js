@@ -17,3 +17,13 @@ export const create = asyncHandler(async (req, res) => {
   const transaction = await carwashService.recordTransaction(req.body, req.user.id, req.user);
   return success(res, { message: 'Car wash recorded', data: transaction, status: 201 });
 });
+
+export const update = asyncHandler(async (req, res) => {
+  const transaction = await carwashService.updateTransaction(Number(req.params.id), req.body, req.user.id, req.user);
+  return success(res, { message: 'Car wash transaction updated', data: transaction });
+});
+
+export const remove = asyncHandler(async (req, res) => {
+  await carwashService.deleteTransaction(Number(req.params.id), req.user.id, req.user);
+  return success(res, { message: 'Car wash transaction deleted' });
+});

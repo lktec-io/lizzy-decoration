@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { FiPlus, FiDroplet } from 'react-icons/fi';
+import { FiPlus, FiDroplet, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
 import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import KPICard from '../../components/dashboard/KPICard';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
@@ -29,6 +30,8 @@ function formatDateTime(isoString) {
 
 function CarWash() {
   const canCreate = usePermission('carwash.create');
+  const canEdit = usePermission('carwash.edit');
+  const canDelete = usePermission('carwash.delete');
   const toast = useToast();
 
   const [services, setServices] = useState([]);
@@ -38,6 +41,8 @@ function CarWash() {
   const { items, meta, loading, page, setPage, search, setSearch, filters, setFilters, refetch } = useTable(fetchTransactions);
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
   const [error, setError] = useState('');
 
   const {
@@ -57,7 +62,23 @@ function CarWash() {
   }, []);
 
   const openCreate = () => {
+    setEditing(null);
     reset(DEFAULT_VALUES);
+    setError('');
+    setModalOpen(true);
+  };
+
+  const openEdit = (row) => {
+    setEditing(row);
+    reset({
+      plateNumber: row.plate_number,
+      customerName: row.customer_name,
+      phone: row.phone,
+      serviceId: String(row.service_id),
+      branchId: String(row.branch_id),
+      amount: row.amount,
+      paymentMethod: row.payment_method,
+    });
     setError('');
     setModalOpen(true);
   };
@@ -81,12 +102,27 @@ function CarWash() {
       paymentMethod: values.paymentMethod,
     };
     try {
-      await carwashService.recordCarwashTransaction(payload);
-      toast.success('Car wash transaction recorded.');
+      if (editing) {
+        await carwashService.updateCarwashTransaction(editing.id, payload);
+        toast.success('Car wash transaction updated.');
+      } else {
+        await carwashService.recordCarwashTransaction(payload);
+        toast.success('Car wash transaction recorded.');
+      }
       setModalOpen(false);
       refetch();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to record car wash.');
+      setError(err.response?.data?.message || 'Failed to save car wash transaction.');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await carwashService.deleteCarwashTransaction(pendingDelete.id);
+      toast.success('Car wash transaction permanently deleted.');
+      refetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete car wash transaction.');
     }
   };
 
@@ -99,6 +135,24 @@ function CarWash() {
     { key: 'payment_method', label: 'Payment', render: (row) => PAYMENT_METHODS.find((m) => m.value === row.payment_method)?.label || row.payment_method },
     { key: 'served_by', label: 'Served By', render: (row) => `${row.served_by_first_name} ${row.served_by_last_name}` },
     { key: 'amount', label: 'Amount', render: (row) => formatCurrency(row.amount) },
+    ...(canEdit || canDelete ? [{
+      key: 'actions',
+      label: '',
+      render: (row) => (
+        <div className="table-actions">
+          {canEdit && (
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit car wash transaction">
+              <FiEdit2 />
+            </button>
+          )}
+          {canDelete && (
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete car wash transaction">
+              <FiTrash2 />
+            </button>
+          )}
+        </div>
+      ),
+    }] : []),
   ];
 
   return (
@@ -162,13 +216,13 @@ function CarWash() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="New Car Wash Service"
+        title={editing ? 'Edit Car Wash Transaction' : 'New Car Wash Service'}
         size="sm"
         footer={
           <>
             <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
             <button type="submit" form="carwash-form" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
-              Record & Receive Payment
+              {editing ? 'Save Changes' : 'Record & Receive Payment'}
             </button>
           </>
         }
@@ -229,6 +283,15 @@ function CarWash() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete Car Wash Transaction?"
+        message="This action cannot be undone."
+        confirmLabel="Delete"
+      />
     </div>
   );
 }

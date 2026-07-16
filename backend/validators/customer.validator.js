@@ -4,7 +4,12 @@ const CUSTOMER_TYPES = ['walk_in', 'retail', 'wholesale', 'vip', 'business'];
 
 export const customerValidator = [
   body('firstName').trim().notEmpty().withMessage('First name is required').isLength({ max: 100 }),
-  body('lastName').trim().notEmpty().withMessage('Last name is required').isLength({ max: 100 }),
+  // Many walk-in customers only give one name ("Kulwa", "Frank") — last
+  // name is genuinely optional, not a required field with a fallback. An
+  // earlier version required this and the frontend worked around it by
+  // duplicating firstName into lastName, which is what caused customers to
+  // save (and display) as "Kulwa Kulwa".
+  body('lastName').optional({ values: 'falsy' }).trim().isLength({ max: 100 }).withMessage('Last name must be 100 characters or fewer'),
   body('businessName').optional({ values: 'falsy' }).isLength({ max: 150 }),
   body('phone').trim().notEmpty().withMessage('Phone number is required').isLength({ max: 20 }),
   body('altPhone').optional({ values: 'falsy' }).isLength({ max: 20 }),

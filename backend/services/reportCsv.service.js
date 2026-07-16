@@ -35,6 +35,12 @@ export function buildReportCsv(type, report) {
     sections.push('');
   }
 
+  if (Array.isArray(report.analysis) && report.analysis.length > 0) {
+    sections.push('Business Summary');
+    report.analysis.forEach((line) => sections.push(csvEscape(line)));
+    sections.push('');
+  }
+
   config.breakdowns.forEach(({ key, title: breakdownTitle, labelHeader }) => {
     const rows = report[key];
     sections.push(breakdownTitle);

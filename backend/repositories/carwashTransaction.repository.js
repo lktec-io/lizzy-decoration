@@ -74,3 +74,22 @@ export async function create({ vehicleId, serviceId, branchId, amount, paymentMe
   );
   return findById(result.insertId);
 }
+
+export async function update(id, { vehicleId, serviceId, branchId, amount, paymentMethod }) {
+  await pool.query(
+    `UPDATE carwash_transactions
+     SET vehicle_id = ?, service_id = ?, branch_id = ?, amount = ?, payment_method = ?
+     WHERE id = ?`,
+    [vehicleId, serviceId, branchId, amount, paymentMethod, id],
+  );
+  return findById(id);
+}
+
+// A real DELETE, not a status flag — carwash_transactions has no
+// deleted_at column and no downstream table references it (see
+// 009_create_carwash.sql), so this is unconditionally safe with no FK
+// violation case to catch, unlike suppliers' hard delete.
+export async function hardDelete(id) {
+  const [result] = await pool.query('DELETE FROM carwash_transactions WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+}

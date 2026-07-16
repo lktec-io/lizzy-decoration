@@ -98,26 +98,36 @@ summary {
   }
 }
 
+/* Flat and un-blurred at rest (nothing scrolled beneath it yet to blur) —
+   becomes a floating glass toolbar once the page scrolls, via
+   html.is-scrolled below. Every property that changes between the two
+   states is listed in this transition so the swap reads as one continuous
+   300ms animation rather than a jump-cut, including backdrop-filter itself
+   (animatable in all current evergreen browsers; browsers that don't
+   animate it just snap instantly, a harmless no-op degradation). */
 .app-navbar {
   grid-area: navbar;
-  background-color: var(--color-navbar-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-page-bg);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  border-bottom: 1px solid transparent;
   position: sticky;
   top: 0;
   z-index: var(--z-navbar);
   display: flex;
   align-items: center;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
-  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  transition: box-shadow 300ms ease, background-color 300ms ease, backdrop-filter 300ms ease, border-color 300ms ease;
 }
 
-/* Elevated glass shadow once the page has scrolled — toggled by a small
-   scroll listener in Navbar.jsx via a class on <html>, not by tracking
-   scroll position in component state (avoids a re-render on every
-   scroll tick). */
+/* Toggled by a small scroll listener in Navbar.jsx via a class on <html>,
+   not by tracking scroll position in component state (avoids a re-render
+   on every scroll tick). */
 html.is-scrolled .app-navbar {
+  background-color: var(--color-navbar-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-bottom-color: var(--color-border);
   box-shadow: 0 8px 30px -12px rgba(15, 23, 42, 0.18);
 }
 

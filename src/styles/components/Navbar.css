@@ -122,7 +122,7 @@
 
 .navbar-search-input:focus {
   outline: none;
-  background-color: var(--color-white);
+  background-color: var(--color-card-bg);
   border-color: var(--color-primary);
 }
 
@@ -131,10 +131,7 @@
   top: calc(100% + var(--space-2));
   left: 0;
   right: 0;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
   max-height: 320px;
   overflow-y: auto;
   z-index: var(--z-dropdown);
@@ -232,10 +229,7 @@
   top: calc(100% + var(--space-2));
   right: 0;
   min-width: 240px;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
   z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;
@@ -453,10 +447,7 @@
   top: calc(100% + var(--space-2));
   right: 0;
   width: 400px;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;

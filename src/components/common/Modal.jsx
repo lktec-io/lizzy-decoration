@@ -27,7 +27,7 @@ function Modal({ open, onClose, title, children, footer, size = 'md' }) {
           onClick={onClose}
         >
           <motion.div
-            className={`modal-panel modal-${size}`}
+            className={`modal-panel glass-modal modal-${size}`}
             role="dialog"
             aria-modal="true"
             aria-label={title}

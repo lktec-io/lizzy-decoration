@@ -80,7 +80,7 @@ function ThemePicker() {
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div className="theme-picker-panel" role="menu" aria-label="Theme picker" {...POPUP_MOTION}>
+          <motion.div className="theme-picker-panel glass-panel" role="menu" aria-label="Theme picker" {...POPUP_MOTION}>
             <div className="theme-picker-header">
               <span className="theme-picker-title">Appearance</span>
               <span className="theme-picker-subtitle">Choose your theme</span>

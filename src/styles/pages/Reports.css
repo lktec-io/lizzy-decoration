@@ -24,7 +24,7 @@
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border);
-  background-color: var(--color-white);
+  background-color: var(--color-card-bg);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   cursor: pointer;

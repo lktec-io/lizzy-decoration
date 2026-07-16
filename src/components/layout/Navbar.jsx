@@ -253,7 +253,7 @@ function Navbar({ onMenuClick, isOpen }) {
         />
         <AnimatePresence>
           {open && query.trim() && (
-            <motion.div className="navbar-search-results" {...DROPDOWN_MOTION}>
+            <motion.div className="navbar-search-results glass-dropdown" {...DROPDOWN_MOTION}>
               {users.length === 0 ? (
                 <EmptyState icon={FiSearch} title="No matches yet" description="Search currently covers Users only." />
               ) : (
@@ -308,7 +308,7 @@ function Navbar({ onMenuClick, isOpen }) {
           </button>
           <AnimatePresence>
             {notifications.open && (
-              <motion.div className="navbar-notification-panel" {...DROPDOWN_MOTION}>
+              <motion.div className="navbar-notification-panel glass-dropdown" {...DROPDOWN_MOTION}>
                 <div className="navbar-notification-header">
                   <span>Notifications</span>
                   <div className="navbar-notification-header-actions">
@@ -397,7 +397,7 @@ function Navbar({ onMenuClick, isOpen }) {
           </button>
           <AnimatePresence>
             {userMenuOpen && (
-              <motion.div className="navbar-user-panel" {...DROPDOWN_MOTION}>
+              <motion.div className="navbar-user-panel glass-dropdown" {...DROPDOWN_MOTION}>
                 <div className="navbar-user-panel-header">
                   {user?.avatar_path ? (
                     <img src={user.avatar_path} alt={displayName} className="navbar-user-panel-avatar navbar-user-panel-avatar-img" loading="lazy" />

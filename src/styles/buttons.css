@@ -45,13 +45,13 @@
 
 /* Secondary — dark gray outline */
 .btn-secondary {
-  background-color: var(--color-white);
+  background-color: var(--color-card-bg);
   border-color: var(--color-border);
   color: var(--color-gray-dark);
 }
 .btn-secondary:hover:not(:disabled) {
   background-color: var(--color-gray-light);
-  border-color: #CBD5E1;
+  border-color: rgba(var(--color-primary-rgb), 0.3);
 }
 
 .btn-danger {

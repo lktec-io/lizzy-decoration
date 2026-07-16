@@ -10,6 +10,7 @@ import TopProductsCard from '../../components/dashboard/TopProductsCard';
 import LowStockAlertCard from '../../components/dashboard/LowStockAlertCard';
 import DoughnutChart from '../../components/charts/DoughnutChart';
 import BarChart from '../../components/charts/BarChart';
+import { useChartTheme } from '../../components/charts/chartTheme';
 import * as dashboardService from '../../services/dashboardService';
 import * as inventoryService from '../../services/inventoryService';
 import { formatCurrency, formatNumber } from '../../utils/formatCurrency';
@@ -68,6 +69,7 @@ function computeTodayTrend(salesTrend) {
 }
 
 function Dashboard() {
+  const chartColors = useChartTheme();
   const [kpis, setKpis] = useState(null);
   const [charts, setCharts] = useState({});
   const [lowStockProducts, setLowStockProducts] = useState([]);
@@ -148,9 +150,9 @@ function Dashboard() {
             <BarChart
               labels={revenueVsExpenses.map((d) => new Date(d.date).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short' }))}
               datasets={[
-                { label: 'Revenue', values: revenueVsExpenses.map((d) => d.revenue), color: '#10B981' },
-                { label: 'Expenses', values: revenueVsExpenses.map((d) => d.expenses), color: '#EF4444' },
-                { label: 'Profit', values: revenueVsExpenses.map((d) => d.profit), color: '#2F6BFF' },
+                { label: 'Revenue', values: revenueVsExpenses.map((d) => d.revenue), color: chartColors.success },
+                { label: 'Expenses', values: revenueVsExpenses.map((d) => d.expenses), color: chartColors.danger },
+                { label: 'Profit', values: revenueVsExpenses.map((d) => d.profit), color: chartColors.info },
               ]}
               valueFormatter={formatCurrency}
               height={280}

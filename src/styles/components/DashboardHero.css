@@ -11,7 +11,7 @@
   margin-bottom: var(--space-6);
   background-image:
     radial-gradient(circle at 90% 20%, rgba(200, 155, 60, 0.14), transparent 45%),
-    linear-gradient(115deg, #071A3D 0%, #123A73 45%, #0E7A57 85%, #123A73 100%);
+    var(--gradient-hero);
   background-size: 220% 220%;
   animation: hero-gradient-shift 16s ease-in-out infinite;
   box-shadow: var(--shadow-md);

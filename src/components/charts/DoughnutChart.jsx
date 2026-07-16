@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { DOUGHNUT_PALETTE } from './chartTheme';
+import { useChartTheme } from './chartTheme';
 import '../../styles/components/DoughnutChart.css';
 
-const OTHER_COLOR = '#334155';
 const RADIUS = 32;
 const STROKE_WIDTH = 14;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -21,9 +20,11 @@ function polarPoint(angleDeg, radius) {
 
 // Folds data beyond the fixed, non-cycled palette length into a single
 // "Other" slice rather than repeating colors or growing the palette ad hoc.
-function prepareSlices(data) {
+// Palette/otherColor come from the active theme so a theme switch recolors
+// every slice on next render.
+function prepareSlices(data, palette, otherColor) {
   const sorted = [...data].filter((d) => d.value > 0).sort((a, b) => b.value - a.value);
-  const maxSlices = DOUGHNUT_PALETTE.length;
+  const maxSlices = palette.length;
   let visible = sorted;
   let other = null;
   if (sorted.length > maxSlices) {
@@ -41,14 +42,15 @@ function prepareSlices(data) {
     ...item,
     percent: percents[index],
     startPercent: startPercents[index],
-    color: item === other ? OTHER_COLOR : DOUGHNUT_PALETTE[index % DOUGHNUT_PALETTE.length],
+    color: item === other ? otherColor : palette[index % palette.length],
     midAngle: ((startPercents[index] + percents[index] / 2) / 100) * 360,
   }));
 }
 
 function DoughnutChart({ data, valueFormatter = (v) => v }) {
+  const chartColors = useChartTheme();
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const slices = prepareSlices(data || []);
+  const slices = prepareSlices(data || [], chartColors.doughnut, chartColors.doughnutOther);
   const total = slices.reduce((sum, s) => sum + s.value, 0);
   const hovered = hoveredIndex !== null ? slices[hoveredIndex] : null;
 
@@ -61,7 +63,7 @@ function DoughnutChart({ data, valueFormatter = (v) => v }) {
     >
       <div className="doughnut-chart-ring-wrap">
         <svg className="doughnut-chart-svg" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="#E2E8F0" strokeWidth={STROKE_WIDTH} />
+          <circle cx="50" cy="50" r={RADIUS} fill="none" stroke={chartColors.doughnutTrack} strokeWidth={STROKE_WIDTH} />
           {slices.map((slice, index) => {
             const sliceLength = (slice.percent / 100) * CIRCUMFERENCE;
             const visibleLength = Math.max(sliceLength - GAP, 0);

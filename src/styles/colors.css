@@ -46,4 +46,51 @@
   --color-gold: #C8A56A;
   --color-gold-dark: #A88447;
   --color-gold-light: #D9BC84;
+
+  /* --- Theme Engine tokens ---
+     Base/fallback values below match the "Aurora Glass" theme so the app
+     looks correct even for the instant before ThemeProvider's
+     useLayoutEffect stamps data-theme onto <html>. src/styles/themes.css
+     overrides every token in this block per [data-theme="..."]; nothing
+     above this comment is theme-swapped (--color-gold stays constant —
+     company branding, not a UI theme color). */
+  --color-primary-rgb: 11, 31, 77;
+  --color-accent-rgb: 16, 185, 129;
+  --color-danger-rgb: 239, 68, 68;
+  --color-card-bg: rgba(255, 255, 255, 0.7);
+  --color-card-glass-bg: rgba(255, 255, 255, 0.55);
+  --color-navbar-bg: rgba(255, 255, 255, 0.62);
+  --glass-blur: 20px;
+  --gradient-sidebar: linear-gradient(180deg, #0B1F4D 0%, #123262 100%);
+  --gradient-primary: linear-gradient(135deg, #2F6BFF 0%, #10B981 100%);
+  --gradient-hero: linear-gradient(115deg, #071A3D 0%, #123A73 45%, #0E7A57 85%, #123A73 100%);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-hover-text: #FFFFFF;
+  --sidebar-active-text: #FFFFFF;
+  --sidebar-text-strong: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --shadow-glow: 0 0 0 rgba(0, 0, 0, 0);
+  --chart-1: #2F6BFF;
+  --chart-2: #10B981;
+  --chart-3: #22D3EE;
+  --chart-4: #8B5CF6;
+
+  /* Spec-literal aliases — same tokens, the exact names requested by the
+     theme-engine spec, for any consumer that prefers the generic name over
+     this file's existing --color-* naming. Both resolve to one value per
+     theme; there's only ever one source of truth per token. */
+  --bg-primary: var(--color-background);
+  --bg-secondary: var(--color-card-bg);
+  --sidebar-bg: var(--color-sidebar-bg);
+  --navbar-bg: var(--color-navbar-bg);
+  --card-bg: var(--color-card-bg);
+  --border-color: var(--color-border);
+  --primary: var(--color-primary);
+  --secondary: var(--color-blue);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
+  --danger: var(--color-danger);
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --shadow: var(--shadow-md);
 }

@@ -1,16 +1,22 @@
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { CHART_COLORS, BASE_FONT } from './chartTheme';
+import { BASE_FONT, useChartTheme } from './chartTheme';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 // `datasets` (array of { label, values, color }) renders a grouped/legended
 // bar chart (Revenue vs Expenses); the single `values`/`color`/`label` props
 // stay the default single-series mode every existing caller already uses.
+// `color`/dataset colors are optional — omitting them falls back to the
+// current theme's primary color, so a theme switch re-colors the chart
+// even for callers that don't pass an explicit color.
 function BarChart({
-  labels, values, label = 'Value', color = CHART_COLORS.primary, horizontal = false,
+  labels, values, label = 'Value', color, horizontal = false,
   datasets = null, valueFormatter = (v) => v, height = 260,
 }) {
+  const chartColors = useChartTheme();
+  const resolvedColor = color || chartColors.primary;
+
   const data = {
     labels,
     datasets: datasets
@@ -25,7 +31,7 @@ function BarChart({
         {
           label,
           data: values,
-          backgroundColor: color,
+          backgroundColor: resolvedColor,
           borderRadius: 4,
           maxBarThickness: 36,
         },
@@ -38,20 +44,20 @@ function BarChart({
     maintainAspectRatio: false,
     plugins: {
       legend: datasets
-        ? { display: true, position: 'top', align: 'end', labels: { font: BASE_FONT, color: CHART_COLORS.graySecondary, usePointStyle: true, boxWidth: 8 } }
+        ? { display: true, position: 'top', align: 'end', labels: { font: BASE_FONT, color: chartColors.graySecondary, usePointStyle: true, boxWidth: 8 } }
         : { display: false },
       tooltip: {
         titleFont: BASE_FONT,
         bodyFont: BASE_FONT,
-        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        backgroundColor: chartColors.tooltipBg,
         padding: 12,
         cornerRadius: 8,
         callbacks: { label: (context) => `${context.dataset.label}: ${valueFormatter(context.parsed[horizontal ? 'x' : 'y'])}` },
       },
     },
     scales: {
-      x: { ticks: { font: BASE_FONT, color: CHART_COLORS.graySecondary }, grid: { display: !horizontal, color: CHART_COLORS.border } },
-      y: { ticks: { font: BASE_FONT, color: CHART_COLORS.graySecondary }, grid: { display: horizontal, color: CHART_COLORS.border } },
+      x: { ticks: { font: BASE_FONT, color: chartColors.graySecondary }, grid: { display: !horizontal, color: chartColors.border } },
+      y: { ticks: { font: BASE_FONT, color: chartColors.graySecondary }, grid: { display: horizontal, color: chartColors.border } },
     },
   };
 

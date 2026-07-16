@@ -79,6 +79,7 @@ summary {
 .app-sidebar {
   grid-area: sidebar;
   background-color: var(--color-sidebar-bg);
+  background-image: var(--gradient-sidebar);
   position: sticky;
   top: 0;
   height: 100vh;
@@ -99,9 +100,9 @@ summary {
 
 .app-navbar {
   grid-area: navbar;
-  background-color: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: var(--color-navbar-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
@@ -174,7 +175,8 @@ html.is-scrolled .app-navbar {
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background-color: var(--color-white);
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: var(--space-8);

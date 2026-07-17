@@ -42,7 +42,6 @@ const ExpenseList = lazy(() => import('../pages/expenses/ExpenseList'));
 const CarWash = lazy(() => import('../pages/carwash/CarWash'));
 const ReportsCenter = lazy(() => import('../pages/reports/ReportsCenter'));
 const SystemSettings = lazy(() => import('../pages/settings/SystemSettings'));
-const BackupSettings = lazy(() => import('../pages/settings/BackupSettings'));
 const ExpenseCategorySettings = lazy(() => import('../pages/settings/ExpenseCategorySettings'));
 const CarwashServiceSettings = lazy(() => import('../pages/settings/CarwashServiceSettings'));
 const Profile = lazy(() => import('../pages/profile/Profile'));
@@ -91,7 +90,6 @@ function AppRouter() {
               <Route path="/settings/expense-categories" element={<RequirePermission permission="settings.manage"><ExpenseCategorySettings /></RequirePermission>} />
               <Route path="/settings/carwash-services" element={<RequirePermission permission="settings.manage"><CarwashServiceSettings /></RequirePermission>} />
               <Route path="/settings/system" element={<RequirePermission permission="settings.view"><SystemSettings /></RequirePermission>} />
-              <Route path="/settings/backups" element={<RequirePermission permission="settings.manage"><BackupSettings /></RequirePermission>} />
               <Route path="/profile" element={<Profile />} />
 
               {/* Bookmark-safety redirects — these pages moved under Settings. */}

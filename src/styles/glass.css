@@ -6,13 +6,24 @@
    is a fixed color, so each class re-themes automatically with the rest of
    the app. */
 
+/* The flagship "Appearance popup" surface — deliberately the strongest
+   glass treatment in the app (blur floor of 24px, uncapped at +8px over
+   each theme's base --glass-blur so every theme lands in the 24-32px
+   range the design calls for). --glass-panel-bg is a dedicated,
+   higher-opacity token (not --color-card-bg, which stays more translucent
+   for ordinary cards) specifically so background content reads as heavily
+   softened rather than clearly visible through it — a native macOS/iOS
+   settings panel, not a tinted window. */
 .glass-panel {
   background-color: var(--glass-panel-bg, var(--color-card-bg));
-  background-image: linear-gradient(160deg, var(--glass-sheen, rgba(255, 255, 255, 0.06)), transparent 60%);
-  backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(1.6);
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(1.6);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-inner-glow, rgba(255, 255, 255, 0.05));
+  background-image: linear-gradient(160deg, var(--glass-sheen, rgba(255, 255, 255, 0.08)), transparent 65%);
+  backdrop-filter: blur(max(24px, calc(var(--glass-blur) + 8px))) saturate(1.8);
+  -webkit-backdrop-filter: blur(max(24px, calc(var(--glass-blur) + 8px))) saturate(1.8);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.16);
+  box-shadow:
+    0 32px 72px -16px rgba(3, 8, 20, 0.4),
+    var(--shadow-lg),
+    inset 0 1px 0 var(--glass-inner-glow, rgba(255, 255, 255, 0.1));
 }
 
 /* Dropdown-style floating panels (search results, notification list, user
@@ -52,9 +63,17 @@
 @media (max-width: 480px) {
   /* Heavy blur + saturate is the most expensive combination on low-power
      mobile GPUs; halving the blur radius keeps the frosted look without
-     the scroll-jank a full-strength blur can cause on entry-level phones. */
-  .glass-panel, .glass-dropdown, .glass-modal, .glass-navbar {
+     the scroll-jank a full-strength blur can cause on entry-level phones.
+     .glass-panel is exempted — the Appearance popup's "background must not
+     read as clearly visible" requirement still has to hold on a phone, so
+     it only steps down to a flat 24px floor instead of being halved. */
+  .glass-dropdown, .glass-modal, .glass-navbar {
     backdrop-filter: blur(calc(var(--glass-blur) / 2)) saturate(1.2);
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) / 2)) saturate(1.2);
+  }
+
+  .glass-panel {
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
   }
 }

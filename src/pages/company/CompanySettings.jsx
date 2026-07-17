@@ -12,23 +12,13 @@ import '../../styles/pages/Notifications.css';
 
 const EMPTY_FORM = {
   companyName: '',
-  businessType: '',
-  tinNumber: '',
-  vrn: '',
-  registrationNumber: '',
   address: '',
   region: '',
   district: '',
   street: '',
   phone: '',
-  altPhone: '',
   email: '',
-  website: '',
-  currency: 'TZS',
-  timezone: 'Africa/Dar_es_Salaam',
   receiptFooter: '',
-  description: '',
-  status: 'active',
 };
 
 function CompanySettings() {
@@ -59,23 +49,13 @@ function CompanySettings() {
         if (profile) {
           reset({
             companyName: profile.company_name || '',
-            businessType: profile.business_type || '',
-            tinNumber: profile.tin_number || '',
-            vrn: profile.vrn || '',
-            registrationNumber: profile.registration_number || '',
             address: profile.address || '',
             region: profile.region || '',
             district: profile.district || '',
             street: profile.street || '',
             phone: profile.phone || '',
-            altPhone: profile.alt_phone || '',
             email: profile.email || '',
-            website: profile.website || '',
-            currency: profile.currency || 'TZS',
-            timezone: profile.timezone || 'Africa/Dar_es_Salaam',
             receiptFooter: profile.receipt_footer || '',
-            description: profile.description || '',
-            status: profile.status || 'active',
           });
           setLogoPath(profile.logo_path || null);
         }
@@ -186,35 +166,20 @@ function CompanySettings() {
             <span className="card-title">Business Identity</span>
           </div>
           <div className="card-body">
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="companyName">Company Name</label>
-                <input
-                  id="companyName"
-                  className={`form-control ${errors.companyName ? 'form-control-error' : ''}`}
-                  disabled={!canManage}
-                  {...register('companyName', { required: 'Company name is required' })}
-                />
-                {errors.companyName && <span className="form-error">{errors.companyName.message}</span>}
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="businessType">Business Type</label>
-                <input id="businessType" className="form-control" disabled={!canManage} {...register('businessType')} />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label" htmlFor="tinNumber">TIN Number</label>
-                <input id="tinNumber" className="form-control" disabled={!canManage} {...register('tinNumber')} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="vrn">VRN</label>
-                <input id="vrn" className="form-control" disabled={!canManage} {...register('vrn')} />
-              </div>
+            <div className="form-group">
+              <label className="form-label form-label-required" htmlFor="companyName">Company Name</label>
+              <input
+                id="companyName"
+                className={`form-control ${errors.companyName ? 'form-control-error' : ''}`}
+                disabled={!canManage}
+                {...register('companyName', { required: 'Company name is required' })}
+              />
+              {errors.companyName && <span className="form-error">{errors.companyName.message}</span>}
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="registrationNumber">Business Registration Number</label>
-              <input id="registrationNumber" className="form-control" disabled={!canManage} {...register('registrationNumber')} />
+              <label className="form-label" htmlFor="receiptFooter">Receipt Footer</label>
+              <textarea id="receiptFooter" className="form-control" disabled={!canManage} placeholder="e.g. Thank you for your business!" {...register('receiptFooter')} />
+              <p className="form-help mt-1">Printed at the bottom of every sales receipt.</p>
             </div>
           </div>
         </div>
@@ -256,12 +221,6 @@ function CompanySettings() {
                 <input id="phone" className="form-control" disabled={!canManage} {...register('phone')} />
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="altPhone">Alternative Phone</label>
-                <input id="altPhone" className="form-control" disabled={!canManage} {...register('altPhone')} />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
                 <label className="form-label" htmlFor="email">Email</label>
                 <input
                   id="email"
@@ -272,43 +231,6 @@ function CompanySettings() {
                 />
                 {errors.email && <span className="form-error">{errors.email.message}</span>}
               </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="website">Website</label>
-                <input id="website" className="form-control" disabled={!canManage} {...register('website')} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card mb-5">
-          <div className="card-header">
-            <span className="card-title">Regional &amp; Receipt Settings</span>
-          </div>
-          <div className="card-body">
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label" htmlFor="currency">Currency</label>
-                <input id="currency" className="form-control" disabled={!canManage} {...register('currency')} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="timezone">Timezone</label>
-                <input id="timezone" className="form-control" disabled={!canManage} {...register('timezone')} />
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="receiptFooter">Receipt Footer</label>
-              <textarea id="receiptFooter" className="form-control" disabled={!canManage} {...register('receiptFooter')} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="description">Business Description</label>
-              <textarea id="description" className="form-control" disabled={!canManage} {...register('description')} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="status">Status</label>
-              <select id="status" className="form-control" disabled={!canManage} {...register('status')}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
             </div>
           </div>
         </div>

@@ -42,7 +42,7 @@
   --color-card-bg: rgba(255, 255, 255, 0.7);
   --color-card-glass-bg: rgba(255, 255, 255, 0.55);
   --color-navbar-bg: rgba(255, 255, 255, 0.62);
-  --glass-panel-bg: rgba(255, 255, 255, 0.88);
+  --glass-panel-bg: rgba(255, 255, 255, 0.94);
   --color-sidebar-bg: #0B1F4D;
 
   --color-text-primary: #0B1F4D;
@@ -72,62 +72,66 @@
 }
 
 /* ============================= MIDNIGHT NEON =============================
-   Dark futuristic — near-black surfaces, neon green + electric cyan +
-   soft purple accents, glow on hover. "Linear/Raycast/Vercel" mood. */
+   Premium Navy Midnight — deep navy / graphite navy surfaces (never pure
+   black), neon blue + cyan + emerald accents. "GitHub Dark / Linear /
+   Raycast / Vercel" mood. Base scale, darkest to lightest: #08121F (sidebar)
+   -> #0B1628 (page) -> #101D33 (navbar/gradient stop) -> #13233D (card tint)
+   — cards are built from the lightest step so they visibly lift off the
+   page instead of blending into flat black. */
 [data-theme='midnight'] {
-  --color-primary: #39FF88;
-  --color-primary-hover: #2EE673;
-  --color-primary-rgb: 57, 255, 136;
+  --color-primary: #3B9EFF;
+  --color-primary-hover: #2B84E0;
+  --color-primary-rgb: 59, 158, 255;
   --color-accent: #22D3EE;
   --color-accent-hover: #0FB8D4;
   --color-accent-rgb: 34, 211, 238;
   --color-danger-rgb: 255, 77, 109;
-  --color-blue: #A78BFA;
+  --color-blue: #10B981;
 
-  --color-background: #0A0B0F;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-gray-light: rgba(255, 255, 255, 0.06);
+  --color-background: #0B1628;
+  --color-border: rgba(148, 178, 220, 0.12);
+  --color-gray-light: rgba(148, 178, 220, 0.08);
   --color-gray-dark: #C7CCD6;
 
-  --color-success: #39FF88;
+  --color-success: #10B981;
   --color-warning: #FFD166;
   --color-danger: #FF4D6D;
   --color-info: #22D3EE;
-  --color-success-bg: rgba(57, 255, 136, 0.14);
+  --color-success-bg: rgba(16, 185, 129, 0.16);
   --color-warning-bg: rgba(255, 209, 102, 0.14);
   --color-danger-bg: rgba(255, 77, 109, 0.14);
   --color-info-bg: rgba(34, 211, 238, 0.14);
 
-  --color-card-bg: rgba(17, 19, 26, 0.85);
-  --color-card-glass-bg: rgba(17, 19, 26, 0.7);
-  --color-navbar-bg: rgba(10, 11, 15, 0.72);
-  --glass-panel-bg: rgba(13, 15, 20, 0.93);
-  --color-sidebar-bg: #000000;
+  --color-card-bg: rgba(19, 35, 61, 0.68);
+  --color-card-glass-bg: rgba(19, 35, 61, 0.55);
+  --color-navbar-bg: rgba(16, 29, 51, 0.72);
+  --glass-panel-bg: rgba(11, 20, 37, 0.97);
+  --color-sidebar-bg: #08121F;
 
   --color-text-primary: #F1F5F9;
   --color-text-secondary: #8B93A7;
   --color-text-on-sidebar: #9AA5B8;
 
-  --sidebar-hover-bg: rgba(57, 255, 136, 0.08);
+  --sidebar-hover-bg: rgba(59, 158, 255, 0.1);
   --sidebar-hover-text: #FFFFFF;
-  --sidebar-active-text: #04120A;
+  --sidebar-active-text: #071426;
   --sidebar-text-strong: #FFFFFF;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-border: rgba(148, 178, 220, 0.1);
 
   --glass-blur: 24px;
-  --gradient-sidebar: linear-gradient(180deg, #000000 0%, #0A0B0F 100%);
-  --gradient-primary: linear-gradient(135deg, #39FF88 0%, #22D3EE 100%);
-  --gradient-hero: linear-gradient(115deg, #04120A 0%, #06231C 45%, #0A2E33 85%, #04120A 100%);
+  --gradient-sidebar: linear-gradient(180deg, #08121F 0%, #101D33 100%);
+  --gradient-primary: linear-gradient(135deg, #3B9EFF 0%, #22D3EE 100%);
+  --gradient-hero: linear-gradient(115deg, #08121F 0%, #101D33 45%, #13233D 85%, #08121F 100%);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 20px rgba(57, 255, 136, 0.35);
+  --shadow-sm: 0 1px 2px rgba(3, 8, 20, 0.4);
+  --shadow-md: 0 4px 16px rgba(3, 8, 20, 0.5);
+  --shadow-lg: 0 12px 32px rgba(3, 8, 20, 0.6);
+  --shadow-glow: 0 0 20px rgba(59, 158, 255, 0.35);
 
-  --chart-1: #39FF88;
+  --chart-1: #3B9EFF;
   --chart-2: #22D3EE;
-  --chart-3: #A78BFA;
-  --chart-4: #FF6EC7;
+  --chart-3: #10B981;
+  --chart-4: #818CF8;
 }
 
 /* ============================= PEARL FROST =============================
@@ -160,7 +164,7 @@
   --color-card-bg: rgba(255, 255, 255, 0.85);
   --color-card-glass-bg: rgba(255, 255, 255, 0.75);
   --color-navbar-bg: rgba(255, 255, 255, 0.75);
-  --glass-panel-bg: rgba(251, 250, 247, 0.93);
+  --glass-panel-bg: rgba(251, 250, 247, 0.96);
   --color-sidebar-bg: #FBFAF7;
 
   --color-text-primary: #1E2430;

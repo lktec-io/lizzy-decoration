@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FiPrinter, FiDownload, FiFileText, FiBarChart2, FiGrid } from 'react-icons/fi';
+import { FiPrinter, FiDownload, FiFileText, FiBarChart2, FiGrid, FiTrendingUp } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
 import EmptyState from '../../components/common/EmptyState';
 import Skeleton from '../../components/common/Skeleton';
+import LineChart from '../../components/charts/LineChart';
+import BarChart from '../../components/charts/BarChart';
 import { usePermission } from '../../hooks/usePermission';
 import { useCompany } from '../../hooks/useCompany';
 import * as reportService from '../../services/reportService';
@@ -10,6 +12,7 @@ import * as branchService from '../../services/branchService';
 import * as categoryService from '../../services/categoryService';
 import * as customerService from '../../services/customerService';
 import * as productService from '../../services/productService';
+import * as userService from '../../services/userService';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { downloadCsv } from '../../utils/exportCsv';
 import '../../styles/pages/Reports.css';
@@ -40,22 +43,44 @@ function firstOfMonthIso() {
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 }
 
+function daysAgoIso(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+function firstOfLastMonthIso() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+}
+
+function lastOfLastMonthIso() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
+}
+
+function firstOfYearIso() {
+  const now = new Date();
+  return new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+}
+
 const DATE_PRESETS = {
   today: () => [todayIso(), todayIso()],
   yesterday: () => [yesterdayIso(), yesterdayIso()],
   week: () => [startOfWeekIso(), todayIso()],
+  last7: () => [daysAgoIso(6), todayIso()],
+  last30: () => [daysAgoIso(29), todayIso()],
   month: () => [firstOfMonthIso(), todayIso()],
+  lastMonth: () => [firstOfLastMonthIso(), lastOfLastMonthIso()],
+  year: () => [firstOfYearIso(), todayIso()],
 };
 
 const MONEY_KEYS = new Set([
   'value', 'totalRevenue', 'totalAmount', 'totalDiscount', 'averageSale', 'totalValue',
   'salesRevenue', 'carwashRevenue', 'expenses', 'totalExpenses', 'net', 'cogs', 'grossProfit', 'netProfit',
+  'totalPurchased', 'totalPaid', 'outstandingBalance', 'averageDailySales', 'averageInvoice',
 ]);
 
-// Exactly the reports named in the signed proposal's "12. Reporting Module"
-// section (Sales, Inventory, Financial/Profit, Car Wash, Branch Reports) —
-// the backend still supports the other report types (Purchases, Products,
-// Customers, Suppliers, Returns, Transfers), they're just not surfaced here.
 const PURCHASE_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
   { value: 'received', label: 'Received' },
@@ -70,9 +95,13 @@ const RETURN_STATUS_OPTIONS = [
 
 const REPORT_CONFIGS = {
   sales: {
-    label: 'Sales', filters: ['dateFrom', 'dateTo', 'branchId', 'customerId', 'productId'],
+    label: 'Sales', filters: ['dateFrom', 'dateTo', 'branchId', 'cashierId', 'customerId', 'productId'],
     summary: { totalSales: 'Total Sales', totalRevenue: 'Total Revenue', totalDiscount: 'Total Discount', averageSale: 'Average Sale' },
     breakdowns: [{ key: 'byDay', title: 'By Day', labelHeader: 'Date' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
+  },
+  suppliers: {
+    label: 'Suppliers', filters: [],
+    breakdowns: [{ key: 'bySupplier', title: 'Supplier Balances', labelHeader: 'Supplier' }],
   },
   customers: {
     label: 'Customers', filters: ['dateFrom', 'dateTo', 'branchId'],
@@ -150,7 +179,7 @@ const REPORT_CONFIGS = {
 };
 
 function humanize(key) {
-  const result = key.replace(/([A-Z])/g, ' $1');
+  const result = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1');
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
@@ -203,15 +232,17 @@ function BreakdownTable({ title, labelHeader, rows, onExport, canExport }) {
 
 function ReportsCenter() {
   const canExport = usePermission('reports.export');
+  const canViewUsers = usePermission('users.view');
   const { company } = useCompany();
   const [reportType, setReportType] = useState('sales');
   const [branches, setBranches] = useState([]);
   const [categories, setCategories] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [cashiers, setCashiers] = useState([]);
   const [datePreset, setDatePreset] = useState('month');
   const [filters, setFilters] = useState({
-    dateFrom: firstOfMonthIso(), dateTo: todayIso(), branchId: '', categoryId: '', status: '', customerId: '', productId: '',
+    dateFrom: firstOfMonthIso(), dateTo: todayIso(), branchId: '', categoryId: '', status: '', customerId: '', productId: '', cashierId: '',
   });
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -227,6 +258,13 @@ function ReportsCenter() {
     categoryService.listActiveCategories().then(setCategories);
     customerService.listActiveCustomers().then(setCustomers);
     productService.listProducts({ limit: 200 }).then((result) => setProducts(result.items || []));
+    // Cashier filter needs the users list, which 403s for a role without
+    // users.view (e.g. Cashier/Sales viewing their own Reports) — only
+    // fetched, and only offered as a filter, for roles that can see it.
+    if (canViewUsers) {
+      userService.listUsers({ limit: 200 }).then((result) => setCashiers(result.items || []));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- canViewUsers is derived from the user's role and stable for the component's lifetime
   }, []);
 
   const applyDatePreset = (preset) => {
@@ -254,12 +292,32 @@ function ReportsCenter() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetching the selected report on filter/type change is standard data-fetching, not derived state
     loadReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- config is derived from reportType, individual filter fields tracked explicitly below
-  }, [reportType, filters.dateFrom, filters.dateTo, filters.branchId, filters.categoryId, filters.status, filters.customerId, filters.productId]);
+  }, [reportType, filters.dateFrom, filters.dateTo, filters.branchId, filters.categoryId, filters.status, filters.customerId, filters.productId, filters.cashierId]);
 
   const summaryEntries = useMemo(() => {
     if (!report?.summary || !config.summary) return [];
     return Object.entries(config.summary).map(([key, label]) => ({ key, label, value: report.summary[key] }));
   }, [report, config]);
+
+  // Whichever day-based breakdown this report type has (sales/profit use
+  // byDay, the combined "all" report uses salesByDay) becomes the trend
+  // line — reports with no date breakdown (inventory, customers, ...)
+  // simply render no trend chart rather than a misleading empty one.
+  const trendRows = report?.byDay || report?.salesByDay || [];
+
+  // The first categorical (non-day-based) breakdown, charted as a
+  // horizontal bar when it's small enough to read as a chart — By Branch,
+  // Top Products, By Category, etc. Skips 'byDay'/'salesByDay' explicitly
+  // since that data already renders as the trend line above; charting it
+  // twice would just be the same numbers in two shapes.
+  const chartBreakdown = useMemo(() => {
+    const candidate = config.breakdowns.find(({ key }) => {
+      if (key === 'byDay' || key === 'salesByDay') return false;
+      const rows = report?.[key];
+      return Array.isArray(rows) && rows.length > 0 && rows.length <= 10 && typeof rows[0]?.value === 'number';
+    });
+    return candidate ? { title: candidate.title, rows: report[candidate.key] } : null;
+  }, [config, report]);
 
   const buildExportParams = () => {
     const params = {};
@@ -349,6 +407,7 @@ function ReportsCenter() {
         ))}
       </div>
 
+      {config.filters.length > 0 && (
       <div className="card mb-5">
         <div className="card-body reports-filter-bar">
           {config.filters.includes('dateFrom') && (
@@ -357,8 +416,12 @@ function ReportsCenter() {
               <select id="datePreset" className="form-control" value={datePreset} onChange={(e) => applyDatePreset(e.target.value)}>
                 <option value="today">Today</option>
                 <option value="yesterday">Yesterday</option>
+                <option value="last7">Last 7 Days</option>
+                <option value="last30">Last 30 Days</option>
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="year">This Year</option>
                 <option value="custom">Custom</option>
               </select>
             </div>
@@ -381,6 +444,15 @@ function ReportsCenter() {
               <select id="branchId" className="form-control" value={filters.branchId} onChange={(e) => setFilters((prev) => ({ ...prev, branchId: e.target.value }))}>
                 <option value="">All Branches</option>
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
+          {config.filters.includes('cashierId') && canViewUsers && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="cashierId">Cashier</label>
+              <select id="cashierId" className="form-control" value={filters.cashierId} onChange={(e) => setFilters((prev) => ({ ...prev, cashierId: e.target.value }))}>
+                <option value="">All Cashiers</option>
+                {cashiers.map((u) => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
               </select>
             </div>
           )}
@@ -422,6 +494,7 @@ function ReportsCenter() {
           )}
         </div>
       </div>
+      )}
 
       {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
 
@@ -446,12 +519,72 @@ function ReportsCenter() {
             </div>
           )}
 
+          {(trendRows.length > 0 || chartBreakdown) && (
+            <div className={`grid mb-5 ${trendRows.length > 0 && chartBreakdown ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {trendRows.length > 0 && (
+                <div className="card">
+                  <div className="card-header"><span className="card-title">{reportType === 'profit' ? 'Daily Profit Trend' : 'Sales Trend'}</span></div>
+                  <div className="card-body">
+                    <LineChart
+                      labels={trendRows.map((r) => new Date(r.label).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short' }))}
+                      values={trendRows.map((r) => Number(r.value))}
+                      valueFormatter={formatCurrency}
+                    />
+                  </div>
+                </div>
+              )}
+              {chartBreakdown && (
+                <div className="card">
+                  <div className="card-header"><span className="card-title">{chartBreakdown.title}</span></div>
+                  <div className="card-body">
+                    <BarChart
+                      labels={chartBreakdown.rows.map((r) => r.label)}
+                      values={chartBreakdown.rows.map((r) => Number(r.value))}
+                      valueFormatter={formatCurrency}
+                      horizontal
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {report?.financialSummary && (
+            <div className="card mb-5">
+              <div className="card-header"><span className="card-title">Financial Summary</span></div>
+              <div className="card-body">
+                <dl className="reports-financial-summary">
+                  <div><dt>Total Revenue</dt><dd>{formatCurrency(report.financialSummary.totalRevenue)}</dd></div>
+                  <div><dt>Average Daily Sales</dt><dd>{formatCurrency(report.financialSummary.averageDailySales)}</dd></div>
+                  {report.financialSummary.averageInvoice != null && (
+                    <div><dt>Average Invoice</dt><dd>{formatCurrency(report.financialSummary.averageInvoice)}</dd></div>
+                  )}
+                  <div><dt>Highest Sales Day</dt><dd>{report.financialSummary.highestSalesDay.date} — {formatCurrency(report.financialSummary.highestSalesDay.value)}</dd></div>
+                  <div><dt>Lowest Sales Day</dt><dd>{report.financialSummary.lowestSalesDay.date} — {formatCurrency(report.financialSummary.lowestSalesDay.value)}</dd></div>
+                </dl>
+              </div>
+            </div>
+          )}
+
           {Array.isArray(report?.analysis) && report.analysis.length > 0 && (
             <div className="card mb-5">
-              <div className="card-header"><span className="card-title">Business Summary</span></div>
+              <div className="card-header"><span className="card-title">Business Analysis</span></div>
               <div className="card-body">
                 <ul className="reports-analysis-list">
                   {report.analysis.map((line) => <li key={line}>{line}</li>)}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {Array.isArray(report?.recommendations) && report.recommendations.length > 0 && (
+            <div className="card mb-5">
+              <div className="card-header"><span className="card-title">Recommendations</span></div>
+              <div className="card-body">
+                <ul className="reports-recommendations-list">
+                  {report.recommendations.map((line) => (
+                    <li key={line}><FiTrendingUp aria-hidden="true" /> {line}</li>
+                  ))}
                 </ul>
               </div>
             </div>

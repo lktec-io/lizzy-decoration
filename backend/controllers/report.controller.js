@@ -19,13 +19,11 @@ export const getReport = asyncHandler(async (req, res) => {
 
 // Resolves the human-readable names behind whatever filter query params are
 // present (raw IDs would be meaningless on a printed report) — only looks up
-// the ones the Reports UI actually exposes as filter inputs.
+// the ones the Reports UI actually exposes as filter inputs. Branch is
+// resolved separately (see buildExportContext) since the report header
+// prints it as its own labelled line, not folded into this generic string.
 async function buildFiltersLabel(query) {
   const parts = [];
-  if (query.branchId) {
-    const branch = await branchRepository.findById(Number(query.branchId));
-    if (branch) parts.push(`Branch: ${branch.name}`);
-  }
   if (query.categoryId) {
     const category = await categoryRepository.findById(Number(query.categoryId));
     if (category) parts.push(`Category: ${category.name}`);
@@ -38,6 +36,10 @@ async function buildFiltersLabel(query) {
     const product = await productRepository.findById(Number(query.productId));
     if (product) parts.push(`Product: ${product.name}`);
   }
+  if (query.cashierId) {
+    const cashier = await userRepository.findById(Number(query.cashierId));
+    if (cashier) parts.push(`Cashier: ${cashier.first_name} ${cashier.last_name}`);
+  }
   if (query.status) {
     parts.push(`Status: ${query.status.charAt(0).toUpperCase()}${query.status.slice(1)}`);
   }
@@ -45,15 +47,17 @@ async function buildFiltersLabel(query) {
 }
 
 async function buildExportContext(req) {
-  const [company, generatedBy, filtersLabel] = await Promise.all([
+  const [company, generatedBy, filtersLabel, branch] = await Promise.all([
     companyRepository.get(),
     userRepository.findById(req.user.id),
     buildFiltersLabel(req.query),
+    req.query.branchId ? branchRepository.findById(Number(req.query.branchId)) : null,
   ]);
   return {
     company,
     generatedByName: generatedBy ? `${generatedBy.first_name} ${generatedBy.last_name}` : undefined,
     filtersLabel,
+    branchLabel: branch?.name,
   };
 }
 

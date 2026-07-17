@@ -1,7 +1,7 @@
 import { ApiError } from '../utils/apiError.js';
 import { getAccessibleBranchIds } from '../utils/branchScope.js';
-import { formatCurrency } from '../utils/formatCurrency.js';
 import * as reportRepository from '../repositories/report.repository.js';
+import { buildAnalysis } from './reportAnalysis.js';
 
 const REPORT_TYPES = [
   'sales', 'inventory', 'purchases', 'expenses', 'carwash', 'profit',
@@ -60,68 +60,71 @@ export async function getReport(type, query, user) {
     throw new ApiError(400, `Date range too large — please select a range of ${MAX_DATE_RANGE_DAYS} days or fewer.`);
   }
 
+  // Revenue growth vs. the immediately preceding period of equal length is
+  // only computed for the three revenue-bearing report types that surface
+  // it (sales/profit/all) — it's a second real query (salesReport again,
+  // shifted dates), not worth paying for on every report type.
+  const needsPreviousRevenue = type === 'sales' || type === 'profit' || type === 'all';
+  const previousRevenue = needsPreviousRevenue ? await getPreviousPeriodRevenue(filters) : null;
+
+  let report;
   switch (type) {
-    case 'sales': return reportRepository.salesReport(filters);
-    case 'inventory': return reportRepository.inventoryReport(filters);
-    case 'purchases': return reportRepository.purchasesReport(filters);
-    case 'expenses': return reportRepository.expensesReport(filters);
-    case 'carwash': return reportRepository.carwashReport(filters);
-    case 'profit': return reportRepository.profitReport(filters);
-    case 'branches': return reportRepository.branchesReport(filters);
-    case 'products': return reportRepository.productsReport(filters);
-    case 'customers': return reportRepository.customersReport(filters);
-    case 'suppliers': return reportRepository.suppliersReport(filters);
-    case 'returns': return reportRepository.returnsReport(filters);
-    case 'transfers': return reportRepository.transfersReport(filters);
-    case 'users': return reportRepository.usersReport(filters);
-    case 'all': return buildAllReport(filters);
+    case 'sales': report = await reportRepository.salesReport(filters); break;
+    case 'inventory': report = await reportRepository.inventoryReport(filters); break;
+    case 'purchases': report = await reportRepository.purchasesReport(filters); break;
+    case 'expenses': report = await reportRepository.expensesReport(filters); break;
+    case 'carwash': report = await reportRepository.carwashReport(filters); break;
+    case 'profit': report = await reportRepository.profitReport(filters); break;
+    case 'branches': report = await reportRepository.branchesReport(filters); break;
+    case 'products': report = await reportRepository.productsReport(filters); break;
+    case 'customers': report = await reportRepository.customersReport(filters); break;
+    case 'suppliers': report = await reportRepository.suppliersReport(filters); break;
+    case 'returns': report = await reportRepository.returnsReport(filters); break;
+    case 'transfers': report = await reportRepository.transfersReport(filters); break;
+    case 'users': report = await reportRepository.usersReport(filters); break;
+    case 'all': return buildAllReport(filters, { previousRevenue });
     default: throw new ApiError(404, `Unknown report type "${type}"`);
   }
+
+  const { analysis, recommendations, financialSummary } = buildAnalysis(type, report, { previousRevenue });
+  return { ...report, analysis, recommendations, financialSummary };
 }
 
-// Plain, factual sentences generated from the same numbers already computed
-// above — no invented figures, no LLM narrative. Each line only appears if
-// its underlying denominator is non-zero (e.g. no "Car Wash contributes 0%
-// of $0" line when there's no revenue at all in the period).
-function buildBusinessSummary({ sales, products, customers, expenses, carwash, profit }) {
-  const lines = [];
+// One extra salesReport call with the date range shifted back by its own
+// span (e.g. "this month" -> "last month", not a fixed 30 days) — reuses
+// the existing, real query rather than estimating. Returns null when the
+// shifted range would itself exceed the max span guard above, or on the
+// (rare) invalid-date edge case, rather than throwing for what's a
+// nice-to-have comparison, not the primary report data.
+async function getPreviousPeriodRevenue(filters) {
+  const from = new Date(filters.dateFrom);
+  const to = new Date(filters.dateTo);
+  const spanMs = to - from;
+  if (!(spanMs >= 0)) return null;
 
-  if (sales.summary.totalSales > 0) {
-    lines.push(`Total sales revenue was ${formatCurrency(sales.summary.totalRevenue)} across ${sales.summary.totalSales} transactions (average sale ${formatCurrency(sales.summary.averageSale)}).`);
+  const prevTo = new Date(from.getTime() - 86400000);
+  const prevFrom = new Date(prevTo.getTime() - spanMs);
+
+  try {
+    const previous = await reportRepository.salesReport({
+      ...filters,
+      dateFrom: prevFrom.toISOString().slice(0, 10),
+      dateTo: prevTo.toISOString().slice(0, 10),
+    });
+    return previous.summary.totalRevenue;
+  } catch {
+    return null;
   }
-
-  if (profit.summary.totalRevenue > 0 && carwash.summary.totalRevenue > 0) {
-    const carwashShare = (carwash.summary.totalRevenue / profit.summary.totalRevenue) * 100;
-    lines.push(`Car Wash contributed ${carwashShare.toFixed(1)}% of total revenue (${formatCurrency(carwash.summary.totalRevenue)} from ${carwash.summary.totalTransactions} washes).`);
-  }
-
-  if (products.topProducts.length > 0) {
-    const top = products.topProducts[0];
-    lines.push(`Top selling product was ${top.label}, with ${top.quantity} units sold (${formatCurrency(top.value)} in revenue).`);
-  }
-
-  if (expenses.summary.totalExpenses > 0) {
-    lines.push(`Total expenses recorded: ${formatCurrency(expenses.summary.totalAmount)} across ${expenses.summary.totalExpenses} entries.`);
-  }
-
-  lines.push(`Net profit for the period: ${formatCurrency(profit.summary.netProfit)}.`);
-
-  if (customers.topCustomers.length > 0) {
-    const top = customers.topCustomers[0];
-    lines.push(`Top customer was ${top.label}, with ${formatCurrency(top.value)} in purchases across ${top.orders} orders.`);
-  }
-
-  return lines;
 }
 
-// The "business summary" report — reuses every existing report function
-// unmodified (same real queries every individual report already runs, run
-// in parallel) and flattens the results into the same flat
+// The "All Reports" business summary — reuses every existing report
+// function unmodified (same real queries every individual report already
+// runs, run in parallel) and flattens the results into the same flat
 // { summary, ...breakdownArrays } shape every other report type already
 // returns, so the existing generic frontend table/PDF/Excel/CSV renderers
 // need no special-casing for this one type — only a new REPORT_CONFIGS
 // entry (frontend + reportConfig.js) naming which flattened keys to show.
-async function buildAllReport(filters) {
+async function buildAllReport(filters, { previousRevenue } = {}) {
   const [sales, products, customers, expenses, carwash, profit] = await Promise.all([
     reportRepository.salesReport(filters),
     reportRepository.productsReport(filters),
@@ -130,6 +133,12 @@ async function buildAllReport(filters) {
     reportRepository.carwashReport(filters),
     reportRepository.profitReport(filters),
   ]);
+
+  const { analysis, recommendations, financialSummary } = buildAnalysis(
+    'all',
+    { sales, products, customers, expenses, carwash, profit },
+    { previousRevenue },
+  );
 
   return {
     summary: {
@@ -145,7 +154,9 @@ async function buildAllReport(filters) {
     topCustomers: customers.topCustomers,
     expensesByCategory: expenses.byCategory,
     carwashByService: carwash.byService,
-    analysis: buildBusinessSummary({ sales, products, customers, expenses, carwash, profit }),
+    analysis,
+    recommendations,
+    financialSummary,
   };
 }
 

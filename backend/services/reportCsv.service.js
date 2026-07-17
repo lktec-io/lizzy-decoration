@@ -27,7 +27,7 @@ export function buildReportCsv(type, report) {
   const sections = [`${config.title} Report`, ''];
 
   if (report.summary && config.summaryLabels) {
-    sections.push('Summary');
+    sections.push('Executive Summary');
     sections.push('Metric,Value');
     Object.entries(config.summaryLabels).forEach(([key, label]) => {
       sections.push(`${csvEscape(label)},${csvEscape(formatCell(key, report.summary[key]))}`);
@@ -35,9 +35,29 @@ export function buildReportCsv(type, report) {
     sections.push('');
   }
 
+  if (report.financialSummary) {
+    const fs = report.financialSummary;
+    sections.push('Financial Summary');
+    sections.push('Metric,Value');
+    sections.push(`Total Revenue,${csvEscape(formatCell('totalRevenue', fs.totalRevenue))}`);
+    sections.push(`Average Daily Sales,${csvEscape(formatCell('totalRevenue', fs.averageDailySales))}`);
+    if (fs.averageInvoice != null) {
+      sections.push(`Average Invoice,${csvEscape(formatCell('totalRevenue', fs.averageInvoice))}`);
+    }
+    sections.push(`Highest Sales Day,${csvEscape(`${fs.highestSalesDay.date} (${formatCell('totalRevenue', fs.highestSalesDay.value)})`)}`);
+    sections.push(`Lowest Sales Day,${csvEscape(`${fs.lowestSalesDay.date} (${formatCell('totalRevenue', fs.lowestSalesDay.value)})`)}`);
+    sections.push('');
+  }
+
   if (Array.isArray(report.analysis) && report.analysis.length > 0) {
-    sections.push('Business Summary');
+    sections.push('Business Analysis');
     report.analysis.forEach((line) => sections.push(csvEscape(line)));
+    sections.push('');
+  }
+
+  if (Array.isArray(report.recommendations) && report.recommendations.length > 0) {
+    sections.push('Recommendations');
+    report.recommendations.forEach((line) => sections.push(csvEscape(line)));
     sections.push('');
   }
 

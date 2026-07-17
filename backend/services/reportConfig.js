@@ -10,6 +10,7 @@ import { formatCurrency } from '../utils/formatCurrency.js';
 export const MONEY_KEYS = new Set([
   'value', 'totalRevenue', 'totalAmount', 'totalDiscount', 'averageSale', 'totalValue',
   'salesRevenue', 'carwashRevenue', 'expenses', 'totalExpenses', 'net', 'cogs', 'grossProfit', 'netProfit', 'totalRefund',
+  'totalPurchased', 'totalPaid', 'outstandingBalance',
 ]);
 
 export const REPORT_CONFIGS = {
@@ -66,6 +67,11 @@ export const REPORT_CONFIGS = {
     summaryLabels: null,
     breakdowns: [{ key: 'byBranch', title: 'Branch Comparison', labelHeader: 'Branch' }],
   },
+  suppliers: {
+    title: 'Suppliers',
+    summaryLabels: null,
+    breakdowns: [{ key: 'bySupplier', title: 'Supplier Balances', labelHeader: 'Supplier' }],
+  },
   users: {
     title: 'Users',
     summaryLabels: { totalUsers: 'Total Users', activeUsers: 'Active', suspendedUsers: 'Suspended', lockedUsers: 'Locked' },
@@ -96,7 +102,12 @@ export const REPORT_CONFIGS = {
 };
 
 export function humanize(key) {
-  const result = key.replace(/([A-Z])/g, ' $1');
+  // Handles both camelCase keys (most breakdown columns) and snake_case
+  // keys (a few pass a raw DB column straight through, e.g. customer_code)
+  // — without the second replace, "customer_code" only capitalizes to
+  // "Customer_code" since there's no capital letter for the first regex to
+  // find and split on.
+  const result = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1');
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 

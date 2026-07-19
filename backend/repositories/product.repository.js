@@ -1,10 +1,13 @@
 import { pool } from '../config/db.js';
 
+// brands is a LEFT JOIN — brand is optional per-product (see the 013
+// migration), and an INNER JOIN here would silently drop any product with
+// no brand from every list/detail query the moment brand_id went NULL.
 const BASE_SELECT = `
   SELECT p.*, c.name AS category_name, b.name AS brand_name
   FROM products p
   JOIN categories c ON c.id = p.category_id
-  JOIN brands b ON b.id = p.brand_id
+  LEFT JOIN brands b ON b.id = p.brand_id
 `;
 
 export async function findById(id) {
@@ -49,7 +52,7 @@ export async function findSellable({ branchId, search, categoryId, limit = 60 })
             COALESCE(i.quantity - i.reserved_quantity, 0) AS available_quantity
      FROM products p
      JOIN categories c ON c.id = p.category_id
-     JOIN brands b ON b.id = p.brand_id
+     LEFT JOIN brands b ON b.id = p.brand_id
      LEFT JOIN inventory i ON i.product_id = p.id AND i.branch_id = ?
      ${whereClause}
      ORDER BY p.name
@@ -98,7 +101,7 @@ export async function create(data) {
     `INSERT INTO products (name, code, category_id, brand_id, description, buying_price, selling_price, min_stock, status, created_by, updated_by)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      data.name, data.code, data.categoryId, data.brandId, data.description || null,
+      data.name, data.code, data.categoryId, data.brandId || null, data.description || null,
       data.buyingPrice, data.sellingPrice, data.minStock || 0, data.status || 'active',
       data.userId, data.userId,
     ],
@@ -111,7 +114,7 @@ export async function update(id, data) {
     `UPDATE products SET name = ?, category_id = ?, brand_id = ?, description = ?,
        buying_price = ?, selling_price = ?, min_stock = ?, status = ?, updated_by = ? WHERE id = ?`,
     [
-      data.name, data.categoryId, data.brandId, data.description || null,
+      data.name, data.categoryId, data.brandId || null, data.description || null,
       data.buyingPrice, data.sellingPrice, data.minStock || 0, data.status, data.userId, id,
     ],
   );

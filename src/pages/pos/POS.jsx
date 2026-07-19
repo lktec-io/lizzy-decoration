@@ -345,6 +345,18 @@ function POS() {
             />
           </div>
 
+          <div className="form-group">
+            <label className="form-label" htmlFor="pos-notes">Note (Optional)</label>
+            <input
+              id="pos-notes"
+              type="text"
+              className="form-control"
+              placeholder="e.g. gift-wrapped"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
           <div>
             <div className="pos-totals-row"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
             {(itemDiscountTotal + resolvedCartDiscount) > 0 && (
@@ -378,6 +390,16 @@ function POS() {
                   value={payment.amount}
                   onChange={(e) => updatePaymentRow(index, { amount: e.target.value })}
                 />
+                {payment.method !== 'cash' && (
+                  <input
+                    type="text"
+                    className="form-control pos-payment-reference"
+                    placeholder="Reference #"
+                    aria-label="Payment reference number"
+                    value={payment.referenceNumber}
+                    onChange={(e) => updatePaymentRow(index, { referenceNumber: e.target.value })}
+                  />
+                )}
                 {payments.length > 1 && (
                   <button type="button" className="btn btn-ghost btn-icon" onClick={() => removePaymentRow(index)} aria-label="Remove payment">
                     <FiTrash2 />

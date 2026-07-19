@@ -13,6 +13,8 @@ function formatDate(isoString) {
   return new Date(isoString).toLocaleDateString('en-TZ', { dateStyle: 'medium' });
 }
 
+const STATUS_BADGE = { received: 'badge-success', pending: 'badge-warning', cancelled: 'badge-danger' };
+
 function PurchaseList() {
   const navigate = useNavigate();
   const canCreate = usePermission('purchases.create');
@@ -26,7 +28,7 @@ function PurchaseList() {
     { key: 'branch_name', label: 'Branch' },
     { key: 'total_amount', label: 'Amount', render: (row) => formatCurrency(row.total_amount) },
     { key: 'created_at', label: 'Date', render: (row) => formatDate(row.created_at) },
-    { key: 'status', label: 'Status', render: (row) => <span className="badge badge-success">{row.status}</span> },
+    { key: 'status', label: 'Status', render: (row) => <span className={`badge ${STATUS_BADGE[row.status] || 'badge-neutral'}`}>{row.status}</span> },
     {
       key: 'actions',
       label: '',

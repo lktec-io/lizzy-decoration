@@ -125,10 +125,20 @@ summary {
    on every scroll tick). */
 html.is-scrolled .app-navbar {
   background-color: var(--color-navbar-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  /* Floor of 28px (Aurora 28 / Midnight 30 / Frost 28) so the navbar never
+     reads as flatter than the rest of the floating-UI layer once scrolled
+     — same strength tier as .glass-modal/.glass-dropdown in glass.css. */
+  backdrop-filter: blur(max(28px, calc(var(--glass-blur) + 6px))) saturate(1.4);
+  -webkit-backdrop-filter: blur(max(28px, calc(var(--glass-blur) + 6px))) saturate(1.4);
   border-bottom-color: var(--color-border);
   box-shadow: 0 8px 30px -12px rgba(15, 23, 42, 0.18);
+}
+
+@media (max-width: 480px) {
+  html.is-scrolled .app-navbar {
+    backdrop-filter: blur(calc(var(--glass-blur) / 2)) saturate(1.2);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) / 2)) saturate(1.2);
+  }
 }
 
 .app-main {

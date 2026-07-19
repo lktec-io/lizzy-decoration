@@ -43,6 +43,7 @@
   --color-card-glass-bg: rgba(255, 255, 255, 0.55);
   --color-navbar-bg: rgba(255, 255, 255, 0.62);
   --glass-panel-bg: rgba(255, 255, 255, 0.94);
+  --modal-backdrop-bg: rgba(11, 31, 77, 0.65);
   --color-sidebar-bg: #0B1F4D;
 
   --color-text-primary: #0B1F4D;
@@ -106,6 +107,7 @@
   --color-card-glass-bg: rgba(19, 35, 61, 0.55);
   --color-navbar-bg: rgba(16, 29, 51, 0.72);
   --glass-panel-bg: rgba(11, 20, 37, 0.97);
+  --modal-backdrop-bg: rgba(3, 8, 20, 0.7);
   --color-sidebar-bg: #08121F;
 
   --color-text-primary: #F1F5F9;
@@ -165,6 +167,7 @@
   --color-card-glass-bg: rgba(255, 255, 255, 0.75);
   --color-navbar-bg: rgba(255, 255, 255, 0.75);
   --glass-panel-bg: rgba(251, 250, 247, 0.96);
+  --modal-backdrop-bg: rgba(30, 36, 48, 0.6);
   --color-sidebar-bg: #FBFAF7;
 
   --color-text-primary: #1E2430;

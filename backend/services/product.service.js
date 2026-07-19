@@ -68,8 +68,12 @@ export async function createProduct(data, actorId) {
   const category = await categoryRepository.findById(data.categoryId);
   if (!category) throw new ApiError(400, 'Selected category does not exist');
 
-  const brand = await brandRepository.findById(data.brandId);
-  if (!brand) throw new ApiError(400, 'Selected brand does not exist');
+  // Brand is optional — only validated (must reference a real row) when
+  // the caller actually sent one, not required to be present at all.
+  if (data.brandId) {
+    const brand = await brandRepository.findById(data.brandId);
+    if (!brand) throw new ApiError(400, 'Selected brand does not exist');
+  }
 
   assertPriceSanity(data);
 
@@ -93,8 +97,10 @@ export async function updateProduct(id, data, actorId) {
   const category = await categoryRepository.findById(data.categoryId);
   if (!category) throw new ApiError(400, 'Selected category does not exist');
 
-  const brand = await brandRepository.findById(data.brandId);
-  if (!brand) throw new ApiError(400, 'Selected brand does not exist');
+  if (data.brandId) {
+    const brand = await brandRepository.findById(data.brandId);
+    if (!brand) throw new ApiError(400, 'Selected brand does not exist');
+  }
 
   assertPriceSanity(data);
 

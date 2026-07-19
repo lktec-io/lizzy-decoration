@@ -104,7 +104,6 @@ function SupplierList() {
     { key: 'name', label: 'Supplier Name' },
     { key: 'phone', label: 'Phone', render: (row) => row.phone || '—' },
     { key: 'email', label: 'Email', render: (row) => row.email || '—' },
-    { key: 'tin_number', label: 'TIN', render: (row) => row.tin_number || '—' },
     {
       key: 'status',
       label: 'Status',

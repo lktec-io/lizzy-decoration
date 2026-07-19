@@ -123,7 +123,7 @@ function ProductForm() {
       reset({
         name: product.name,
         categoryId: String(product.category_id),
-        brandId: String(product.brand_id),
+        brandId: product.brand_id ? String(product.brand_id) : '',
         description: product.description || '',
         buyingPrice: product.buying_price,
         sellingPrice: product.selling_price,
@@ -145,7 +145,7 @@ function ProductForm() {
     const payload = {
       ...values,
       categoryId: Number(values.categoryId),
-      brandId: Number(values.brandId),
+      brandId: values.brandId ? Number(values.brandId) : null,
       buyingPrice: Number(values.buyingPrice),
       sellingPrice: Number(values.sellingPrice),
       minStock: Number(values.minStock) || 0,
@@ -304,16 +304,15 @@ function ProductForm() {
               </div>
               <div className="form-group">
                 <div className="flex items-center justify-between">
-                  <label className="form-label form-label-required" htmlFor="brandId">Brand</label>
+                  <label className="form-label" htmlFor="brandId">Brand (Optional)</label>
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBrandModalOpen(true)}>
                     <FiPlus aria-hidden="true" /> Add Brand
                   </button>
                 </div>
-                <select id="brandId" className={`form-control ${errors.brandId ? 'form-control-error' : ''}`} {...register('brandId', { required: 'Brand is required' })}>
-                  <option value="">Select a brand</option>
+                <select id="brandId" className="form-control" {...register('brandId')}>
+                  <option value="">No brand</option>
                   {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
-                {errors.brandId && <span className="form-error">{errors.brandId.message}</span>}
               </div>
             </div>
             <div className="form-group">

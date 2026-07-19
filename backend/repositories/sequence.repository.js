@@ -16,8 +16,19 @@ async function getNextNumber(documentType, year) {
 }
 
 // e.g. generateCode('PRODUCT_CRT', 'CRT') -> "CRT-2026-00001"
-export async function generateCode(documentType, prefix, { padLength = 5 } = {}) {
-  const year = new Date().getFullYear();
+//
+// includeYear: false drops the year segment from the visible code (e.g.
+// "CUST-0001" instead of "CUST-2026-00001") — used for customers, where a
+// year-scoped counter reads as an odd artifact on a code a cashier reads
+// aloud to a customer. It keys the counter on a fixed sentinel year (0,
+// never a real calendar year) rather than the current year, so the
+// sequence never resets on Jan 1 and never repeats a number across years
+// the way it would if the real year were used as the DB key but omitted
+// from the printed string.
+export async function generateCode(documentType, prefix, { padLength = 5, includeYear = true } = {}) {
+  const year = includeYear ? new Date().getFullYear() : 0;
   const number = await getNextNumber(documentType, year);
-  return `${prefix}-${year}-${String(number).padStart(padLength, '0')}`;
+  return includeYear
+    ? `${prefix}-${year}-${String(number).padStart(padLength, '0')}`
+    : `${prefix}-${String(number).padStart(padLength, '0')}`;
 }

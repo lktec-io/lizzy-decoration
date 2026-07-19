@@ -78,6 +78,7 @@ function InventoryOverview() {
     { key: 'quantity', label: 'Current Stock', render: (row) => formatNumber(row.quantity) },
     { key: 'available_quantity', label: 'Available', render: (row) => formatNumber(row.available_quantity) },
     { key: 'min_stock', label: 'Min Stock', render: (row) => formatNumber(row.min_stock) },
+    { key: 'stock_value', label: 'Stock Value', render: (row) => formatCurrency(row.stock_value) },
     {
       key: 'level',
       label: 'Level',

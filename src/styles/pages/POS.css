@@ -218,16 +218,26 @@
 
 .pos-payment-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
 }
 
 .pos-payment-method {
-  flex: 1 1 40%;
+  flex: 1 1 30%;
 }
 
 .pos-payment-amount {
-  flex: 1 1 40%;
+  flex: 1 1 30%;
+}
+
+/* Only rendered for non-cash methods (mpesa/airtel/bank/card) — cash has no
+   reference to record. Shares the row with method+amount on wide screens,
+   wraps to its own full-width line on narrow ones via the row's flex-wrap
+   rather than a fixed breakpoint. */
+.pos-payment-reference {
+  flex: 1 1 30%;
+  min-width: 120px;
 }
 
 .pos-scan-empty {

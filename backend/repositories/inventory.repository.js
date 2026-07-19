@@ -117,6 +117,7 @@ export async function findAll({ page = 1, limit = 20, search, branchId, lowStock
             (i.quantity - i.reserved_quantity) AS available_quantity,
             COALESCE(i.min_stock, p.min_stock) AS min_stock, i.updated_at,
             p.name AS product_name, p.code AS product_code,
+            (i.quantity * p.buying_price) AS stock_value,
             b.name AS branch_name
      FROM inventory i
      JOIN products p ON p.id = i.product_id

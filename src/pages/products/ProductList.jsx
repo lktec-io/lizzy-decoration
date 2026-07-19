@@ -110,7 +110,7 @@ function ProductList() {
       ),
     },
     { key: 'category_name', label: 'Category' },
-    { key: 'brand_name', label: 'Brand' },
+    { key: 'brand_name', label: 'Brand', render: (row) => row.brand_name || '—' },
     { key: 'buying_price', label: 'Buying Price', render: (row) => formatCurrency(row.buying_price) },
     { key: 'selling_price', label: 'Selling Price', render: (row) => formatCurrency(row.selling_price) },
     {
@@ -200,7 +200,7 @@ function ProductList() {
                   <div className="management-grid-card-subtitle">{row.code}</div>
                 </div>
                 <div className="management-grid-card-body">
-                  <span>{row.category_name} &middot; {row.brand_name}</span>
+                  <span>{row.brand_name ? `${row.category_name} · ${row.brand_name}` : row.category_name}</span>
                   <span>{formatCurrency(row.selling_price)}</span>
                 </div>
                 <div className="management-grid-card-footer">

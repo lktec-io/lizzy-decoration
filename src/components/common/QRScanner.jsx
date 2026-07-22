@@ -104,15 +104,18 @@ function QRScanner({ onScan, onError }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scanner lifecycle is intentionally mount/unmount only
   }, []);
 
+  // No status text by design — a cashier scanning continuously should never
+  // have to read "Starting..."/"Ready..."/error copy. Camera startup is a
+  // bare spinner (no words); a failure is reported to the caller (onError)
+  // which closes this modal and hands off to the search box instead of
+  // leaving dead camera UI on screen.
   return (
     <div className={`qr-scanner ${flash ? 'qr-scanner-flash' : ''}`}>
       <div id={ELEMENT_ID} className="qr-scanner-viewport" />
-      {status === 'starting' && <p className="text-sm text-secondary mt-2">Starting camera...</p>}
-      {status === 'scanning' && <p className="text-sm text-secondary mt-2">Ready — scan continuously, no need to touch the screen.</p>}
-      {status === 'error' && (
-        <p className="text-sm text-danger mt-2">
-          Could not access the camera. Use the search box — a barcode scanner or keyboard input works there too.
-        </p>
+      {status === 'starting' && (
+        <div className="flex items-center justify-center p-4">
+          <span className="spinner" aria-label="Starting camera" />
+        </div>
       )}
     </div>
   );

@@ -137,6 +137,30 @@
   background-color: var(--color-background);
 }
 
+/* The only feedback a successful add/increment gets — no toast, no status
+   text. Fires on every add-to-cart path (scan, exact-code match,
+   search+Enter, product-grid click) and on a stepper/qty increase. Targets
+   the qty and total specifically too so the "cart is the confirmation"
+   principle reads clearly at a glance, not just as a background flicker. */
+@keyframes posCartLineFlash {
+  0% { background-color: rgba(34, 197, 94, 0.22); }
+  100% { background-color: transparent; }
+}
+
+.pos-cart-line-flash {
+  animation: posCartLineFlash 450ms ease-out;
+}
+
+.pos-cart-line-flash .pos-cart-qty-input,
+.pos-cart-line-flash .pos-cart-line-total {
+  animation: posCartLineValuePulse 450ms ease-out;
+}
+
+@keyframes posCartLineValuePulse {
+  0% { transform: scale(1.12); color: var(--color-success); }
+  100% { transform: scale(1); color: inherit; }
+}
+
 .pos-cart-line-top {
   display: flex;
   justify-content: space-between;

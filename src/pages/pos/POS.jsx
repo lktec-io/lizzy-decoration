@@ -54,6 +54,8 @@ function POS() {
 
   const [cart, setCart] = useState([]);
   const [selectedLineId, setSelectedLineId] = useState(null);
+  const [flashLineId, setFlashLineId] = useState(null);
+  const flashTimerRef = useRef(null);
   const [expandedDiscountLines, setExpandedDiscountLines] = useState(() => new Set());
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState('');
@@ -62,7 +64,6 @@ function POS() {
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [clearCartConfirmOpen, setClearCartConfirmOpen] = useState(false);
-  const [scanMessage, setScanMessage] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [lastSale, setLastSale] = useState(null);
@@ -105,6 +106,21 @@ function POS() {
 
   const cartLine = (productId) => cart.find((line) => line.productId === productId);
 
+  // The cart itself is the confirmation — no toast, no status text. A brief
+  // highlight on the affected row is the only feedback, cleared after
+  // FLASH_DURATION_MS so it never lingers into being its own kind of
+  // "message."
+  const triggerFlash = useCallback((productId) => {
+    clearTimeout(flashTimerRef.current);
+    setFlashLineId(productId);
+    flashTimerRef.current = setTimeout(() => setFlashLineId(null), 450);
+  }, []);
+
+  // The one path every add-to-cart trigger goes through — scan, exact-code
+  // auto-match, search+Enter, and a plain product-grid click. Clearing and
+  // refocusing the search box here (rather than in each caller) guarantees
+  // none of them can regress into leaving the last query sitting in the
+  // box, which is exactly what a manual click used to do.
   const addToCart = useCallback((product) => {
     setCart((prev) => {
       const existing = prev.find((line) => line.productId === product.id);
@@ -126,8 +142,11 @@ function POS() {
         },
       ];
     });
+    triggerFlash(product.id);
+    setSearch('');
+    setHighlightedIndex(-1);
     searchInputRef.current?.focus();
-  }, []);
+  }, [triggerFlash]);
 
   // Makes hardware/keyboard-wedge barcode scanners "just work" through the
   // same search box a cashier types into — those devices type the full
@@ -140,9 +159,8 @@ function POS() {
     if (!query || products.length === 0) return;
     const exact = products.find((p) => p.code.toLowerCase() === query);
     if (exact) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to an external event (a completed scan resolving to a product) by updating the cart and clearing the box for the next scan, not deriving render state
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to an external event (a completed scan resolving to a product) by updating the cart, not deriving render state
       addToCart(exact);
-      setSearch('');
     }
   }, [products, debouncedSearch, addToCart]);
 
@@ -151,9 +169,12 @@ function POS() {
   };
 
   // Shared by the [-]/[+] stepper buttons and the direct-type number input
-  // so both paths clamp to the same [1, availableQuantity] bounds.
+  // so both paths clamp to the same [1, availableQuantity] bounds. Only
+  // flashes on an actual increase — typing a smaller number or hitting [-]
+  // isn't the "just added stock" moment this cue is for.
   const setLineQuantity = (line, nextQuantity) => {
     const qty = Math.max(1, Math.min(line.availableQuantity, nextQuantity || 1));
+    if (qty > line.quantity) triggerFlash(line.productId);
     updateLine(line.productId, { quantity: qty });
   };
 
@@ -209,8 +230,14 @@ function POS() {
 
   const isMobileMoneyMethod = paymentMethod === 'mpesa' || paymentMethod === 'airtel_money';
 
+  // Success is silent by design — the cart flash + beep (in QRScanner) are
+  // the only feedback a cashier gets, so scanning never interrupts itself
+  // with a message to read. A scan that can't resolve to a product is the
+  // one case still worth surfacing (silently doing nothing would leave the
+  // cashier wondering why the item never showed up) — a toast, not
+  // persistent on-screen text, and it never stops the scanner from
+  // listening for the next code.
   const handleScan = async (decodedText) => {
-    setScanMessage('');
     let code = null;
     let productIdHint = null;
     try {
@@ -222,10 +249,7 @@ function POS() {
       // manufacturer barcode and match it directly against products.code.
       code = decodedText.trim();
     }
-    if (!code) {
-      setScanMessage('Unrecognized code.');
-      return;
-    }
+    if (!code) return;
 
     try {
       const matches = await productService.listSellableProducts({ branchId, search: code, limit: 5 });
@@ -233,19 +257,17 @@ function POS() {
         || matches.find((p) => p.id === productIdHint)
         || matches[0];
       if (!match) {
-        setScanMessage(`No product found for "${code}".`);
+        toast.error(`No product found for "${code}".`);
         return;
       }
       addToCart(match);
-      setScanMessage(`Added "${match.name}".`);
     } catch {
-      setScanMessage('Could not look up the scanned product.');
+      toast.error('Could not look up the scanned product.');
     }
   };
 
   const handleScannerError = () => {
     setScannerOpen(false);
-    setScanMessage('');
     toast.error('Camera unavailable — search or scan with a barcode scanner in the search box instead.');
     searchInputRef.current?.focus();
   };
@@ -259,8 +281,6 @@ function POS() {
   const handleSearchEnter = async () => {
     if (highlightedIndex >= 0 && products[highlightedIndex]) {
       addToCart(products[highlightedIndex]);
-      setSearch('');
-      setHighlightedIndex(-1);
       return;
     }
 
@@ -271,8 +291,6 @@ function POS() {
       const match = results.find((p) => p.code.toLowerCase() === query.toLowerCase()) || results[0];
       if (match) {
         addToCart(match);
-        setSearch('');
-        setHighlightedIndex(-1);
       } else {
         toast.error(`No product found for "${query}".`);
       }
@@ -441,7 +459,6 @@ function POS() {
       }
       if (event.key === 'F4') {
         event.preventDefault();
-        setScanMessage('');
         setScannerOpen(true);
         return;
       }
@@ -485,7 +502,7 @@ function POS() {
               onKeyDown={handleSearchKeyDown}
               placeholder="Scan or search by name, barcode, or SKU (F2)"
             />
-            <button type="button" className="btn btn-secondary" onClick={() => { setScanMessage(''); setScannerOpen(true); }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setScannerOpen(true)}>
               <FiCamera aria-hidden="true" /> Scan Barcode
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => navigate('/pos/sales')}>
@@ -539,8 +556,9 @@ function POS() {
               const lineTotal = line.quantity * line.unitPrice - (Number(line.discountAmount) || 0);
               const isSelected = selectedLineId === line.productId;
               const isExpanded = expandedDiscountLines.has(line.productId);
+              const isFlashing = flashLineId === line.productId;
               return (
-                <div className={`pos-cart-line ${isSelected ? 'pos-cart-line-selected' : ''}`} key={line.productId}>
+                <div className={`pos-cart-line ${isSelected ? 'pos-cart-line-selected' : ''} ${isFlashing ? 'pos-cart-line-flash' : ''}`} key={line.productId}>
                   <div className="pos-cart-line-top">
                     <button
                       type="button"
@@ -717,7 +735,6 @@ function POS() {
 
       <Modal open={scannerOpen} onClose={() => setScannerOpen(false)} title="Scan Barcode" size="sm">
         <QRScanner onScan={handleScan} onError={handleScannerError} />
-        {scanMessage && <p className="text-sm text-secondary mt-2">{scanMessage}</p>}
       </Modal>
 
       <ConfirmDialog

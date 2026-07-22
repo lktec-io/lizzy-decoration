@@ -30,33 +30,6 @@
   max-width: 260px;
 }
 
-.pos-category-pills {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.pos-category-pill {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-full);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-card-bg);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: border-color var(--transition-fast), color var(--transition-fast);
-}
-
-.pos-category-pill:hover {
-  border-color: var(--color-primary);
-}
-
-.pos-category-pill-active {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-white);
-}
-
 .pos-product-grid {
   flex: 1;
   overflow-y: auto;
@@ -88,6 +61,15 @@
 .pos-product-card:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Arrow-key navigation of search results (F2 to focus search, then
+   Up/Down) — mirrors the hover treatment so keyboard and mouse users see
+   the same "this is what Enter will add" affordance. */
+.pos-product-card-highlighted {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--color-background);
 }
 
 .pos-product-name {
@@ -137,12 +119,22 @@
 }
 
 .pos-cart-line {
-  padding: var(--space-3) 0;
+  padding: var(--space-3) var(--space-2);
+  margin: 0 calc(-1 * var(--space-2));
   border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
 }
 
 .pos-cart-line:last-child {
   border-bottom: none;
+}
+
+/* Selected via clicking the product name (see .pos-cart-line-name) — the
+   Delete key then removes exactly this line, matching the "Delete = Remove
+   selected cart item" shortcut. */
+.pos-cart-line-selected {
+  background-color: var(--color-background);
 }
 
 .pos-cart-line-top {
@@ -155,6 +147,12 @@
 .pos-cart-line-name {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: var(--color-text-primary);
+  cursor: pointer;
 }
 
 .pos-cart-line-controls {
@@ -212,10 +210,28 @@
   width: 80px;
 }
 
+.pos-cart-line-price {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
 .pos-cart-line-total {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
+}
+
+/* Manager-only (sales.manage), revealed per-line by the FiPercent toggle —
+   collapsed by default so an ordinary cashier's cart row never shows a
+   price/discount field to type into. */
+.pos-cart-line-override {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--color-border);
 }
 
 .pos-cart-footer {
@@ -239,28 +255,47 @@
   font-weight: var(--font-weight-bold);
 }
 
-.pos-payment-row {
-  display: flex;
-  flex-wrap: wrap;
+.pos-payment-groups {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-2);
-  align-items: center;
+  margin-top: var(--space-2);
 }
 
-.pos-payment-method {
-  flex: 1 1 30%;
+.pos-payment-group-btn {
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.pos-payment-amount {
-  flex: 1 1 30%;
+.pos-payment-group-btn:hover {
+  border-color: var(--color-primary);
 }
 
-/* Only rendered for non-cash methods (mpesa/airtel/bank/card) — cash has no
-   reference to record. Shares the row with method+amount on wide screens,
-   wraps to its own full-width line on narrow ones via the row's flex-wrap
-   rather than a fixed breakpoint. */
-.pos-payment-reference {
-  flex: 1 1 30%;
-  min-width: 120px;
+.pos-payment-group-btn-active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+/* Mobile Money isn't one backend value — tapping it opens exactly these
+   two, so M-Pesa vs Airtel Money stays distinguishable in reports. */
+.pos-payment-suboptions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.pos-payment-suboption-btn {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
 }
 
 .pos-scan-empty {
@@ -308,4 +343,63 @@
   .pos-product-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
+
+  .pos-payment-groups {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Non-modal — no backdrop, doesn't trap focus — so the search box stays
+   focused and typeable/scannable underneath it immediately after checkout.
+   Fixed to the viewport rather than the cart panel so it's visible
+   regardless of scroll position in either panel. */
+.pos-receipt-tray {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  width: 320px;
+  max-width: calc(100vw - (2 * var(--space-5)));
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-4);
+  z-index: var(--z-toast);
+}
+
+.pos-receipt-tray-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.pos-receipt-tray-icon {
+  color: var(--color-success);
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.pos-receipt-tray-title {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.pos-receipt-tray-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.pos-receipt-tray-header .btn-icon {
+  margin-left: auto;
+}
+
+.pos-receipt-tray-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.pos-receipt-tray-actions .btn {
+  flex: 1 1 auto;
 }

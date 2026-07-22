@@ -5,6 +5,19 @@ export async function findById(id) {
   return rows[0] || null;
 }
 
+// Case-insensitive exact match, used by the Purchases Excel import to
+// resolve a template row's "Supplier" text column to a real supplier — an
+// unmatched name is reported to the importer as "Unknown supplier" rather
+// than silently creating one, since suppliers (unlike products/categories)
+// aren't auto-created by this import per the sprint spec.
+export async function findByName(name) {
+  const [rows] = await pool.query(
+    'SELECT * FROM suppliers WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL LIMIT 1',
+    [name],
+  );
+  return rows[0] || null;
+}
+
 export async function findAllActive() {
   const [rows] = await pool.query(
     "SELECT id, name FROM suppliers WHERE status = 'active' AND deleted_at IS NULL ORDER BY name",

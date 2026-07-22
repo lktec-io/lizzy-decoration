@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { downloadBlob } from '../utils/exportCsv';
 
 function openPdfBlob(blob) {
   const url = URL.createObjectURL(blob);
@@ -21,10 +22,18 @@ export async function checkout(payload) {
   return data.data;
 }
 
-// Preview/Print/Download/Reprint all render the same PDF — opened in a new
-// tab, where the browser's own print dialog and "Save as PDF" cover the
-// remaining spec features without needing separate endpoints.
-export async function openReceipt(id) {
+// "Print" opens the receipt in a new tab so the browser's own PDF viewer
+// (and its print icon/Ctrl+P) handles the actual print dialog.
+export async function printReceipt(id) {
   const { data } = await apiClient.get(`/sales/${id}/receipt`, { responseType: 'blob' });
   openPdfBlob(data);
+}
+
+// "Download PDF" is a distinct, separately-labelled action from Print
+// (spec: "Provide: Print, Download PDF, New Sale") — triggers a real file
+// save via the same <a download> pattern the Reports exports use, not
+// another new-tab open a user would have to manually save from.
+export async function downloadReceiptPdf(id, saleNumber) {
+  const { data } = await apiClient.get(`/sales/${id}/receipt`, { responseType: 'blob' });
+  downloadBlob(`${saleNumber || `Receipt-${id}`}.pdf`, data);
 }

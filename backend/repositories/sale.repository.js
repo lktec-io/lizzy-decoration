@@ -1,5 +1,15 @@
 import { pool } from '../config/db.js';
 
+// Looked up BEFORE opening a checkout transaction — a client-resubmitted
+// (double-click, retried network request) checkout carrying the same key
+// as one that already succeeded returns the existing sale id instead of
+// creating a second one.
+export async function findByIdempotencyKey(key) {
+  if (!key) return null;
+  const [rows] = await pool.query('SELECT id FROM sales WHERE idempotency_key = ? LIMIT 1', [key]);
+  return rows[0]?.id || null;
+}
+
 export async function findById(id) {
   const [rows] = await pool.query(
     `SELECT s.*, b.name AS branch_name,
@@ -14,8 +24,13 @@ export async function findById(id) {
   );
   if (!rows[0]) return null;
 
+  // p.buying_price is CURRENT cost, not a snapshot at sale time — same
+  // convention report.repository.js's profitReport() already uses for
+  // COGS, kept consistent here rather than introducing a second, divergent
+  // way of costing a sale. sale.service.js strips this field back out of
+  // the response unless the caller has permission to see profit figures.
   const [items] = await pool.query(
-    `SELECT si.*, p.name AS product_name, p.code AS product_code
+    `SELECT si.*, p.name AS product_name, p.code AS product_code, p.buying_price
      FROM sale_items si JOIN products p ON p.id = si.product_id
      WHERE si.sale_id = ?`,
     [id],
@@ -36,8 +51,17 @@ export async function findAll({ page = 1, limit = 20, search, branchId, customer
   const params = [];
 
   if (search) {
-    conditions.push('s.sale_number LIKE ?');
-    params.push(`%${search}%`);
+    // Returns' "search by Receipt Number OR Barcode OR Product Name" needs
+    // a sale search that matches on more than sale_number — this system
+    // has no separate barcode column (products.code IS the barcode/SKU,
+    // the same field the QR scanner already matches against), so Barcode
+    // and Product Name both resolve to this one EXISTS check against that
+    // sale's line items.
+    conditions.push(`(s.sale_number LIKE ? OR EXISTS (
+      SELECT 1 FROM sale_items si JOIN products p ON p.id = si.product_id
+      WHERE si.sale_id = s.id AND (p.name LIKE ? OR p.code LIKE ?)
+    ))`);
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
   if (branchId) {
     conditions.push('s.branch_id = ?');
@@ -76,13 +100,13 @@ export async function findAll({ page = 1, limit = 20, search, branchId, customer
 }
 
 export async function createSale(
-  { saleNumber, branchId, customerId, cashierId, subtotal, discountAmount, taxAmount, totalAmount, notes },
+  { saleNumber, idempotencyKey, branchId, customerId, cashierId, subtotal, discountAmount, taxAmount, totalAmount, notes },
   connection,
 ) {
   const [result] = await connection.query(
-    `INSERT INTO sales (sale_number, branch_id, customer_id, cashier_id, subtotal, discount_amount, tax_amount, total_amount, notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')`,
-    [saleNumber, branchId, customerId || null, cashierId, subtotal, discountAmount, taxAmount, totalAmount, notes || null],
+    `INSERT INTO sales (sale_number, idempotency_key, branch_id, customer_id, cashier_id, subtotal, discount_amount, tax_amount, total_amount, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')`,
+    [saleNumber, idempotencyKey || null, branchId, customerId || null, cashierId, subtotal, discountAmount, taxAmount, totalAmount, notes || null],
   );
   return result.insertId;
 }

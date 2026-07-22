@@ -94,6 +94,34 @@ export function createUploader({ subfolder, cloudinaryFolder = subfolder, allowe
   };
 }
 
+const SPREADSHEET_MIME_TYPES = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+];
+
+// Deliberately separate from createUploader() above: that uploader's
+// storage backend switches on whether Cloudinary is enabled (memory there
+// vs. disk here), and its Cloudinary path is image-specific (uploadImageBuffer
+// assumes resource_type: 'image'). An .xlsx import is parsed once in the
+// request handler and never persisted as a stored asset, so it always uses
+// memoryStorage regardless of the Cloudinary toggle — no disk fallback to
+// account for, no image upload to skip.
+export function createSpreadsheetUploader({ maxSizeMb = 5 } = {}) {
+  const fileFilter = (req, file, cb) => {
+    if (!SPREADSHEET_MIME_TYPES.includes(file.mimetype)) {
+      cb(new Error('Unsupported file type. Please upload an Excel (.xlsx) file'));
+      return;
+    }
+    cb(null, true);
+  };
+
+  return multer({
+    storage: multer.memoryStorage(),
+    fileFilter,
+    limits: { fileSize: maxSizeMb * 1024 * 1024 },
+  });
+}
+
 export function publicPathFor(subfolder, filename) {
   return `/uploads/${subfolder}/${filename}`;
 }

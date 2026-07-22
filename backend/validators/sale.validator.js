@@ -1,6 +1,7 @@
 import { body } from 'express-validator';
 
 export const checkoutValidator = [
+  body('idempotencyKey').optional({ values: 'falsy' }).isLength({ max: 64 }),
   body('branchId').notEmpty().withMessage('Branch is required').isInt(),
   body('customerId').optional({ values: 'falsy' }).isInt(),
   body('notes').optional({ values: 'falsy' }).isLength({ max: 255 }),

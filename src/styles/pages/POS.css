@@ -177,8 +177,31 @@
   text-transform: uppercase;
 }
 
+.pos-qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pos-qty-stepper-btn {
+  padding: var(--space-1);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
 .pos-cart-qty-input {
-  width: 56px;
+  width: 40px;
+  text-align: center;
+  /* Hides the native up/down spinner — the [-]/[+] buttons are the
+     intended way to step the value; the spinner just doubled the same
+     control in a cramped 40px-wide field. */
+  -moz-appearance: textfield;
+}
+
+.pos-cart-qty-input::-webkit-outer-spin-button,
+.pos-cart-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .pos-cart-price-input {

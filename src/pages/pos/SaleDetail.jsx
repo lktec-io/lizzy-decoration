@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiArrowLeft, FiPrinter } from 'react-icons/fi';
+import { FiArrowLeft, FiPrinter, FiDownload, FiPlusCircle } from 'react-icons/fi';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import * as saleService from '../../services/saleService';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -48,8 +48,14 @@ function SaleDetail() {
           </p>
         </div>
         <div className="page-actions">
-          <button type="button" className="btn btn-primary" onClick={() => saleService.openReceipt(sale.id)}>
-            <FiPrinter aria-hidden="true" /> View / Print Receipt
+          <button type="button" className="btn btn-secondary" onClick={() => saleService.printReceipt(sale.id)}>
+            <FiPrinter aria-hidden="true" /> Print
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => saleService.downloadReceiptPdf(sale.id, sale.sale_number)}>
+            <FiDownload aria-hidden="true" /> Download PDF
+          </button>
+          <button type="button" className="btn btn-primary" onClick={() => navigate('/pos')}>
+            <FiPlusCircle aria-hidden="true" /> New Sale
           </button>
         </div>
       </div>
@@ -94,6 +100,26 @@ function SaleDetail() {
           </div>
         </div>
       </div>
+
+      {sale.profit && (
+        <div className="card mb-5">
+          <div className="card-header"><span className="card-title">Profit</span></div>
+          <div className="card-body flex" style={{ gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+            <div>
+              <div className="text-xs text-secondary">Cost</div>
+              <div className="text-sm font-semibold">{formatCurrency(sale.profit.cost)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-secondary">Gross Profit</div>
+              <div className="text-sm font-semibold">{formatCurrency(sale.profit.grossProfit)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-secondary">Margin</div>
+              <div className="text-sm font-semibold">{sale.profit.marginPercent.toFixed(1)}%</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="card-header"><span className="card-title">Payments</span></div>

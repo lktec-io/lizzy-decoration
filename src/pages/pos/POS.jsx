@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiTrash2, FiCamera, FiPlus, FiClock, FiShoppingCart } from 'react-icons/fi';
+import { FiTrash2, FiCamera, FiPlus, FiMinus, FiClock, FiShoppingCart, FiUserPlus } from 'react-icons/fi';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SearchInput from '../../components/common/SearchInput';
@@ -9,12 +9,14 @@ import EmptyState from '../../components/common/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useToast } from '../../hooks/useToast';
 import * as productService from '../../services/productService';
 import * as categoryService from '../../services/categoryService';
 import * as branchService from '../../services/branchService';
 import * as customerService from '../../services/customerService';
 import * as saleService from '../../services/saleService';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { splitFullName } from '../../utils/splitFullName';
 import '../../styles/pages/POS.css';
 
 const PAYMENT_METHODS = [
@@ -29,6 +31,16 @@ function POS() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const canOverride = usePermission('sales.manage');
+  const toast = useToast();
+
+  const searchInputRef = useRef(null);
+  // One idempotency key per checkout attempt — generated once when the
+  // cart starts (here, mount) and regenerated only in clearCart() (which
+  // runs both on an explicit "Clear Cart" and right after a successful
+  // checkout), so a double-click/retry during ONE attempt always resends
+  // the same key, but a genuinely new sale always gets a fresh one.
+  const idempotencyKeyRef = useRef(crypto.randomUUID());
+  const isCheckingOutRef = useRef(false);
 
   const [branchId, setBranchId] = useState(user?.branch_id || '');
   const [branches, setBranches] = useState([]);
@@ -51,6 +63,12 @@ function POS() {
   const [scanMessage, setScanMessage] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
+  const [quickCustomerName, setQuickCustomerName] = useState('');
+  const [quickCustomerPhone, setQuickCustomerPhone] = useState('');
+  const [quickCustomerError, setQuickCustomerError] = useState('');
+  const [savingQuickCustomer, setSavingQuickCustomer] = useState(false);
 
   useEffect(() => {
     if (!user?.branch_id) {
@@ -81,6 +99,7 @@ function POS() {
     if (existing) {
       if (existing.quantity >= product.available_quantity) return;
       setCart((prev) => prev.map((line) => (line.productId === product.id ? { ...line, quantity: line.quantity + 1 } : line)));
+      searchInputRef.current?.focus();
       return;
     }
     if (product.available_quantity < 1) return;
@@ -97,10 +116,18 @@ function POS() {
         discountAmount: 0,
       },
     ]);
+    searchInputRef.current?.focus();
   };
 
   const updateLine = (productId, patch) => {
     setCart((prev) => prev.map((line) => (line.productId === productId ? { ...line, ...patch } : line)));
+  };
+
+  // Shared by the [-]/[+] stepper buttons and the direct-type number input
+  // so both paths clamp to the same [1, availableQuantity] bounds.
+  const setLineQuantity = (line, nextQuantity) => {
+    const qty = Math.max(1, Math.min(line.availableQuantity, nextQuantity || 1));
+    updateLine(line.productId, { quantity: qty });
   };
 
   const removeLine = (productId) => {
@@ -113,6 +140,7 @@ function POS() {
     setCartDiscountAmount('0');
     setNotes('');
     setPayments([{ method: 'cash', amount: '', referenceNumber: '' }]);
+    idempotencyKeyRef.current = crypto.randomUUID();
   };
 
   const subtotal = useMemo(() => cart.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0), [cart]);
@@ -152,11 +180,53 @@ function POS() {
     }
   };
 
+  const openQuickCustomer = () => {
+    setQuickCustomerName('');
+    setQuickCustomerPhone('');
+    setQuickCustomerError('');
+    setQuickCustomerOpen(true);
+  };
+
+  // Same two required fields the full Customer form already treats as
+  // required (fullName, phone) — Quick Customer isn't a lighter validation
+  // rule, it's the same create endpoint with the optional fields (email/
+  // address/notes) simply never shown.
+  const submitQuickCustomer = async () => {
+    setQuickCustomerError('');
+    if (!quickCustomerName.trim() || !quickCustomerPhone.trim()) {
+      setQuickCustomerError('Name and phone are required.');
+      return;
+    }
+    setSavingQuickCustomer(true);
+    try {
+      const { firstName, lastName } = splitFullName(quickCustomerName);
+      const created = await customerService.createCustomer({ firstName, lastName, phone: quickCustomerPhone.trim() });
+      setCustomers((prev) => [...prev, created]);
+      setCustomerId(String(created.id));
+      setQuickCustomerOpen(false);
+      toast.success(`${quickCustomerName.trim()} added and selected.`);
+    } catch (err) {
+      setQuickCustomerError(err.response?.data?.message || 'Failed to add customer.');
+    } finally {
+      setSavingQuickCustomer(false);
+    }
+  };
+
   const handleCheckout = async () => {
+    // isCheckingOutRef is checked synchronously (unlike the isCheckingOut
+    // state used to disable the button, which only takes effect after the
+    // next render) — closes the gap where two rapid clicks/taps both fire
+    // before React re-renders with the button disabled. The server-side
+    // idempotency key is the actual authority (see sale.service.js); this
+    // is just the fastest possible client-side line of defense.
+    if (isCheckingOutRef.current) return;
+    isCheckingOutRef.current = true;
+
     setCheckoutError('');
     setIsCheckingOut(true);
     try {
       const payload = {
+        idempotencyKey: idempotencyKeyRef.current,
         branchId: Number(branchId),
         customerId: customerId ? Number(customerId) : undefined,
         notes: notes || undefined,
@@ -179,6 +249,7 @@ function POS() {
       setCheckoutError(err.response?.data?.message || 'Checkout failed. Please try again.');
     } finally {
       setIsCheckingOut(false);
+      isCheckingOutRef.current = false;
     }
   };
 
@@ -197,7 +268,7 @@ function POS() {
             ) : (
               <span className="badge badge-neutral">{user.branch_name}</span>
             )}
-            <SearchInput value={search} onChange={setSearch} placeholder="Search by name or code..." />
+            <SearchInput ref={searchInputRef} value={search} onChange={setSearch} placeholder="Search by name or code..." />
             <button type="button" className="btn btn-secondary" onClick={() => { setScanMessage(''); setScannerOpen(true); }}>
               <FiCamera aria-hidden="true" /> Scan QR
             </button>
@@ -274,18 +345,35 @@ function POS() {
                 <div className="pos-cart-line-controls">
                   <div className="pos-cart-line-field">
                     <label htmlFor={`qty-${line.productId}`}>Qty</label>
-                    <input
-                      id={`qty-${line.productId}`}
-                      type="number"
-                      min="1"
-                      max={line.availableQuantity}
-                      className="form-control pos-cart-qty-input"
-                      value={line.quantity}
-                      onChange={(e) => {
-                        const qty = Math.max(1, Math.min(line.availableQuantity, Number(e.target.value) || 1));
-                        updateLine(line.productId, { quantity: qty });
-                      }}
-                    />
+                    <div className="pos-qty-stepper">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon pos-qty-stepper-btn"
+                        onClick={() => setLineQuantity(line, line.quantity - 1)}
+                        disabled={line.quantity <= 1}
+                        aria-label={`Decrease quantity of ${line.name}`}
+                      >
+                        <FiMinus />
+                      </button>
+                      <input
+                        id={`qty-${line.productId}`}
+                        type="number"
+                        min="1"
+                        max={line.availableQuantity}
+                        className="form-control pos-cart-qty-input"
+                        value={line.quantity}
+                        onChange={(e) => setLineQuantity(line, Number(e.target.value))}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon pos-qty-stepper-btn"
+                        onClick={() => setLineQuantity(line, line.quantity + 1)}
+                        disabled={line.quantity >= line.availableQuantity}
+                        aria-label={`Increase quantity of ${line.name}`}
+                      >
+                        <FiPlus />
+                      </button>
+                    </div>
                   </div>
                   <div className="pos-cart-line-field">
                     <label htmlFor={`price-${line.productId}`}>Price</label>
@@ -321,7 +409,12 @@ function POS() {
 
         <div className="pos-cart-footer">
           <div className="form-group">
-            <label className="form-label" htmlFor="pos-customer">Customer (Optional)</label>
+            <div className="flex items-center justify-between">
+              <label className="form-label" htmlFor="pos-customer" style={{ margin: 0 }}>Customer (Optional)</label>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={openQuickCustomer}>
+                <FiUserPlus aria-hidden="true" /> Quick Add
+              </button>
+            </div>
             <select id="pos-customer" className="form-control" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
               <option value="">Walk-in customer</option>
               {customers.map((c) => (
@@ -386,7 +479,8 @@ function POS() {
                   min="0"
                   step="0.01"
                   className="form-control pos-payment-amount"
-                  placeholder="Amount"
+                  placeholder={payment.method === 'cash' ? 'Cash Received' : 'Amount'}
+                  aria-label={payment.method === 'cash' ? 'Cash received' : 'Payment amount'}
                   value={payment.amount}
                   onChange={(e) => updatePaymentRow(index, { amount: e.target.value })}
                 />
@@ -439,6 +533,47 @@ function POS() {
         message={`Remove all ${cart.length} item${cart.length === 1 ? '' : 's'} from the cart? This cannot be undone.`}
         confirmLabel="Clear Cart"
       />
+
+      <Modal
+        open={quickCustomerOpen}
+        onClose={() => setQuickCustomerOpen(false)}
+        title="Quick Add Customer"
+        size="sm"
+        footer={
+          <>
+            <button type="button" className="btn btn-secondary" onClick={() => setQuickCustomerOpen(false)}>Cancel</button>
+            <button
+              type="button"
+              className={`btn btn-primary ${savingQuickCustomer ? 'btn-loading' : ''}`}
+              disabled={savingQuickCustomer}
+              onClick={submitQuickCustomer}
+            >
+              Add &amp; Select
+            </button>
+          </>
+        }
+      >
+        {quickCustomerError && <div className="alert alert-danger mb-4" role="alert">{quickCustomerError}</div>}
+        <div className="form-group">
+          <label className="form-label form-label-required" htmlFor="quick-customer-name">Full Name</label>
+          <input
+            id="quick-customer-name"
+            className="form-control"
+            value={quickCustomerName}
+            onChange={(e) => setQuickCustomerName(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label form-label-required" htmlFor="quick-customer-phone">Phone Number</label>
+          <input
+            id="quick-customer-phone"
+            className="form-control"
+            value={quickCustomerPhone}
+            onChange={(e) => setQuickCustomerPhone(e.target.value)}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

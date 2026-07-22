@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiEye } from 'react-icons/fi';
+import { FiPlus, FiEye, FiUpload } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
+import PurchaseImportModal from './PurchaseImportModal';
 import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
 import * as purchaseService from '../../services/purchaseService';
@@ -18,9 +19,10 @@ const STATUS_BADGE = { received: 'badge-success', pending: 'badge-warning', canc
 function PurchaseList() {
   const navigate = useNavigate();
   const canCreate = usePermission('purchases.create');
+  const [importOpen, setImportOpen] = useState(false);
 
   const fetchPurchases = useCallback((params) => purchaseService.listPurchases(params), []);
-  const { items, meta, loading, page, setPage, search, setSearch } = useTable(fetchPurchases);
+  const { items, meta, loading, page, setPage, search, setSearch, refetch } = useTable(fetchPurchases);
 
   const columns = [
     { key: 'purchase_number', label: 'Purchase #' },
@@ -51,6 +53,9 @@ function PurchaseList() {
         </div>
         {canCreate && (
           <div className="page-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => setImportOpen(true)}>
+              <FiUpload aria-hidden="true" /> Import Excel
+            </button>
             <button type="button" className="btn btn-primary" onClick={() => navigate('/purchases/new')}>
               <FiPlus aria-hidden="true" /> New Purchase
             </button>
@@ -65,6 +70,8 @@ function PurchaseList() {
         <Table columns={columns} rows={items} loading={loading} emptyMessage="No purchases recorded yet" />
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>
+
+      <PurchaseImportModal open={importOpen} onClose={() => setImportOpen(false)} onImported={refetch} />
     </div>
   );
 }

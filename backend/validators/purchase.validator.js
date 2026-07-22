@@ -9,6 +9,13 @@ export const createPurchaseValidator = [
   body('items.*.buyingPrice').isFloat({ min: 0 }).withMessage('Buying price must be positive'),
 ];
 
+export const commitImportValidator = [
+  body('branchId').notEmpty().withMessage('Branch is required').isInt(),
+  body('rows').isArray({ min: 1 }).withMessage('No rows to import'),
+  body('rows.*.rowNumber').isInt(),
+  body('rows.*.productName').optional({ values: 'falsy' }).isString(),
+];
+
 export const paymentValidator = [
   body('supplierId').notEmpty().withMessage('Supplier is required').isInt(),
   body('purchaseOrderId').optional({ values: 'falsy' }).isInt(),

@@ -10,6 +10,17 @@ export async function findByName(name) {
   return rows[0] || null;
 }
 
+// Case-insensitive exact match — the Purchases Excel import resolves a
+// template row's "Category" text column against this before deciding
+// whether to reuse an existing category or auto-create a new one.
+export async function findByNameCaseInsensitive(name) {
+  const [rows] = await pool.query(
+    'SELECT id, name, code FROM categories WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL LIMIT 1',
+    [name],
+  );
+  return rows[0] || null;
+}
+
 export async function findByCode(code) {
   const [rows] = await pool.query('SELECT id, code FROM categories WHERE code = ? AND deleted_at IS NULL LIMIT 1', [code]);
   return rows[0] || null;

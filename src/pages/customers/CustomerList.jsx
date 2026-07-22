@@ -13,6 +13,7 @@ import { useTable } from '../../hooks/useTable';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
 import * as customerService from '../../services/customerService';
+import { splitFullName } from '../../utils/splitFullName';
 import '../../styles/components/ViewToggle.css';
 
 const CUSTOMER_TYPE_LABELS = {
@@ -24,23 +25,6 @@ const CUSTOMER_TYPE_LABELS = {
 };
 
 const DEFAULT_VALUES = { fullName: '', phone: '', email: '', address: '', notes: '' };
-
-// Quick registration only collects a single "Full Name" field (fast for a
-// cashier to type at the counter); the database still stores first_name +
-// last_name separately, so this splits on the first space. A single-word
-// name (very common for walk-in customers — "Kulwa", "Frank") must leave
-// lastName as an empty string, NOT duplicate firstName into it — an
-// earlier version fell back to `|| firstName` here specifically to satisfy
-// a backend notEmpty() validator on lastName, which is exactly what caused
-// every single-word name to save (and then display) as "Kulwa Kulwa". The
-// validator was relaxed to allow an empty lastName instead of working
-// around it here.
-function splitFullName(fullName) {
-  const parts = fullName.trim().split(/\s+/);
-  const firstName = parts[0] || '';
-  const lastName = parts.slice(1).join(' ');
-  return { firstName, lastName };
-}
 
 function CustomerList() {
   const navigate = useNavigate();

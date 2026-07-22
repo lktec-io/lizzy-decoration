@@ -10,7 +10,7 @@ export const list = asyncHandler(async (req, res) => {
 });
 
 export const getById = asyncHandler(async (req, res) => {
-  const sale = await saleService.getSale(Number(req.params.id));
+  const sale = await saleService.getSale(Number(req.params.id), req.user);
   return success(res, { data: sale });
 });
 

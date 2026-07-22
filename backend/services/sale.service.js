@@ -48,10 +48,40 @@ export async function listSales(query, user) {
   return { items: rows, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 }
 
-export async function getSale(id) {
+// Cost/profit isn't shown to every sales.view holder (a cashier ringing up
+// this exact sale can view it) — gated behind the same sales.manage tier
+// hasDiscountAuthority already checks for discount/price-override, since
+// margin visibility is the same "manager-level" business rule.
+function computeProfit(items) {
+  const revenue = items.reduce((sum, item) => sum + Number(item.line_total), 0);
+  const cost = items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.buying_price), 0);
+  const grossProfit = revenue - cost;
+  return {
+    revenue,
+    cost,
+    grossProfit,
+    marginPercent: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
+  };
+}
+
+// Applied to every sale object this service hands back to a controller
+// (getSale AND checkout's own return value — checkout used to return
+// saleRepository.findById()'s raw row straight through, which still
+// carried buying_price on every item regardless of who completed the
+// sale) so cost/margin data can't leak to a cashier who only has
+// sales.create by reading their own checkout response.
+async function withProfitVisibility(sale, user) {
+  const canSeeProfit = user ? await hasDiscountAuthority(user) : false;
+  if (!canSeeProfit) {
+    return { ...sale, items: sale.items.map(({ buying_price, ...item }) => item) };
+  }
+  return { ...sale, profit: computeProfit(sale.items) };
+}
+
+export async function getSale(id, user) {
   const sale = await saleRepository.findById(id);
   if (!sale) throw new ApiError(404, 'Sale not found');
-  return sale;
+  return withProfitVisibility(sale, user);
 }
 
 // The checkout transaction: validate cart, stock, customer and payment
@@ -61,6 +91,20 @@ export async function getSale(id) {
 // consumer of Phase 10's composable design, after Purchases' single
 // direction and Transfers' dual-branch pair.
 export async function checkout(data, actorId, user) {
+  // A resubmission (double-click before the button's disabled state took
+  // effect, a retried network request, a second tab) carrying the same
+  // client-generated key as one that already succeeded returns that sale
+  // as-is rather than creating (and double-decrementing stock for) a
+  // second one. Checked before any validation/transaction work, not
+  // relied on as a last-resort UNIQUE-constraint catch, so a resubmission
+  // never even re-runs the stock checks.
+  if (data.idempotencyKey) {
+    const existingSaleId = await saleRepository.findByIdempotencyKey(data.idempotencyKey);
+    if (existingSaleId) {
+      return withProfitVisibility(await saleRepository.findById(existingSaleId), user);
+    }
+  }
+
   const branchId = Number(data.branchId);
   const branch = await branchRepository.findById(branchId);
   if (!branch) throw new ApiError(400, 'Selected branch does not exist');
@@ -139,6 +183,7 @@ export async function checkout(data, actorId, user) {
     const saleId = await saleRepository.createSale(
       {
         saleNumber,
+        idempotencyKey: data.idempotencyKey,
         branchId,
         customerId: data.customerId || null,
         cashierId: actorId,
@@ -226,9 +271,22 @@ export async function checkout(data, actorId, user) {
       });
     }
 
-    return saleRepository.findById(saleId);
+    return withProfitVisibility(await saleRepository.findById(saleId), user);
   } catch (err) {
     await connection.rollback();
+    // Two requests carrying the same idempotencyKey can both pass the
+    // pre-check above if they arrive close enough together (neither has
+    // committed yet when the other checks) — the UNIQUE constraint on
+    // idempotency_key is what actually decides the race, and the loser
+    // hits it here. Rather than surface that as a checkout failure, return
+    // whichever sale the winner just created — from the client's point of
+    // view, its checkout still succeeds.
+    if (err.code === 'ER_DUP_ENTRY' && data.idempotencyKey && err.sqlMessage?.includes('idempotency_key')) {
+      const existingSaleId = await saleRepository.findByIdempotencyKey(data.idempotencyKey);
+      if (existingSaleId) {
+        return withProfitVisibility(await saleRepository.findById(existingSaleId), user);
+      }
+    }
     throw err;
   } finally {
     connection.release();

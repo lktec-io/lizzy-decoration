@@ -43,7 +43,7 @@ function SaleList() {
           <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/pos/sales/${row.id}`)} aria-label="View sale">
             <FiEye />
           </button>
-          <button type="button" className="btn btn-ghost btn-icon" onClick={() => saleService.openReceipt(row.id)} aria-label="Reprint receipt">
+          <button type="button" className="btn btn-ghost btn-icon" onClick={() => saleService.printReceipt(row.id)} aria-label="Reprint receipt">
             <FiPrinter />
           </button>
         </div>

@@ -163,38 +163,186 @@ export async function restore(id, userId) {
   return findById(id);
 }
 
-// True permanent removal — children first, parent last, one transaction,
-// rollback on any failure. Two tiers of "related data", by design (see the
-// 015 migration and product.service.js's deleteProduct for the full
-// reasoning):
-//  - sale_items / purchase_items are financial/audit records. Their row
-//    survives (quantity, price, line_total already live there); only their
-//    product_id link is cut, via the 015 migration's ON DELETE SET NULL —
-//    handled automatically the moment the product row itself is deleted
-//    below, which is why this function snapshots the name/code onto those
-//    rows *first*, while the product still exists to read it from.
-//  - inventory / inventory_movements / inventory_adjustments /
-//    stock_transfer_items are operational stock-tracking data, not
-//    financial records — deleting a product legitimately means "this item
-//    no longer exists in the stock system at all", so these rows are
-//    removed outright. inventory_adjustments references
-//    inventory_movements (ON DELETE RESTRICT), so it must be deleted first.
-// product_images / qr_codes need no explicit handling — both are ON DELETE
-// CASCADE against products.
-export async function purgeProduct({ id, name, code, buyingPrice }, connection) {
-  await connection.query(
-    'UPDATE sale_items SET product_name_snapshot = ?, product_code_snapshot = ?, buying_price_snapshot = ? WHERE product_id = ? AND product_name_snapshot IS NULL',
-    [name, code, buyingPrice, id],
+async function columnExists(connection, tableName, columnName) {
+  const [rows] = await connection.query(
+    'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1',
+    [tableName, columnName],
   );
-  await connection.query(
-    'UPDATE purchase_items SET product_name_snapshot = ?, product_code_snapshot = ? WHERE product_id = ? AND product_name_snapshot IS NULL',
-    [name, code, id],
-  );
+  return rows.length > 0;
+}
 
-  await connection.query('DELETE FROM inventory_adjustments WHERE product_id = ?', [id]);
-  await connection.query('DELETE FROM inventory_movements WHERE product_id = ?', [id]);
-  await connection.query('DELETE FROM stock_transfer_items WHERE product_id = ?', [id]);
-  await connection.query('DELETE FROM inventory WHERE product_id = ?', [id]);
+// Reads this database's *actual* foreign keys instead of a hardcoded table
+// list — every table currently referencing products.id, whatever this
+// specific deployment's schema happens to be (which migrations have or
+// haven't been run manually is not something the delete path can safely
+// assume). Returns [{ TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME }, ...].
+async function findTablesReferencingProducts(connection) {
+  const [rows] = await connection.query(
+    `SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME
+     FROM information_schema.KEY_COLUMN_USAGE
+     WHERE REFERENCED_TABLE_SCHEMA = DATABASE()
+       AND REFERENCED_TABLE_NAME = 'products'
+       AND REFERENCED_COLUMN_NAME = 'id'`,
+  );
+  return rows;
+}
+
+// sale_items and purchase_items are the only two referencing tables that
+// represent real financial/audit history (see purgeProduct's comment) —
+// every other table this database's own foreign keys report is treated as
+// operational data and deleted outright, whatever it's actually called.
+const PRESERVE_WITH_SNAPSHOT_TABLES = new Set(['sale_items', 'purchase_items']);
+
+// Adds the name/code snapshot columns (and, for sale_items only, a cost
+// snapshot — see the service layer's comment on why sale_items needs one
+// and purchase_items doesn't) if they aren't already there, and relaxes
+// the referencing column from NOT NULL/RESTRICT to NULL/SET NULL if it
+// isn't already — checked and applied right here, at delete time, rather
+// than depended on as a separate migration step someone has to remember to
+// run first. Idempotent: a database that already has this shape does
+// nothing here.
+//
+// Deliberately run on the plain pool, *before* any transaction starts, not
+// on a transactional connection: ALTER TABLE causes an implicit commit in
+// MySQL/InnoDB — running DDL partway through an explicit transaction
+// silently ends it right there, so anything that transaction rolled back
+// afterward wouldn't actually be undone the way it looks like it would.
+// Keeping schema-healing (DDL) and the actual delete (DML, in
+// purgeProduct below) as two separate steps is what keeps the delete a
+// real all-or-nothing transaction.
+// Two admins deleting different products within the same instant, on a
+// database that hasn't been healed yet, could both see a column/constraint
+// missing and both attempt to fix it — the loser of that race hits
+// "duplicate column" / "can't drop it, already gone" from MySQL, not an
+// actual problem (the schema ends up correct either way), so those two
+// specific errors are swallowed here rather than failing the delete.
+const TOLERATED_CONCURRENT_SCHEMA_ERRORS = new Set([
+  'ER_DUP_FIELDNAME', // ADD COLUMN raced — the other caller already added it
+  'ER_CANT_DROP_FIELD_OR_KEY', // DROP FOREIGN KEY raced — already dropped
+  'ER_DUP_KEYNAME', // ADD CONSTRAINT raced — already added under this name
+  'ER_FK_DUP_NAME',
+]);
+
+async function alterIgnoringConcurrentSchemaChange(sql) {
+  try {
+    await pool.query(sql);
+  } catch (err) {
+    if (!TOLERATED_CONCURRENT_SCHEMA_ERRORS.has(err.code)) throw err;
+  }
+}
+
+async function ensureSnapshotCompatible(table, column, constraintName, includeBuyingPrice) {
+  if (!(await columnExists(pool, table, 'product_name_snapshot'))) {
+    await alterIgnoringConcurrentSchemaChange(`ALTER TABLE ${table} ADD COLUMN product_name_snapshot VARCHAR(150) NULL AFTER ${column}`);
+  }
+  if (!(await columnExists(pool, table, 'product_code_snapshot'))) {
+    await alterIgnoringConcurrentSchemaChange(`ALTER TABLE ${table} ADD COLUMN product_code_snapshot VARCHAR(30) NULL AFTER product_name_snapshot`);
+  }
+  if (includeBuyingPrice && !(await columnExists(pool, table, 'buying_price_snapshot'))) {
+    await alterIgnoringConcurrentSchemaChange(`ALTER TABLE ${table} ADD COLUMN buying_price_snapshot DECIMAL(14,2) NULL AFTER product_code_snapshot`);
+  }
+
+  const [[rule]] = await pool.query(
+    `SELECT DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?`,
+    [table, constraintName],
+  );
+  if (rule?.DELETE_RULE !== 'SET NULL') {
+    await pool.query(`ALTER TABLE ${table} MODIFY COLUMN ${column} BIGINT UNSIGNED NULL`);
+    await alterIgnoringConcurrentSchemaChange(`ALTER TABLE ${table} DROP FOREIGN KEY ${constraintName}`);
+    await alterIgnoringConcurrentSchemaChange(
+      `ALTER TABLE ${table} ADD CONSTRAINT ${constraintName} FOREIGN KEY (${column}) REFERENCES products (id) ON DELETE SET NULL`,
+    );
+  }
+}
+
+// Called once, before the delete transaction opens (see product.service.js)
+// — inspects this database's real foreign keys and brings sale_items/
+// purchase_items into a snapshot-compatible shape if they aren't already.
+// A no-op on a database that's already compatible.
+export async function ensureProductDeletionSchema() {
+  const referencing = await findTablesReferencingProducts(pool);
+  const preserve = referencing.filter((ref) => PRESERVE_WITH_SNAPSHOT_TABLES.has(ref.TABLE_NAME));
+  for (const ref of preserve) {
+    await ensureSnapshotCompatible(ref.TABLE_NAME, ref.COLUMN_NAME, ref.CONSTRAINT_NAME, ref.TABLE_NAME === 'sale_items');
+  }
+}
+
+// True permanent removal — children first, parent last, one transaction,
+// rollback on any failure. Pure DML: no DDL runs in here (see
+// ensureProductDeletionSchema above for why that has to happen separately,
+// first). Every table/column name used below comes from
+// findTablesReferencingProducts()'s own query against this database's
+// information_schema, not a hardcoded assumption — table identifiers can't
+// be bound as query parameters, but they're safe to interpolate here
+// because they originate from MySQL's own catalog for this exact
+// column/id, never from external input.
+//
+// Two tiers, by design:
+//  - sale_items / purchase_items (or whatever the schema calls them —
+//    matched by name, not assumed to exist) are financial/audit records.
+//    Their row survives; only the product_id link is cut. By the time this
+//    runs, ensureProductDeletionSchema() has already made that possible.
+//  - Every other table this database's foreign keys report is operational
+//    stock-tracking data, not a financial record — deleting a product
+//    legitimately means "this item no longer exists in the stock system
+//    at all", so those rows are removed outright. Retried in passes
+//    (rather than a fixed order) since some of them can reference each
+//    other, and the real dependency graph is whatever this specific
+//    database says it is — if a full pass makes no progress, whatever
+//    MySQL's own error says about the last blocked table is what
+//    propagates up, not a guess.
+export async function purgeProduct({ id, name, code, buyingPrice }, connection) {
+  const referencing = await findTablesReferencingProducts(connection);
+
+  const preserve = referencing.filter((ref) => PRESERVE_WITH_SNAPSHOT_TABLES.has(ref.TABLE_NAME));
+  for (const ref of preserve) {
+    const includeBuyingPrice = ref.TABLE_NAME === 'sale_items';
+    const setClauses = ['product_name_snapshot = ?', 'product_code_snapshot = ?'];
+    const params = [name, code];
+    if (includeBuyingPrice) {
+      setClauses.push('buying_price_snapshot = ?');
+      params.push(buyingPrice);
+    }
+    params.push(id);
+    await connection.query(
+      `UPDATE ${ref.TABLE_NAME} SET ${setClauses.join(', ')} WHERE ${ref.COLUMN_NAME} = ? AND product_name_snapshot IS NULL`,
+      params,
+    );
+  }
+
+  const seenTables = new Set();
+  let remaining = referencing
+    .filter((ref) => !PRESERVE_WITH_SNAPSHOT_TABLES.has(ref.TABLE_NAME))
+    .filter((ref) => (seenTables.has(ref.TABLE_NAME) ? false : (seenTables.add(ref.TABLE_NAME), true)));
+
+  while (remaining.length > 0) {
+    const stillBlocked = [];
+    let progressed = false;
+    let lastError = null;
+
+    for (const ref of remaining) {
+      try {
+        await connection.query(`DELETE FROM ${ref.TABLE_NAME} WHERE ${ref.COLUMN_NAME} = ?`, [id]);
+        progressed = true;
+      } catch (err) {
+        if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+          stillBlocked.push(ref);
+          lastError = err;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (!progressed) {
+      // No further deletes succeeded this pass — genuinely stuck. MySQL's
+      // own error already names the exact table/column/constraint
+      // responsible; let it propagate rather than replacing it with a guess.
+      throw lastError;
+    }
+    remaining = stillBlocked;
+  }
 
   await connection.query('DELETE FROM products WHERE id = ?', [id]);
 }
@@ -233,18 +381,27 @@ export async function softDelete(id, userId) {
 }
 
 // No longer a gate on whether delete is allowed (purgeProduct() above
-// safely handles a product with or without history — see the 015
-// migration) — kept purely so the service layer can write an accurate
-// activity-log line ("had N sales/purchases, preserved via snapshot" vs.
-// "never referenced by anything").
+// safely handles a product with or without history) — kept purely so the
+// service layer can write an accurate activity-log line ("had sales/
+// purchases, preserved via snapshot" vs. "never referenced by anything").
+// Deliberately scoped to just the two snapshot-preserving tables (not
+// every referencing table purgeProduct discovers) — a product_images or
+// qr_codes row doesn't mean this product has real transaction history,
+// just that someone uploaded a photo, and calling that "history" would
+// make the resulting log line misleading. Still dynamic (never assumes
+// sale_items/purchase_items exist), just filtered to the ones that matter
+// for this specific message.
 export async function hasTransactionHistory(id) {
-  const [[saleItems]] = await pool.query('SELECT COUNT(*) AS total FROM sale_items WHERE product_id = ?', [id]);
-  const [[purchaseItems]] = await pool.query('SELECT COUNT(*) AS total FROM purchase_items WHERE product_id = ?', [id]);
-  const [[transferItems]] = await pool.query('SELECT COUNT(*) AS total FROM stock_transfer_items WHERE product_id = ?', [id]);
-  const [[inventoryRows]] = await pool.query('SELECT COUNT(*) AS total FROM inventory WHERE product_id = ?', [id]);
-  const [[movements]] = await pool.query('SELECT COUNT(*) AS total FROM inventory_movements WHERE product_id = ?', [id]);
-  const [[adjustments]] = await pool.query('SELECT COUNT(*) AS total FROM inventory_adjustments WHERE product_id = ?', [id]);
-  return [saleItems, purchaseItems, transferItems, inventoryRows, movements, adjustments].some((row) => row.total > 0);
+  const referencing = await findTablesReferencingProducts(pool);
+  const preserve = referencing.filter((ref) => PRESERVE_WITH_SNAPSHOT_TABLES.has(ref.TABLE_NAME));
+  for (const ref of preserve) {
+    const [[row]] = await pool.query(
+      `SELECT 1 AS found FROM ${ref.TABLE_NAME} WHERE ${ref.COLUMN_NAME} = ? LIMIT 1`,
+      [id],
+    );
+    if (row) return true;
+  }
+  return false;
 }
 
 export async function addImage(productId, imagePath, isPrimary) {

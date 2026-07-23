@@ -20,6 +20,14 @@
 -- still-existing product rows before relaxing the constraint. No existing
 -- row's data changes; no table is dropped.
 --
+-- OPTIONAL, not a hard prerequisite: product.repository.js's
+-- ensureProductDeletionSchema() runs this exact same schema check/fix
+-- (via information_schema, not a migrations table) itself, once, right
+-- before the very first product delete on a database that doesn't have it
+-- yet — deletion was never allowed to depend on someone remembering to run
+-- this file first. Running it proactively here just avoids paying that
+-- one-time ALTER TABLE cost inline on that first delete.
+--
 -- sale_items also gets a buying_price_snapshot: unlike purchase_items
 -- (which already stores the price actually paid on the row), sale_items
 -- has never stored cost — report.repository.js's profitReport() and

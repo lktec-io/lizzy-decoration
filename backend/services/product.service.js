@@ -159,18 +159,23 @@ async function cleanupProductImageFiles(images) {
   }));
 }
 
-// Real permanent deletion, always — no archive fallback. Safe to do
-// unconditionally now: the 015 migration means sale_items/purchase_items
-// survive with a name/code snapshot (see purgeProduct's comment) instead
-// of blocking the delete or being destroyed themselves, so there is no
-// case left where deleting a product needs to be refused or silently
-// downgraded to a soft delete. One all-or-nothing transaction — if any
+// Real permanent deletion, always — no archive fallback, no dependency on
+// a separate migration having been run first. ensureProductDeletionSchema()
+// inspects this database's actual schema and brings it into a compatible
+// shape itself (adding the snapshot columns / relaxing the FK if they
+// aren't already there) before anything else runs, so there is no case
+// left where deleting a product needs to be refused. That step is DDL and
+// runs standalone, before the transaction opens — DDL causes an implicit
+// commit in MySQL, so it can't safely run inside the same transaction as
+// the delete itself (see its comment). Once the schema is confirmed
+// compatible, the actual delete is one all-or-nothing transaction — if any
 // step fails, nothing about the product or its related rows changes.
 export async function deleteProduct(id, actorId) {
   const existing = await productRepository.findById(id);
   if (!existing) throw new ApiError(404, 'Product not found');
 
   const hadHistory = await productRepository.hasTransactionHistory(id);
+  await productRepository.ensureProductDeletionSchema();
 
   const connection = await pool.getConnection();
   try {
@@ -179,15 +184,13 @@ export async function deleteProduct(id, actorId) {
     await connection.commit();
   } catch (err) {
     await connection.rollback();
-    // Only reachable if the 015 migration hasn't been applied yet (its
-    // ON DELETE SET NULL is exactly what makes this delete always safe) —
-    // a real deployment-ordering mistake, not a business-rule conflict,
-    // but still must never surface as a raw DB error to the user.
+    // purgeProduct() already self-heals the one FK shape it knows how to
+    // fix (sale_items/purchase_items). Reaching this with a row-referenced
+    // error means some other, unanticipated table/constraint is blocking
+    // it — surface MySQL's own message (it already names the exact table,
+    // column, and constraint) instead of a guess.
     if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
-      throw new ApiError(
-        503,
-        `Cannot delete "${existing.name}" right now — a required database update hasn't been applied yet. Contact your administrator.`,
-      );
+      throw new ApiError(409, `Cannot delete "${existing.name}" — blocked by a database relationship: ${err.sqlMessage || err.message}`);
     }
     throw err;
   } finally {
@@ -238,6 +241,8 @@ export async function permanentlyDeleteProduct(id, actorId) {
   const existing = await productRepository.findArchivedById(id);
   if (!existing) throw new ApiError(404, 'Archived product not found');
 
+  await productRepository.ensureProductDeletionSchema();
+
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -246,10 +251,7 @@ export async function permanentlyDeleteProduct(id, actorId) {
   } catch (err) {
     await connection.rollback();
     if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
-      throw new ApiError(
-        503,
-        `Cannot delete "${existing.name}" right now — a required database update hasn't been applied yet. Contact your administrator.`,
-      );
+      throw new ApiError(409, `Cannot delete "${existing.name}" — blocked by a database relationship: ${err.sqlMessage || err.message}`);
     }
     throw err;
   } finally {

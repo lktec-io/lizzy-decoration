@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import { pool } from '../config/db.js';
 import { ApiError } from '../utils/apiError.js';
 import * as productRepository from '../repositories/product.repository.js';
 import * as categoryRepository from '../repositories/category.repository.js';
@@ -158,54 +159,48 @@ async function cleanupProductImageFiles(images) {
   }));
 }
 
-// A product with real sales/purchase/inventory history can never be hard
-// deleted (see hasTransactionHistory's comment) — historical records must
-// stay intact, so it's archived (soft delete) instead, automatically, with
-// no separate "are you sure" business-rule error to work around. Only a
-// product nobody has ever transacted against is actually removed.
+// Real permanent deletion, always — no archive fallback. Safe to do
+// unconditionally now: the 015 migration means sale_items/purchase_items
+// survive with a name/code snapshot (see purgeProduct's comment) instead
+// of blocking the delete or being destroyed themselves, so there is no
+// case left where deleting a product needs to be refused or silently
+// downgraded to a soft delete. One all-or-nothing transaction — if any
+// step fails, nothing about the product or its related rows changes.
 export async function deleteProduct(id, actorId) {
   const existing = await productRepository.findById(id);
   if (!existing) throw new ApiError(404, 'Product not found');
 
-  const hasHistory = await productRepository.hasTransactionHistory(id);
-  if (hasHistory) {
-    await productRepository.softDelete(id, actorId);
-    await activityLogRepository.create({
-      userId: actorId,
-      branchId: null,
-      description: `Product "${existing.name}" (${existing.code}) archived — has sales, purchase, or inventory history`,
-      referenceType: 'product',
-      referenceId: id,
-    });
-    return { archived: true };
-  }
+  const hadHistory = await productRepository.hasTransactionHistory(id);
 
+  const connection = await pool.getConnection();
   try {
-    await productRepository.hardDelete(id);
+    await connection.beginTransaction();
+    await productRepository.purgeProduct({ id, name: existing.name, code: existing.code, buyingPrice: existing.buying_price }, connection);
+    await connection.commit();
   } catch (err) {
-    // The pre-check said safe, but a concurrent purchase/sale/adjustment
-    // referenced this product between the check and the delete — archive
-    // rather than surface the raw FK error, staying consistent with the
-    // "history means archive, not delete" rule instead of just failing.
+    await connection.rollback();
+    // Only reachable if the 015 migration hasn't been applied yet (its
+    // ON DELETE SET NULL is exactly what makes this delete always safe) —
+    // a real deployment-ordering mistake, not a business-rule conflict,
+    // but still must never surface as a raw DB error to the user.
     if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
-      await productRepository.softDelete(id, actorId);
-      await activityLogRepository.create({
-        userId: actorId,
-        branchId: null,
-        description: `Product "${existing.name}" (${existing.code}) archived — has sales, purchase, or inventory history`,
-        referenceType: 'product',
-        referenceId: id,
-      });
-      return { archived: true };
+      throw new ApiError(
+        503,
+        `Cannot delete "${existing.name}" right now — a required database update hasn't been applied yet. Contact your administrator.`,
+      );
     }
     throw err;
+  } finally {
+    connection.release();
   }
 
   await cleanupProductImageFiles(existing.images);
   await activityLogRepository.create({
     userId: actorId,
     branchId: null,
-    description: `Product "${existing.name}" (${existing.code}) permanently deleted`,
+    description: hadHistory
+      ? `Product "${existing.name}" (${existing.code}) permanently deleted — sales/purchase records preserved with a name snapshot`
+      : `Product "${existing.name}" (${existing.code}) permanently deleted`,
     referenceType: 'product',
     referenceId: id,
   });
@@ -235,29 +230,30 @@ export async function restoreProduct(id, actorId) {
   return restored;
 }
 
-// The archive page's own delete — distinct from deleteProduct() above
-// because it must NEVER silently re-archive an already-archived product.
-// Re-checks history at this moment (not just at the original archive time)
-// since "safe to permanently delete" can only ever be answered right now.
+// Handles any product archived before this hotfix shipped (deleteProduct()
+// no longer creates new archives — see its comment) — same safe purge as
+// the main delete flow, just reading from the archived-only lookup so it
+// only ever acts on a product that's already soft-deleted.
 export async function permanentlyDeleteProduct(id, actorId) {
   const existing = await productRepository.findArchivedById(id);
   if (!existing) throw new ApiError(404, 'Archived product not found');
 
-  const hasHistory = await productRepository.hasTransactionHistory(id);
-  if (hasHistory) {
-    throw new ApiError(
-      409,
-      `Cannot permanently delete "${existing.name}" — it still has sales, purchase, or inventory history that must be preserved.`,
-    );
-  }
-
+  const connection = await pool.getConnection();
   try {
-    await productRepository.hardDelete(id);
+    await connection.beginTransaction();
+    await productRepository.purgeProduct({ id, name: existing.name, code: existing.code, buyingPrice: existing.buying_price }, connection);
+    await connection.commit();
   } catch (err) {
+    await connection.rollback();
     if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
-      throw new ApiError(409, `Cannot permanently delete "${existing.name}" — other records still reference it.`);
+      throw new ApiError(
+        503,
+        `Cannot delete "${existing.name}" right now — a required database update hasn't been applied yet. Contact your administrator.`,
+      );
     }
     throw err;
+  } finally {
+    connection.release();
   }
 
   await cleanupProductImageFiles(existing.images);

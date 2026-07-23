@@ -192,9 +192,13 @@ export async function profitReport({ dateFrom, dateTo, branchId, branchIds }) {
     salesAllParams,
   );
 
+  // LEFT JOIN + COALESCE onto sale_items.buying_price_snapshot (see the 015
+  // migration) — a sold product can be permanently deleted later; without
+  // this fallback its cost would silently read NULL/0 here, understating
+  // COGS (and so overstating gross profit) for every past sale of it.
   const [[cogsRow]] = await pool.query(
-    `SELECT COALESCE(SUM(si.quantity * p.buying_price), 0) AS cogs
-     FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
+    `SELECT COALESCE(SUM(si.quantity * COALESCE(p.buying_price, si.buying_price_snapshot)), 0) AS cogs
+     FROM sale_items si JOIN sales s ON s.id = si.sale_id LEFT JOIN products p ON p.id = si.product_id
      ${salesWhere}`,
     salesAllParams,
   );
@@ -221,8 +225,8 @@ export async function profitReport({ dateFrom, dateTo, branchId, branchIds }) {
 
   const [byDay] = await pool.query(
     `SELECT DATE(s.created_at) AS label,
-            COALESCE(SUM(si.line_total - (si.quantity * p.buying_price)), 0) AS value
-     FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
+            COALESCE(SUM(si.line_total - (si.quantity * COALESCE(p.buying_price, si.buying_price_snapshot))), 0) AS value
+     FROM sale_items si JOIN sales s ON s.id = si.sale_id LEFT JOIN products p ON p.id = si.product_id
      ${salesWhere} GROUP BY DATE(s.created_at) ORDER BY label`,
     salesAllParams,
   );
@@ -280,10 +284,20 @@ export async function productsReport({ dateFrom, dateTo, branchId, categoryId, b
   const where = `WHERE ${conditions.join(' AND ')} ${scope.clause}`;
   const allParams = [...params, ...scope.params];
 
+  // LEFT JOIN + COALESCE (see the 015 migration) so a since-deleted
+  // product's past sales still count here instead of disappearing.
+  // categoryId can't match a deleted product (it has no live category
+  // anymore), which is an acceptable narrowing of a category-filtered
+  // breakdown — the overall sales/profit totals above aren't affected.
+  // Grouped by the *_snapshot code (not p.id, which is NULL for every
+  // deleted product alike) so multiple different deleted products don't
+  // collapse into a single combined row.
   const [topProducts] = await pool.query(
-    `SELECT p.id, p.name AS label, p.code, SUM(si.quantity) AS quantity, COALESCE(SUM(si.line_total), 0) AS value
-     FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
-     ${where} GROUP BY p.id, p.name, p.code ORDER BY quantity DESC LIMIT ?`,
+    `SELECT p.id, COALESCE(p.name, si.product_name_snapshot) AS label, COALESCE(p.code, si.product_code_snapshot) AS code,
+            SUM(si.quantity) AS quantity, COALESCE(SUM(si.line_total), 0) AS value
+     FROM sale_items si JOIN sales s ON s.id = si.sale_id LEFT JOIN products p ON p.id = si.product_id
+     ${where} GROUP BY COALESCE(p.code, si.product_code_snapshot), COALESCE(p.name, si.product_name_snapshot)
+     ORDER BY quantity DESC LIMIT ?`,
     [...allParams, limit],
   );
 

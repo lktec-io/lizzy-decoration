@@ -40,10 +40,7 @@ export const bulkStatus = asyncHandler(async (req, res) => {
 
 export const remove = asyncHandler(async (req, res) => {
   const result = await productService.deleteProduct(Number(req.params.id), req.user.id);
-  const message = result.archived
-    ? 'Product archived — it has sales, purchase, or inventory history that must be preserved'
-    : 'Product permanently deleted';
-  return success(res, { message, data: result });
+  return success(res, { message: 'Product permanently deleted', data: result });
 });
 
 export const listArchived = asyncHandler(async (req, res) => {

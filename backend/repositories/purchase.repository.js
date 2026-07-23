@@ -11,9 +11,15 @@ export async function findById(id) {
   );
   if (!rows[0]) return null;
 
+  // LEFT JOIN + COALESCE onto the *_snapshot columns (see the 015
+  // migration) — a product can be permanently deleted after being
+  // purchased; product_id goes NULL, but this purchase order must still
+  // display what was actually bought.
   const [items] = await pool.query(
-    `SELECT pi.*, p.name AS product_name, p.code AS product_code
-     FROM purchase_items pi JOIN products p ON p.id = pi.product_id
+    `SELECT pi.*,
+            COALESCE(p.name, pi.product_name_snapshot) AS product_name,
+            COALESCE(p.code, pi.product_code_snapshot) AS product_code
+     FROM purchase_items pi LEFT JOIN products p ON p.id = pi.product_id
      WHERE pi.purchase_order_id = ?`,
     [id],
   );

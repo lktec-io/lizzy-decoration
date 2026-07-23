@@ -125,6 +125,14 @@ export async function approveReturn(id, actorId, user) {
     await connection.beginTransaction();
 
     for (const item of returnRecord.items) {
+      // The product this line was for can have been permanently deleted
+      // since the return was requested (see product.service.js's
+      // deleteProduct) — its inventory row is gone along with it, so
+      // there's nothing left to restock. The refund itself doesn't depend
+      // on live product data (refund_amount is already fixed on the
+      // return record), so approval still proceeds for every other line.
+      if (!item.product_id) continue;
+
       await inventoryRepository.recordMovement(
         {
           productId: item.product_id,

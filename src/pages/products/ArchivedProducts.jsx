@@ -123,7 +123,7 @@ function ArchivedProducts() {
         onClose={() => setPendingDelete(null)}
         onConfirm={handlePermanentDelete}
         title="Permanently delete product"
-        message={pendingDelete ? `Permanently delete "${pendingDelete.name}"? This cannot be undone. Blocked if it still has any sales, purchase, or inventory history.` : ''}
+        message={pendingDelete ? `Permanently delete "${pendingDelete.name}"? This cannot be undone. Past sales and purchase records are kept for your reports, but will no longer be linked to this product.` : ''}
         confirmLabel="Delete Permanently"
         variant="danger"
       />

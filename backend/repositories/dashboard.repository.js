@@ -28,11 +28,15 @@ export async function getKpis(branchIds) {
   );
 
   const salesAliased = branchFilter('s.branch_id', branchIds);
+  // LEFT JOIN + COALESCE onto sale_items.buying_price_snapshot (see the 015
+  // migration) — a sold product can be permanently deleted later; without
+  // this fallback today's/this month's profit would understate cost the
+  // moment that happens.
   const profitQuery = (dateCondition) => `
-    SELECT COALESCE(SUM(si.line_total - (si.quantity * p.buying_price)), 0) AS value
+    SELECT COALESCE(SUM(si.line_total - (si.quantity * COALESCE(p.buying_price, si.buying_price_snapshot))), 0) AS value
     FROM sale_items si
     JOIN sales s ON s.id = si.sale_id
-    JOIN products p ON p.id = si.product_id
+    LEFT JOIN products p ON p.id = si.product_id
     WHERE s.status = 'completed' AND ${dateCondition}
     ${salesAliased.clause}
   `;
@@ -195,10 +199,10 @@ export async function getProfitTrend(branchIds) {
   const filter = branchFilter('s.branch_id', branchIds);
   const [rows] = await pool.query(
     `SELECT DATE_FORMAT(s.created_at, '%Y-%m') AS month,
-            COALESCE(SUM(si.line_total - (si.quantity * p.buying_price)), 0) AS value
+            COALESCE(SUM(si.line_total - (si.quantity * COALESCE(p.buying_price, si.buying_price_snapshot))), 0) AS value
      FROM sale_items si
      JOIN sales s ON s.id = si.sale_id
-     JOIN products p ON p.id = si.product_id
+     LEFT JOIN products p ON p.id = si.product_id
      WHERE s.status = 'completed' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) ${filter.clause}
      GROUP BY month ORDER BY month`,
     filter.params,
@@ -206,17 +210,25 @@ export async function getProfitTrend(branchIds) {
   return rows;
 }
 
+// LEFT JOIN + COALESCE (see the 015 migration) so a since-deleted product
+// that was genuinely a top seller still shows up here instead of quietly
+// disappearing from "Top Products" the moment it's removed from the
+// catalog. Grouped by the snapshot code (not p.id, NULL for every deleted
+// product alike) so different deleted products don't collapse together;
+// the image subquery naturally returns NULL for one (nothing to show), the
+// same as a product that never had an image.
 export async function getTopProducts(branchIds, limit = 5) {
   const filter = branchFilter('s.branch_id', branchIds);
   const [rows] = await pool.query(
-    `SELECT p.id, p.name, SUM(si.quantity) AS quantity, SUM(si.line_total) AS revenue,
+    `SELECT p.id, COALESCE(p.name, si.product_name_snapshot) AS name,
+            SUM(si.quantity) AS quantity, SUM(si.line_total) AS revenue,
             (SELECT pi.image_path FROM product_images pi
              WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order LIMIT 1) AS image_path
      FROM sale_items si
      JOIN sales s ON s.id = si.sale_id
-     JOIN products p ON p.id = si.product_id
+     LEFT JOIN products p ON p.id = si.product_id
      WHERE s.status = 'completed' ${filter.clause}
-     GROUP BY p.id, p.name
+     GROUP BY COALESCE(p.code, si.product_code_snapshot), COALESCE(p.name, si.product_name_snapshot)
      ORDER BY quantity DESC
      LIMIT ?`,
     [...filter.params, limit],

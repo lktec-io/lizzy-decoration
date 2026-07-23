@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode, Html5QrcodeScannerState, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { FiZap } from 'react-icons/fi';
 import '../../styles/components/QRScanner.css';
 
@@ -75,6 +75,17 @@ function QRScanner({ onScan, onError }) {
   const [torchOn, setTorchOn] = useState(false);
 
   useEffect(() => {
+    // Guards against the real race this component's lifecycle can hit: the
+    // scanner can be told to close (Modal's onClose, or handleScan closing
+    // it right after a successful match) WHILE start() is still resolving
+    // — camera negotiation is genuinely async and can take a moment. If
+    // that happens, getState() below wouldn't yet report SCANNING, so a
+    // plain "only stop if scanning" cleanup would skip the stop() call
+    // entirely — and then start() would go on to succeed moments later,
+    // leaving the camera running with no component left to ever release
+    // it. cancelled is checked the instant start() resolves so that exact
+    // window can never leave a hidden running scanner behind.
+    let cancelled = false;
     const scanner = new Html5Qrcode(ELEMENT_ID, {
       formatsToSupport: SCAN_FORMATS,
       useBarCodeDetectorIfSupported: true,
@@ -112,6 +123,10 @@ function QRScanner({ onScan, onError }) {
         },
       )
       .then(async () => {
+        if (cancelled) {
+          scanner.stop().catch(() => {});
+          return;
+        }
         setStatus('scanning');
 
         // Continuous autofocus reduces the camera "hunting" for focus on
@@ -121,6 +136,10 @@ function QRScanner({ onScan, onError }) {
         } catch {
           // Not supported on this device/browser — the camera's default
           // focus behavior still works, just without this hint.
+        }
+        if (cancelled) {
+          scanner.stop().catch(() => {});
+          return;
         }
 
         try {
@@ -147,14 +166,29 @@ function QRScanner({ onScan, onError }) {
         }
       })
       .catch((err) => {
+        if (cancelled) return;
         setStatus('error');
         onError?.(err);
       });
 
     return () => {
-      if (scanner.getState() === Html5QrcodeScannerState.SCANNING) {
-        scanner.stop().catch(() => {});
-      }
+      cancelled = true;
+      // Always attempted, not gated behind a getState() check — a stop()
+      // call when the camera never actually reached SCANNING just rejects
+      // harmlessly (caught below) and is cheap insurance against ever
+      // leaving the hardware held past this component's lifetime. clear()
+      // afterward tears down the library's own rendered video/canvas/UI
+      // state so nothing lingers if this same DOM node is ever reused.
+      scanner
+        .stop()
+        .catch(() => {})
+        .finally(() => {
+          try {
+            scanner.clear();
+          } catch {
+            // Nothing rendered yet (start() never got far enough) — fine.
+          }
+        });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scanner lifecycle is intentionally mount/unmount only
   }, []);

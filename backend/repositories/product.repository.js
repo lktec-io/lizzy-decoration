@@ -163,16 +163,40 @@ export async function restore(id, userId) {
   return findById(id);
 }
 
-// Real removal — only ever called after the caller has confirmed
-// hasTransactionHistory() is false. product_images/qr_codes cascade
-// automatically (ON DELETE CASCADE); every other referencing table
-// (sale_items, purchase_items, stock_transfer_items, inventory,
-// inventory_movements, inventory_adjustments) is ON DELETE RESTRICT, so
-// this throws ER_ROW_IS_REFERENCED_2 if that pre-check was somehow stale —
-// the service layer converts that into a friendly message rather than
-// letting the raw DB error reach the client.
-export async function hardDelete(id) {
-  await pool.query('DELETE FROM products WHERE id = ?', [id]);
+// True permanent removal — children first, parent last, one transaction,
+// rollback on any failure. Two tiers of "related data", by design (see the
+// 015 migration and product.service.js's deleteProduct for the full
+// reasoning):
+//  - sale_items / purchase_items are financial/audit records. Their row
+//    survives (quantity, price, line_total already live there); only their
+//    product_id link is cut, via the 015 migration's ON DELETE SET NULL —
+//    handled automatically the moment the product row itself is deleted
+//    below, which is why this function snapshots the name/code onto those
+//    rows *first*, while the product still exists to read it from.
+//  - inventory / inventory_movements / inventory_adjustments /
+//    stock_transfer_items are operational stock-tracking data, not
+//    financial records — deleting a product legitimately means "this item
+//    no longer exists in the stock system at all", so these rows are
+//    removed outright. inventory_adjustments references
+//    inventory_movements (ON DELETE RESTRICT), so it must be deleted first.
+// product_images / qr_codes need no explicit handling — both are ON DELETE
+// CASCADE against products.
+export async function purgeProduct({ id, name, code, buyingPrice }, connection) {
+  await connection.query(
+    'UPDATE sale_items SET product_name_snapshot = ?, product_code_snapshot = ?, buying_price_snapshot = ? WHERE product_id = ? AND product_name_snapshot IS NULL',
+    [name, code, buyingPrice, id],
+  );
+  await connection.query(
+    'UPDATE purchase_items SET product_name_snapshot = ?, product_code_snapshot = ? WHERE product_id = ? AND product_name_snapshot IS NULL',
+    [name, code, id],
+  );
+
+  await connection.query('DELETE FROM inventory_adjustments WHERE product_id = ?', [id]);
+  await connection.query('DELETE FROM inventory_movements WHERE product_id = ?', [id]);
+  await connection.query('DELETE FROM stock_transfer_items WHERE product_id = ?', [id]);
+  await connection.query('DELETE FROM inventory WHERE product_id = ?', [id]);
+
+  await connection.query('DELETE FROM products WHERE id = ?', [id]);
 }
 
 export async function create(data) {
@@ -208,13 +232,11 @@ export async function softDelete(id, userId) {
   await pool.query('UPDATE products SET deleted_at = NOW(), updated_by = ? WHERE id = ?', [userId, id]);
 }
 
-// Every table below is ON DELETE RESTRICT against products (see the 004/005/
-// 006/007 migrations) — any row in any of them would make a hard DELETE fail
-// with a raw FK error. Checked up front so "delete" can decide whether to
-// archive instead of ever attempting (and failing) the real delete.
-// inventory/inventory_movements/inventory_adjustments matter even for a
-// product with zero sales or purchases — a manual stock adjustment
-// ("initial_count", a correction) creates those rows independently.
+// No longer a gate on whether delete is allowed (purgeProduct() above
+// safely handles a product with or without history — see the 015
+// migration) — kept purely so the service layer can write an accurate
+// activity-log line ("had N sales/purchases, preserved via snapshot" vs.
+// "never referenced by anything").
 export async function hasTransactionHistory(id) {
   const [[saleItems]] = await pool.query('SELECT COUNT(*) AS total FROM sale_items WHERE product_id = ?', [id]);
   const [[purchaseItems]] = await pool.query('SELECT COUNT(*) AS total FROM purchase_items WHERE product_id = ?', [id]);

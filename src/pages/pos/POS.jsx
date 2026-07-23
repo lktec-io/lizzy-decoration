@@ -117,10 +117,17 @@ function POS() {
   }, []);
 
   // The one path every add-to-cart trigger goes through — scan, exact-code
-  // auto-match, search+Enter, and a plain product-grid click. Clearing and
-  // refocusing the search box here (rather than in each caller) guarantees
-  // none of them can regress into leaving the last query sitting in the
-  // box, which is exactly what a manual click used to do.
+  // auto-match, search+Enter, and a plain product-grid click. Clears the
+  // search box here (rather than in each caller) so none of them regress
+  // into leaving the last query sitting there. Deliberately does NOT
+  // refocus search — that used to happen on every add (scan, click, or
+  // Enter alike), which meant tapping a product card or finishing a camera
+  // scan popped the on-screen keyboard on mobile every single time. Search
+  // now only gets focus from an actual user action on the search box
+  // itself (a tap, or the F2/Escape shortcuts below) — a hardware
+  // keyboard-wedge scanner still works exactly as before, since typing
+  // into the box is what puts focus there in the first place; clearing its
+  // value afterward doesn't blur it.
   const addToCart = useCallback((product) => {
     setCart((prev) => {
       const existing = prev.find((line) => line.productId === product.id);
@@ -145,7 +152,6 @@ function POS() {
     triggerFlash(product.id);
     setSearch('');
     setHighlightedIndex(-1);
-    searchInputRef.current?.focus();
   }, [triggerFlash]);
 
   // Makes hardware/keyboard-wedge barcode scanners "just work" through the
@@ -231,12 +237,15 @@ function POS() {
   const isMobileMoneyMethod = paymentMethod === 'mpesa' || paymentMethod === 'airtel_money';
 
   // Success is silent by design — the cart flash + beep (in QRScanner) are
-  // the only feedback a cashier gets, so scanning never interrupts itself
-  // with a message to read. A scan that can't resolve to a product is the
-  // one case still worth surfacing (silently doing nothing would leave the
-  // cashier wondering why the item never showed up) — a toast, not
-  // persistent on-screen text, and it never stops the scanner from
-  // listening for the next code.
+  // the only feedback a cashier gets. A scan that resolves to a real
+  // product closes the scanner immediately (one successful scan = one
+  // camera session, per spec — the cashier presses "Scan Barcode" again
+  // for the next item rather than the camera staying open indefinitely).
+  // A scan that can't resolve to a product is the one case that keeps the
+  // camera open: silently doing nothing would leave the cashier wondering
+  // why the item never showed up, and per spec a miss must NOT close the
+  // scanner — a toast, not persistent on-screen text, and scanning
+  // continues for another attempt.
   // The scanner's ONLY job: turn a decoded barcode into a product, then
   // hand off to the exact same addToCart() a manual product-grid click
   // calls — no separate cart logic ever lives here. Looks up by EXACT code
@@ -264,6 +273,7 @@ function POS() {
         return;
       }
       addToCart(match);
+      setScannerOpen(false);
     } catch {
       toast.error('Product not found');
     }
@@ -272,7 +282,6 @@ function POS() {
   const handleScannerError = () => {
     setScannerOpen(false);
     toast.error('Camera unavailable — search or scan with a barcode scanner in the search box instead.');
-    searchInputRef.current?.focus();
   };
 
   // Enter in the search box: a highlighted (arrow-keyed) result wins
@@ -385,7 +394,6 @@ function POS() {
       // Customer, Add Product, Settings, ...) rather than a bespoke panel,
       // per the "one consistent design language" requirement.
       setLastSale(sale);
-      searchInputRef.current?.focus();
     } catch (err) {
       setCheckoutError(err.response?.data?.message || 'Checkout failed. Please try again.');
     } finally {
@@ -402,17 +410,13 @@ function POS() {
   // otherwise have to click New Sale for every single transaction.
   useEffect(() => {
     if (!lastSale) return undefined;
-    receiptTimerRef.current = setTimeout(() => {
-      setLastSale(null);
-      searchInputRef.current?.focus();
-    }, 10000);
+    receiptTimerRef.current = setTimeout(() => setLastSale(null), 10000);
     return () => clearTimeout(receiptTimerRef.current);
   }, [lastSale]);
 
   const dismissReceipt = () => {
     clearTimeout(receiptTimerRef.current);
     setLastSale(null);
-    searchInputRef.current?.focus();
   };
 
   const handlePrintReceipt = async () => {

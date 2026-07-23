@@ -29,9 +29,17 @@ export async function findById(id) {
   // COGS, kept consistent here rather than introducing a second, divergent
   // way of costing a sale. sale.service.js strips this field back out of
   // the response unless the caller has permission to see profit figures.
+  // LEFT JOIN (not JOIN) + COALESCE onto the *_snapshot columns (see the
+  // 015 migration): a product can be permanently deleted after being sold
+  // — product_id goes NULL, but the sale must still display correctly and
+  // its profit must still be computable, so the row's own snapshot of the
+  // name/code/cost as they were at sale time is the fallback.
   const [items] = await pool.query(
-    `SELECT si.*, p.name AS product_name, p.code AS product_code, p.buying_price
-     FROM sale_items si JOIN products p ON p.id = si.product_id
+    `SELECT si.*,
+            COALESCE(p.name, si.product_name_snapshot) AS product_name,
+            COALESCE(p.code, si.product_code_snapshot) AS product_code,
+            COALESCE(p.buying_price, si.buying_price_snapshot) AS buying_price
+     FROM sale_items si LEFT JOIN products p ON p.id = si.product_id
      WHERE si.sale_id = ?`,
     [id],
   );

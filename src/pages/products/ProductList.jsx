@@ -63,12 +63,8 @@ function ProductList() {
   };
 
   const handleDelete = async () => {
-    const result = await productService.deleteProduct(pendingDelete.id);
-    toast.success(
-      result.archived
-        ? `"${pendingDelete.name}" has sales, purchase, or inventory history — archived instead of deleted.`
-        : `"${pendingDelete.name}" deleted.`,
-    );
+    await productService.deleteProduct(pendingDelete.id);
+    toast.success(`"${pendingDelete.name}" permanently deleted.`);
     refetch();
   };
 
@@ -245,8 +241,9 @@ function ProductList() {
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
         title="Delete product"
-        message={pendingDelete ? `Delete "${pendingDelete.name}"? Products with sales, purchase, or inventory history are archived instead of deleted, so historical records stay intact.` : ''}
+        message={pendingDelete ? `Permanently delete "${pendingDelete.name}"? This removes it from the catalog, search, POS, scanner, and inventory completely. This cannot be undone. Past sales and purchase records are kept for your reports, but will no longer be linked to this product.` : ''}
         confirmLabel="Delete"
+        variant="danger"
       />
     </div>
   );

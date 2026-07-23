@@ -17,11 +17,17 @@ export async function findById(id) {
   );
   if (!rows[0]) return null;
 
+  // LEFT JOIN + COALESCE onto sale_items' own *_snapshot columns (see the
+  // 015 migration) — the returned product can be permanently deleted after
+  // the return itself was recorded; this must still show what was
+  // returned.
   const [items] = await pool.query(
-    `SELECT ri.*, si.product_id, si.quantity AS sold_quantity, si.unit_price, p.name AS product_name, p.code AS product_code
+    `SELECT ri.*, si.product_id, si.quantity AS sold_quantity, si.unit_price,
+            COALESCE(p.name, si.product_name_snapshot) AS product_name,
+            COALESCE(p.code, si.product_code_snapshot) AS product_code
      FROM return_items ri
      JOIN sale_items si ON si.id = ri.sale_item_id
-     JOIN products p ON p.id = si.product_id
+     LEFT JOIN products p ON p.id = si.product_id
      WHERE ri.return_id = ?`,
     [id],
   );

@@ -16,11 +16,19 @@ router.use(authenticate);
 
 router.get('/', authorize('products.view'), productController.list);
 router.get('/sellable', authorize('products.view'), productController.sellable);
+// Only Super Administrator holds products.delete in the seeded RBAC (see
+// 001_seed_roles_permissions.sql) — reused here rather than a new
+// permission code, since "who may permanently remove a product" is exactly
+// the same authority as "who may delete one" in the first place. Placed
+// before the /:id routes so "archived" is never captured as an :id value.
+router.get('/archived', authorize('products.delete'), productController.listArchived);
 router.get('/:id', authorize('products.view'), productController.getById);
 router.post('/', authorize('products.create'), productValidator, validateRequest, productController.create);
 router.put('/:id', authorize('products.edit'), productValidator, validateRequest, productController.update);
 router.patch('/bulk-status', authorize('products.manage'), bulkStatusValidator, validateRequest, productController.bulkStatus);
 router.delete('/:id', authorize('products.delete'), productController.remove);
+router.post('/:id/restore', authorize('products.delete'), productController.restore);
+router.delete('/:id/permanent', authorize('products.delete'), productController.permanentDelete);
 router.post('/:id/images', authorize('products.edit'), productImageUploader.single('image'), productController.uploadImage);
 router.delete('/:id/images/:imageId', authorize('products.edit'), productController.removeImage);
 router.get('/:id/qr', authorize('products.view'), qrCodeController.getForProduct);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiPackage, FiPrinter } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiPackage, FiPrinter, FiArchive } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import SearchInput from '../../components/common/SearchInput';
@@ -63,8 +63,12 @@ function ProductList() {
   };
 
   const handleDelete = async () => {
-    await productService.deleteProduct(pendingDelete.id);
-    toast.success('Product deleted.');
+    const result = await productService.deleteProduct(pendingDelete.id);
+    toast.success(
+      result.archived
+        ? `"${pendingDelete.name}" has sales, purchase, or inventory history — archived instead of deleted.`
+        : `"${pendingDelete.name}" deleted.`,
+    );
     refetch();
   };
 
@@ -145,13 +149,18 @@ function ProductList() {
           <h1 className="page-title">Products</h1>
           <p className="page-subtitle">Manage your product catalog</p>
         </div>
-        {canCreate && (
-          <div className="page-actions">
+        <div className="page-actions">
+          {canDelete && (
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('/products/archived')}>
+              <FiArchive aria-hidden="true" /> Archived Products
+            </button>
+          )}
+          {canCreate && (
             <button type="button" className="btn btn-primary" onClick={() => navigate('/products/new')}>
               <FiPlus aria-hidden="true" /> New Product
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {actionError && <div className="alert alert-danger mb-4" role="alert">{actionError}</div>}
@@ -236,7 +245,7 @@ function ProductList() {
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
         title="Delete product"
-        message={pendingDelete ? `Delete "${pendingDelete.name}"? This is blocked if any sales or purchases reference it.` : ''}
+        message={pendingDelete ? `Delete "${pendingDelete.name}"? Products with sales, purchase, or inventory history are archived instead of deleted, so historical records stay intact.` : ''}
         confirmLabel="Delete"
       />
     </div>

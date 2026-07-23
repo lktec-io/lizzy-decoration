@@ -19,3 +19,65 @@
   border-color: var(--color-success);
   box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35);
 }
+
+/* Only rendered once the camera confirms it actually supports zoom and/or
+   torch (MediaTrackCapabilities) — never shown as dead buttons on hardware
+   that can't do either. */
+.qr-scanner-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.qr-scanner-zoom {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.qr-scanner-zoom-btn {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.qr-scanner-zoom-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.qr-scanner-zoom-btn-active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.qr-scanner-torch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.qr-scanner-torch-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.qr-scanner-torch-btn-active {
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-white);
+}

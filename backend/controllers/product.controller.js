@@ -34,8 +34,26 @@ export const bulkStatus = asyncHandler(async (req, res) => {
 });
 
 export const remove = asyncHandler(async (req, res) => {
-  await productService.deleteProduct(Number(req.params.id), req.user.id);
-  return success(res, { message: 'Product deleted' });
+  const result = await productService.deleteProduct(Number(req.params.id), req.user.id);
+  const message = result.archived
+    ? 'Product archived — it has sales, purchase, or inventory history that must be preserved'
+    : 'Product permanently deleted';
+  return success(res, { message, data: result });
+});
+
+export const listArchived = asyncHandler(async (req, res) => {
+  const { items, meta } = await productService.listArchivedProducts(req.query);
+  return success(res, { data: { items, meta } });
+});
+
+export const restore = asyncHandler(async (req, res) => {
+  const product = await productService.restoreProduct(Number(req.params.id), req.user.id);
+  return success(res, { message: 'Product restored', data: product });
+});
+
+export const permanentDelete = asyncHandler(async (req, res) => {
+  await productService.permanentlyDeleteProduct(Number(req.params.id), req.user.id);
+  return success(res, { message: 'Product permanently deleted' });
 });
 
 export const uploadImage = asyncHandler(async (req, res) => {

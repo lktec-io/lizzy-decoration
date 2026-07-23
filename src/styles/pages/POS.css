@@ -346,6 +346,15 @@
 
   .pos-product-grid {
     max-height: 60vh;
+    /* Tablet: balanced — smaller than desktop's comfortable 150px minimum,
+       tighter padding/gap, but still roomy enough to read at a glance. */
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-2);
+  }
+
+  .pos-product-card {
+    padding: var(--space-2);
+    gap: 2px;
   }
 
   .pos-cart {
@@ -364,66 +373,89 @@
     max-width: none;
   }
 
-  .pos-product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  }
-
   .pos-payment-groups {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Non-modal — no backdrop, doesn't trap focus — so the search box stays
-   focused and typeable/scannable underneath it immediately after checkout.
-   Fixed to the viewport rather than the cart panel so it's visible
-   regardless of scroll position in either panel. */
-.pos-receipt-tray {
-  position: fixed;
-  right: var(--space-5);
-  bottom: var(--space-5);
-  width: 320px;
-  max-width: calc(100vw - (2 * var(--space-5)));
-  background-color: var(--color-card-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: var(--space-4);
-  z-index: var(--z-toast);
+/* Mobile: small, touch-friendly cards — more products visible per screen,
+   faster scrolling. Card content stays legible at a smaller size rather
+   than just shrinking the same desktop card proportionally. */
+@media (max-width: 640px) {
+  .pos-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: var(--space-1);
+    max-height: 50vh;
+  }
+
+  .pos-product-card {
+    padding: var(--space-2) var(--space-1);
+    gap: 1px;
+    border-radius: var(--radius-sm);
+  }
+
+  .pos-product-name {
+    font-size: var(--font-size-xs);
+    line-height: 1.15;
+    /* Two-line clamp — a long product name shouldn't blow up card height
+       on a grid this dense. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .pos-product-code {
+    display: none;
+  }
+
+  .pos-product-price {
+    font-size: var(--font-size-xs);
+  }
+
+  .pos-product-stock {
+    font-size: 10px;
+  }
 }
 
-.pos-receipt-tray-header {
+/* Rendered inside the shared <Modal> (glass-modal, same backdrop blur/
+   opacity as Add Customer/Add Product/Settings/etc) — this file only styles
+   the content, not the modal chrome itself, so "one consistent design
+   language" holds by construction rather than by matching numbers. */
+.pos-receipt-modal-body {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-1);
 }
 
-.pos-receipt-tray-icon {
+.pos-receipt-modal-icon {
   color: var(--color-success);
-  font-size: 1.5rem;
-  flex-shrink: 0;
+  font-size: 2.5rem;
+  margin-bottom: var(--space-2);
 }
 
-.pos-receipt-tray-title {
+.pos-receipt-modal-number {
   font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
 }
 
-.pos-receipt-tray-subtitle {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+.pos-receipt-modal-total {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin-bottom: var(--space-4);
 }
 
-.pos-receipt-tray-header .btn-icon {
-  margin-left: auto;
-}
-
-.pos-receipt-tray-actions {
+.pos-receipt-modal-actions {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
 }
 
-.pos-receipt-tray-actions .btn {
+.pos-receipt-modal-actions .btn {
   flex: 1 1 auto;
 }

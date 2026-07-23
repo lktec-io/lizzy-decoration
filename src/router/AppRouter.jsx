@@ -23,6 +23,7 @@ const BranchList = lazy(() => import('../pages/branches/BranchList'));
 const BranchForm = lazy(() => import('../pages/branches/BranchForm'));
 const ProductList = lazy(() => import('../pages/products/ProductList'));
 const ProductForm = lazy(() => import('../pages/products/ProductForm'));
+const ArchivedProducts = lazy(() => import('../pages/products/ArchivedProducts'));
 const InventoryOverview = lazy(() => import('../pages/inventory/InventoryOverview'));
 const StockMovements = lazy(() => import('../pages/inventory/StockMovements'));
 const SupplierList = lazy(() => import('../pages/suppliers/SupplierList'));
@@ -103,6 +104,7 @@ function AppRouter() {
               <Route path="/branches/:id/edit" element={<RedirectWithId to="/settings/branches/:id/edit" />} />
 
               <Route path="/products" element={<RequirePermission permission="products.view"><ProductList /></RequirePermission>} />
+              <Route path="/products/archived" element={<RequirePermission permission="products.delete"><ArchivedProducts /></RequirePermission>} />
               <Route path="/products/new" element={<RequirePermission permission="products.view"><ProductForm /></RequirePermission>} />
               <Route path="/products/:id/edit" element={<RequirePermission permission="products.view"><ProductForm /></RequirePermission>} />
               <Route path="/inventory" element={<RequirePermission permission="inventory.view"><InventoryOverview /></RequirePermission>} />

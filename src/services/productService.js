@@ -31,7 +31,22 @@ export async function bulkUpdateStatus(ids, status) {
 }
 
 export async function deleteProduct(id) {
-  await apiClient.delete(`/products/${id}`);
+  const { data } = await apiClient.delete(`/products/${id}`);
+  return data.data;
+}
+
+export async function listArchivedProducts(params) {
+  const { data } = await apiClient.get('/products/archived', { params });
+  return data.data;
+}
+
+export async function restoreProduct(id) {
+  const { data } = await apiClient.post(`/products/${id}/restore`);
+  return data.data;
+}
+
+export async function permanentlyDeleteProduct(id) {
+  await apiClient.delete(`/products/${id}/permanent`);
 }
 
 export async function uploadProductImage(id, file, isPrimary = false) {

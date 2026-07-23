@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeScannerState, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { FiZap } from 'react-icons/fi';
 import '../../styles/components/QRScanner.css';
 
 const ELEMENT_ID = 'qr-scanner-viewport';
@@ -27,6 +28,12 @@ const SCAN_FORMATS = [
   Html5QrcodeSupportedFormats.CODE_128,
   Html5QrcodeSupportedFormats.CODE_39,
 ];
+
+// The spec's requested preset stops — only the ones inside this camera's
+// actual supported [min, max] zoomFeature() range ever render, so a device
+// that can't zoom (most laptop webcams) simply shows no zoom row instead of
+// buttons that would silently no-op.
+const ZOOM_PRESETS = [0.5, 1, 2, 3];
 
 function playBeep() {
   try {
@@ -59,8 +66,13 @@ function playBeep() {
 function QRScanner({ onScan, onError }) {
   const scannerRef = useRef(null);
   const lastScanRef = useRef({ text: null, time: 0 });
+  const zoomFeatureRef = useRef(null);
+  const torchFeatureRef = useRef(null);
   const [status, setStatus] = useState('idle'); // idle | starting | scanning | error
   const [flash, setFlash] = useState(false);
+  const [zoomInfo, setZoomInfo] = useState(null); // { presets, current } once confirmed supported
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   useEffect(() => {
     const scanner = new Html5Qrcode(ELEMENT_ID, {
@@ -74,7 +86,16 @@ function QRScanner({ onScan, onError }) {
     scanner
       .start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 260, height: 260 } },
+        {
+          fps: 10,
+          qrbox: { width: 260, height: 260 },
+          // Highest resolution the camera offers rather than the browser's
+          // low default — more detail for the decoder, and the same
+          // barcode is readable from farther away at a given frame size.
+          // Rear camera preferred on mobile (facingMode carried here too,
+          // matching the first start() argument).
+          videoConstraints: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        },
         (decodedText) => {
           const now = Date.now();
           const last = lastScanRef.current;
@@ -90,7 +111,41 @@ function QRScanner({ onScan, onError }) {
           // Fired continuously while no code is in frame — not an error, ignore.
         },
       )
-      .then(() => setStatus('scanning'))
+      .then(async () => {
+        setStatus('scanning');
+
+        // Continuous autofocus reduces the camera "hunting" for focus on
+        // every frame — best-effort, silently ignored where unsupported.
+        try {
+          await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        } catch {
+          // Not supported on this device/browser — the camera's default
+          // focus behavior still works, just without this hint.
+        }
+
+        try {
+          const capabilities = scanner.getRunningTrackCameraCapabilities();
+          const zoom = capabilities.zoomFeature();
+          if (zoom.isSupported()) {
+            const min = zoom.min();
+            const max = zoom.max();
+            const presets = ZOOM_PRESETS.filter((value) => value >= min && value <= max);
+            if (presets.length > 0) {
+              zoomFeatureRef.current = zoom;
+              setZoomInfo({ presets, current: zoom.value() ?? presets[0] });
+            }
+          }
+          const torch = capabilities.torchFeature();
+          if (torch.isSupported()) {
+            torchFeatureRef.current = torch;
+            setTorchSupported(true);
+          }
+        } catch {
+          // getRunningTrackCameraCapabilities/MediaTrackCapabilities isn't
+          // available on this browser — no zoom/torch controls render, the
+          // plain camera feed still works.
+        }
+      })
       .catch((err) => {
         setStatus('error');
         onError?.(err);
@@ -104,6 +159,28 @@ function QRScanner({ onScan, onError }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scanner lifecycle is intentionally mount/unmount only
   }, []);
 
+  const handleZoomSelect = async (value) => {
+    if (!zoomFeatureRef.current) return;
+    try {
+      await zoomFeatureRef.current.apply(value);
+      setZoomInfo((prev) => (prev ? { ...prev, current: value } : prev));
+    } catch {
+      // Camera momentarily rejected the level — leave the UI as-is rather
+      // than showing an error for a zoom tap.
+    }
+  };
+
+  const handleToggleTorch = async () => {
+    if (!torchFeatureRef.current) return;
+    const next = !torchOn;
+    try {
+      await torchFeatureRef.current.apply(next);
+      setTorchOn(next);
+    } catch {
+      // Unsupported mid-session on this device — button just stays inert.
+    }
+  };
+
   // No status text by design — a cashier scanning continuously should never
   // have to read "Starting..."/"Ready..."/error copy. Camera startup is a
   // bare spinner (no words); a failure is reported to the caller (onError)
@@ -115,6 +192,35 @@ function QRScanner({ onScan, onError }) {
       {status === 'starting' && (
         <div className="flex items-center justify-center p-4">
           <span className="spinner" aria-label="Starting camera" />
+        </div>
+      )}
+      {(zoomInfo || torchSupported) && (
+        <div className="qr-scanner-controls">
+          {zoomInfo && (
+            <div className="qr-scanner-zoom">
+              {zoomInfo.presets.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className={`qr-scanner-zoom-btn ${zoomInfo.current === preset ? 'qr-scanner-zoom-btn-active' : ''}`}
+                  onClick={() => handleZoomSelect(preset)}
+                >
+                  {preset}x
+                </button>
+              ))}
+            </div>
+          )}
+          {torchSupported && (
+            <button
+              type="button"
+              className={`qr-scanner-torch-btn ${torchOn ? 'qr-scanner-torch-btn-active' : ''}`}
+              onClick={handleToggleTorch}
+              aria-label={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+              aria-pressed={torchOn}
+            >
+              <FiZap />
+            </button>
+          )}
         </div>
       )}
     </div>

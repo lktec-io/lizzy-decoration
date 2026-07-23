@@ -75,7 +75,27 @@ export async function generate(productId) {
 
   const existing = await qrCodeRepository.findByProductId(productId);
   const payload = buildPayload(product);
-  const buffer = await QRCode.toBuffer(JSON.stringify(payload), { type: 'png', width: 320, margin: 2 });
+
+  // The scanner only ever reads two fields out of a decoded payload —
+  // product.code (matched directly against products.code) with productId
+  // as a tie-breaker — so encoding name/sellingPrice too was pure wasted
+  // density: a longer product name meant a bigger QR version and smaller,
+  // harder-to-read modules for no scanning benefit. product.code alone
+  // (not even JSON-wrapped) is the smallest payload that still round-trips
+  // correctly — the scanner already falls back to treating a non-JSON scan
+  // as a raw code, so this reads exactly like a real barcode would. The
+  // full payload is still kept in the DB `payload` column below for
+  // reference; it's just no longer what gets encoded into the image.
+  const buffer = await QRCode.toBuffer(product.code, {
+    type: 'png',
+    width: 480,
+    // ISO/IEC 18004's recommended quiet zone is 4 modules — the previous
+    // margin of 2 was under that minimum, which is a real reason a scanner
+    // held even slightly back would fail to lock on.
+    margin: 4,
+    errorCorrectionLevel: 'M',
+    color: { dark: '#000000', light: '#FFFFFF' },
+  });
 
   // A unique-per-call suffix (not the DB's regenerated_count, which lags by
   // one write and previously produced the exact same filename/public_id on

@@ -120,20 +120,134 @@ export async function bulkUpdateStatus(ids, status, actorId) {
   await productRepository.bulkUpdateStatus(ids, status, actorId);
 }
 
+// Best-effort cleanup of a product's uploaded image files before the row
+// (and its product_images rows, via ON DELETE CASCADE) is actually
+// removed — otherwise a hard delete leaves orphaned files on disk/Cloudinary
+// with nothing left in the DB to ever clean them up later. Mirrors
+// removeImage()'s per-file cleanup below; never throws, since a failed file
+// cleanup shouldn't block the delete itself.
+async function cleanupProductImageFiles(images) {
+  await Promise.all((images || []).map(async (image) => {
+    try {
+      if (image.image_path.startsWith('/uploads/')) {
+        await fs.unlink(path.join(UPLOADS_ROOT, image.image_path.replace('/uploads/', '')));
+      } else {
+        await deleteUploadedFile(image.image_path);
+      }
+    } catch {
+      // Already gone, inaccessible, or a Cloudinary failure already logged
+      // inside deleteUploadedFile — not fatal to the product delete itself.
+    }
+  }));
+}
+
+// A product with real sales/purchase/inventory history can never be hard
+// deleted (see hasTransactionHistory's comment) — historical records must
+// stay intact, so it's archived (soft delete) instead, automatically, with
+// no separate "are you sure" business-rule error to work around. Only a
+// product nobody has ever transacted against is actually removed.
 export async function deleteProduct(id, actorId) {
   const existing = await productRepository.findById(id);
   if (!existing) throw new ApiError(404, 'Product not found');
 
   const hasHistory = await productRepository.hasTransactionHistory(id);
   if (hasHistory) {
-    throw new ApiError(409, 'Cannot delete a product with existing sales or purchase history — deactivate it instead');
+    await productRepository.softDelete(id, actorId);
+    await activityLogRepository.create({
+      userId: actorId,
+      branchId: null,
+      description: `Product "${existing.name}" (${existing.code}) archived — has sales, purchase, or inventory history`,
+      referenceType: 'product',
+      referenceId: id,
+    });
+    return { archived: true };
   }
 
-  await productRepository.softDelete(id, actorId);
+  try {
+    await productRepository.hardDelete(id);
+  } catch (err) {
+    // The pre-check said safe, but a concurrent purchase/sale/adjustment
+    // referenced this product between the check and the delete — archive
+    // rather than surface the raw FK error, staying consistent with the
+    // "history means archive, not delete" rule instead of just failing.
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      await productRepository.softDelete(id, actorId);
+      await activityLogRepository.create({
+        userId: actorId,
+        branchId: null,
+        description: `Product "${existing.name}" (${existing.code}) archived — has sales, purchase, or inventory history`,
+        referenceType: 'product',
+        referenceId: id,
+      });
+      return { archived: true };
+    }
+    throw err;
+  }
+
+  await cleanupProductImageFiles(existing.images);
   await activityLogRepository.create({
     userId: actorId,
     branchId: null,
-    description: `Product "${existing.name}" (${existing.code}) deleted`,
+    description: `Product "${existing.name}" (${existing.code}) permanently deleted`,
+    referenceType: 'product',
+    referenceId: id,
+  });
+  return { archived: false };
+}
+
+export async function listArchivedProducts(query) {
+  const page = Number(query.page) || 1;
+  const limit = Math.min(Number(query.limit) || 20, 100);
+
+  const { rows, total } = await productRepository.findAllArchived({ page, limit, search: query.search });
+  return { items: rows, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+}
+
+export async function restoreProduct(id, actorId) {
+  const existing = await productRepository.findArchivedById(id);
+  if (!existing) throw new ApiError(404, 'Archived product not found');
+
+  const restored = await productRepository.restore(id, actorId);
+  await activityLogRepository.create({
+    userId: actorId,
+    branchId: null,
+    description: `Product "${existing.name}" (${existing.code}) restored from archive`,
+    referenceType: 'product',
+    referenceId: id,
+  });
+  return restored;
+}
+
+// The archive page's own delete — distinct from deleteProduct() above
+// because it must NEVER silently re-archive an already-archived product.
+// Re-checks history at this moment (not just at the original archive time)
+// since "safe to permanently delete" can only ever be answered right now.
+export async function permanentlyDeleteProduct(id, actorId) {
+  const existing = await productRepository.findArchivedById(id);
+  if (!existing) throw new ApiError(404, 'Archived product not found');
+
+  const hasHistory = await productRepository.hasTransactionHistory(id);
+  if (hasHistory) {
+    throw new ApiError(
+      409,
+      `Cannot permanently delete "${existing.name}" — it still has sales, purchase, or inventory history that must be preserved.`,
+    );
+  }
+
+  try {
+    await productRepository.hardDelete(id);
+  } catch (err) {
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      throw new ApiError(409, `Cannot permanently delete "${existing.name}" — other records still reference it.`);
+    }
+    throw err;
+  }
+
+  await cleanupProductImageFiles(existing.images);
+  await activityLogRepository.create({
+    userId: actorId,
+    branchId: null,
+    description: `Product "${existing.name}" (${existing.code}) permanently deleted from archive`,
     referenceType: 'product',
     referenceId: id,
   });

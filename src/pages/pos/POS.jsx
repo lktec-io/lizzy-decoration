@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiTrash2, FiCamera, FiPlus, FiMinus, FiClock, FiShoppingCart, FiUserPlus, FiPercent, FiPrinter, FiDownload, FiCheckCircle, FiX } from 'react-icons/fi';
+import { FiTrash2, FiCamera, FiPlus, FiMinus, FiClock, FiShoppingCart, FiUserPlus, FiPercent, FiPrinter, FiDownload, FiCheckCircle } from 'react-icons/fi';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SearchInput from '../../components/common/SearchInput';
@@ -76,7 +76,7 @@ function POS() {
   const [quickCustomerError, setQuickCustomerError] = useState('');
   const [savingQuickCustomer, setSavingQuickCustomer] = useState(false);
 
-  const anyModalOpen = scannerOpen || quickCustomerOpen || clearCartConfirmOpen;
+  const anyModalOpen = scannerOpen || quickCustomerOpen || clearCartConfirmOpen || Boolean(lastSale);
 
   useEffect(() => {
     if (!user?.branch_id) {
@@ -376,13 +376,11 @@ function POS() {
 
       const sale = await saleService.checkout(payload);
       clearCart();
-      // Deliberately NOT navigating away to the Sale Detail page — the spec
-      // requires focus to return to the search box with no click needed,
-      // which a page navigation would defeat. The receipt tray below is a
-      // non-modal overlay (no backdrop, doesn't steal focus) so the search
-      // box — refocused by clearCart()'s downstream effects — stays live
-      // and typeable/scannable immediately while Print/Download/New Sale
-      // remain one click away for whoever wants a physical receipt.
+      // Deliberately NOT navigating away to the Sale Detail page — the
+      // cashier never leaves POS. The Sale Completed modal uses the exact
+      // same glass modal system as every other modal in the app (Add
+      // Customer, Add Product, Settings, ...) rather than a bespoke panel,
+      // per the "one consistent design language" requirement.
       setLastSale(sale);
       searchInputRef.current?.focus();
     } catch (err) {
@@ -393,24 +391,25 @@ function POS() {
     }
   }, [cart, branchId, customerId, paymentMethod, total]);
 
-  // The tray dismisses itself the moment the cashier starts the next sale
-  // (first item lands back in the now-empty cart) — no click required to
-  // get it out of the way — and as a fallback after a short delay in case
-  // they step away without starting another sale.
+  // A real modal blocks the page underneath it, so — unlike the previous
+  // non-modal tray — it can't just dismiss itself the moment the cashier
+  // starts scanning the next sale (there's nothing to interact with behind
+  // the backdrop). It still closes itself after a short delay as a
+  // convenience for a cashier who doesn't need Print/Download and would
+  // otherwise have to click New Sale for every single transaction.
   useEffect(() => {
     if (!lastSale) return undefined;
-    if (cart.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- dismissing the tray in reaction to the cashier starting the next sale (cart refilling), not deriving it from a prop
+    receiptTimerRef.current = setTimeout(() => {
       setLastSale(null);
-      return undefined;
-    }
-    receiptTimerRef.current = setTimeout(() => setLastSale(null), 15000);
+      searchInputRef.current?.focus();
+    }, 10000);
     return () => clearTimeout(receiptTimerRef.current);
-  }, [lastSale, cart.length]);
+  }, [lastSale]);
 
   const dismissReceipt = () => {
     clearTimeout(receiptTimerRef.current);
     setLastSale(null);
+    searchInputRef.current?.focus();
   };
 
   const handlePrintReceipt = async () => {
@@ -787,31 +786,26 @@ function POS() {
         </div>
       </Modal>
 
-      {lastSale && (
-        <div className="pos-receipt-tray" role="status">
-          <div className="pos-receipt-tray-header">
-            <FiCheckCircle className="pos-receipt-tray-icon" aria-hidden="true" />
-            <div>
-              <div className="pos-receipt-tray-title">Sale completed</div>
-              <div className="pos-receipt-tray-subtitle">{lastSale.sale_number} · {formatCurrency(lastSale.total_amount)}</div>
+      <Modal open={Boolean(lastSale)} onClose={dismissReceipt} title="Sale Completed" size="sm">
+        {lastSale && (
+          <div className="pos-receipt-modal-body">
+            <FiCheckCircle className="pos-receipt-modal-icon" aria-hidden="true" />
+            <div className="pos-receipt-modal-number">{lastSale.sale_number}</div>
+            <div className="pos-receipt-modal-total">{formatCurrency(lastSale.total_amount)}</div>
+            <div className="pos-receipt-modal-actions">
+              <button type="button" className={`btn btn-secondary ${receiptBusy === 'print' ? 'btn-loading' : ''}`} disabled={!!receiptBusy} onClick={handlePrintReceipt}>
+                <FiPrinter aria-hidden="true" /> Print
+              </button>
+              <button type="button" className={`btn btn-secondary ${receiptBusy === 'download' ? 'btn-loading' : ''}`} disabled={!!receiptBusy} onClick={handleDownloadReceipt}>
+                <FiDownload aria-hidden="true" /> Download PDF
+              </button>
+              <button type="button" className="btn btn-primary" onClick={dismissReceipt}>
+                New Sale
+              </button>
             </div>
-            <button type="button" className="btn btn-ghost btn-icon" onClick={dismissReceipt} aria-label="Dismiss receipt">
-              <FiX />
-            </button>
           </div>
-          <div className="pos-receipt-tray-actions">
-            <button type="button" className={`btn btn-secondary btn-sm ${receiptBusy === 'print' ? 'btn-loading' : ''}`} disabled={!!receiptBusy} onClick={handlePrintReceipt}>
-              <FiPrinter aria-hidden="true" /> Print
-            </button>
-            <button type="button" className={`btn btn-secondary btn-sm ${receiptBusy === 'download' ? 'btn-loading' : ''}`} disabled={!!receiptBusy} onClick={handleDownloadReceipt}>
-              <FiDownload aria-hidden="true" /> Download PDF
-            </button>
-            <button type="button" className="btn btn-primary btn-sm" onClick={dismissReceipt}>
-              New Sale
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

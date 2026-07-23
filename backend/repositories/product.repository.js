@@ -96,6 +96,59 @@ export async function findAll({ page = 1, limit = 20, search, categoryId, brandI
   return { rows, total: countRows[0].total };
 }
 
+// The Archived Products page's list — the mirror image of findAll()'s
+// "deleted_at IS NULL": everything currently archived, newest-archived
+// first so a Super Admin cleaning up sees their own recent actions on top.
+export async function findAllArchived({ page = 1, limit = 20, search }) {
+  const conditions = ['p.deleted_at IS NOT NULL'];
+  const params = [];
+
+  if (search) {
+    conditions.push('(p.name LIKE ? OR p.code LIKE ?)');
+    const term = `%${search}%`;
+    params.push(term, term);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  const offset = (page - 1) * limit;
+
+  const [rows] = await pool.query(
+    `${BASE_SELECT} ${whereClause} ORDER BY p.deleted_at DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+  const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM products p ${whereClause}`, params);
+
+  return { rows, total: countRows[0].total };
+}
+
+export async function findArchivedById(id) {
+  const [rows] = await pool.query(`${BASE_SELECT} WHERE p.id = ? AND p.deleted_at IS NOT NULL LIMIT 1`, [id]);
+  if (!rows[0]) return null;
+
+  const [images] = await pool.query(
+    'SELECT id, image_path, is_primary, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order',
+    [id],
+  );
+  return { ...rows[0], images };
+}
+
+export async function restore(id, userId) {
+  await pool.query('UPDATE products SET deleted_at = NULL, updated_by = ? WHERE id = ?', [userId, id]);
+  return findById(id);
+}
+
+// Real removal — only ever called after the caller has confirmed
+// hasTransactionHistory() is false. product_images/qr_codes cascade
+// automatically (ON DELETE CASCADE); every other referencing table
+// (sale_items, purchase_items, stock_transfer_items, inventory,
+// inventory_movements, inventory_adjustments) is ON DELETE RESTRICT, so
+// this throws ER_ROW_IS_REFERENCED_2 if that pre-check was somehow stale —
+// the service layer converts that into a friendly message rather than
+// letting the raw DB error reach the client.
+export async function hardDelete(id) {
+  await pool.query('DELETE FROM products WHERE id = ?', [id]);
+}
+
 export async function create(data) {
   const [result] = await pool.query(
     `INSERT INTO products (name, code, category_id, brand_id, description, buying_price, selling_price, min_stock, status, created_by, updated_by)
@@ -129,10 +182,21 @@ export async function softDelete(id, userId) {
   await pool.query('UPDATE products SET deleted_at = NOW(), updated_by = ? WHERE id = ?', [userId, id]);
 }
 
+// Every table below is ON DELETE RESTRICT against products (see the 004/005/
+// 006/007 migrations) — any row in any of them would make a hard DELETE fail
+// with a raw FK error. Checked up front so "delete" can decide whether to
+// archive instead of ever attempting (and failing) the real delete.
+// inventory/inventory_movements/inventory_adjustments matter even for a
+// product with zero sales or purchases — a manual stock adjustment
+// ("initial_count", a correction) creates those rows independently.
 export async function hasTransactionHistory(id) {
   const [[saleItems]] = await pool.query('SELECT COUNT(*) AS total FROM sale_items WHERE product_id = ?', [id]);
   const [[purchaseItems]] = await pool.query('SELECT COUNT(*) AS total FROM purchase_items WHERE product_id = ?', [id]);
-  return saleItems.total > 0 || purchaseItems.total > 0;
+  const [[transferItems]] = await pool.query('SELECT COUNT(*) AS total FROM stock_transfer_items WHERE product_id = ?', [id]);
+  const [[inventoryRows]] = await pool.query('SELECT COUNT(*) AS total FROM inventory WHERE product_id = ?', [id]);
+  const [[movements]] = await pool.query('SELECT COUNT(*) AS total FROM inventory_movements WHERE product_id = ?', [id]);
+  const [[adjustments]] = await pool.query('SELECT COUNT(*) AS total FROM inventory_adjustments WHERE product_id = ?', [id]);
+  return [saleItems, purchaseItems, transferItems, inventoryRows, movements, adjustments].some((row) => row.total > 0);
 }
 
 export async function addImage(productId, imagePath, isPrimary) {

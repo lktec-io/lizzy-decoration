@@ -13,6 +13,11 @@ export const sellable = asyncHandler(async (req, res) => {
   return success(res, { data: products });
 });
 
+export const lookupSellable = asyncHandler(async (req, res) => {
+  const product = await productService.getSellableProductByCode(req.query, req.user);
+  return success(res, { data: product });
+});
+
 export const getById = asyncHandler(async (req, res) => {
   const product = await productService.getProduct(Number(req.params.id));
   return success(res, { data: product });

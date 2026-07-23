@@ -16,6 +16,8 @@ router.use(authenticate);
 
 router.get('/', authorize('products.view'), productController.list);
 router.get('/sellable', authorize('products.view'), productController.sellable);
+// Placed before /:id so "lookup" is never captured as an :id value.
+router.get('/lookup', authorize('products.view'), productController.lookupSellable);
 // Only Super Administrator holds products.delete in the seeded RBAC (see
 // 001_seed_roles_permissions.sql) — reused here rather than a new
 // permission code, since "who may permanently remove a product" is exactly

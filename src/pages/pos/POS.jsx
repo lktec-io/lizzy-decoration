@@ -237,32 +237,35 @@ function POS() {
   // cashier wondering why the item never showed up) — a toast, not
   // persistent on-screen text, and it never stops the scanner from
   // listening for the next code.
+  // The scanner's ONLY job: turn a decoded barcode into a product, then
+  // hand off to the exact same addToCart() a manual product-grid click
+  // calls — no separate cart logic ever lives here. Looks up by EXACT code
+  // match (products.code is the only column that serves as a barcode in
+  // this schema — there is no dedicated `barcode` column) rather than the
+  // product grid's fuzzy name/code search, since a scan is either the
+  // right product or nothing — never a "close enough" guess.
   const handleScan = async (decodedText) => {
-    let code = null;
-    let productIdHint = null;
+    let code;
     try {
       const payload = JSON.parse(decodedText);
       code = payload.code;
-      productIdHint = payload.productId;
     } catch {
-      // Not our self-printed QR JSON — treat the raw decoded text as a real
-      // manufacturer barcode and match it directly against products.code.
-      code = decodedText.trim();
+      // Not our self-printed QR JSON — the raw decoded text is a real
+      // manufacturer barcode, matched directly against products.code.
+      code = decodedText;
     }
+    code = code?.trim();
     if (!code) return;
 
     try {
-      const matches = await productService.listSellableProducts({ branchId, search: code, limit: 5 });
-      const match = matches.find((p) => p.code.toLowerCase() === code.toLowerCase())
-        || matches.find((p) => p.id === productIdHint)
-        || matches[0];
+      const match = await productService.lookupSellableProduct({ code, branchId });
       if (!match) {
-        toast.error(`No product found for "${code}".`);
+        toast.error('Product not found');
         return;
       }
       addToCart(match);
     } catch {
-      toast.error('Could not look up the scanned product.');
+      toast.error('Product not found');
     }
   };
 

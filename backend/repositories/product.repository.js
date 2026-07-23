@@ -62,6 +62,32 @@ export async function findSellable({ branchId, search, categoryId, limit = 60 })
   return rows;
 }
 
+// Barcode-scan lookup — a genuinely different query from findSellable()'s
+// `search`, which does a fuzzy `LIKE '%...%'` across both name and code and
+// was never meant to resolve a single scanned value with certainty. This is
+// an exact match on the one column that actually serves as this app's
+// barcode (see the sale.repository.js / handleScan comments — there is no
+// separate `barcode` column anywhere in the schema). products.code has a
+// UNIQUE index and the table's collation (utf8mb4_unicode_ci) is already
+// case-insensitive, so a plain `p.code = ?` on a trimmed input stays index-
+// backed — wrapping the column itself in TRIM()/LOWER() would defeat that
+// index and turn every scan into a full table scan as the catalog grows.
+export async function findSellableByCode({ code, branchId }) {
+  const [rows] = await pool.query(
+    `SELECT p.id, p.name, p.code, p.selling_price, p.category_id, c.name AS category_name,
+            p.brand_id, b.name AS brand_name,
+            COALESCE(i.quantity - i.reserved_quantity, 0) AS available_quantity
+     FROM products p
+     JOIN categories c ON c.id = p.category_id
+     LEFT JOIN brands b ON b.id = p.brand_id
+     LEFT JOIN inventory i ON i.product_id = p.id AND i.branch_id = ?
+     WHERE p.deleted_at IS NULL AND p.status = 'active' AND p.code = ?
+     LIMIT 1`,
+    [branchId, code],
+  );
+  return rows[0] || null;
+}
+
 export async function findAll({ page = 1, limit = 20, search, categoryId, brandId, status }) {
   const conditions = ['p.deleted_at IS NULL'];
   const params = [];

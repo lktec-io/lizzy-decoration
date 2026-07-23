@@ -54,6 +54,23 @@ export async function getSellableProducts(query, user) {
   });
 }
 
+// The barcode scanner's only lookup — exact match, not the fuzzy `search`
+// findSellable() does for the product grid. Returns null (not a 404) on no
+// match: "barcode doesn't resolve to a product" is an ordinary, expected
+// outcome of scanning, not an error condition.
+export async function getSellableProductByCode(query, user) {
+  if (!query.branchId) throw new ApiError(400, 'Branch is required');
+  if (!query.code) throw new ApiError(400, 'Code is required');
+  const branchId = Number(query.branchId);
+
+  const branchIds = await getAccessibleBranchIds(user);
+  if (branchIds !== null && !branchIds.includes(branchId)) {
+    throw new ApiError(403, 'You do not have access to this branch');
+  }
+
+  return productRepository.findSellableByCode({ code: query.code.trim(), branchId });
+}
+
 function assertPriceSanity(data) {
   if (Number(data.buyingPrice) > Number(data.sellingPrice) && !data.confirmPriceOverride) {
     throw new ApiError(

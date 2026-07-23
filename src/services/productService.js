@@ -16,6 +16,15 @@ export async function listSellableProducts(params) {
   return data.data;
 }
 
+// The barcode scanner's only lookup — exact match on products.code (the
+// one field that serves as this app's barcode), not the fuzzy `search`
+// listSellableProducts() does for the product grid. Resolves to null, not
+// an error, when nothing matches — that's an ordinary scan outcome.
+export async function lookupSellableProduct(params) {
+  const { data } = await apiClient.get('/products/lookup', { params });
+  return data.data;
+}
+
 export async function createProduct(payload) {
   const { data } = await apiClient.post('/products', payload);
   return data.data;

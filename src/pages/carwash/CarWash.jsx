@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { FiPlus, FiDroplet, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
@@ -15,9 +16,9 @@ import * as branchService from '../../services/branchService';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const PAYMENT_METHODS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'mpesa', label: 'M-Pesa' },
-  { value: 'airtel_money', label: 'Airtel Money' },
+  { value: 'cash', key: 'common:cash' },
+  { value: 'mpesa', key: 'paymentMethodMpesa' },
+  { value: 'airtel_money', key: 'paymentMethodAirtelMoney' },
 ];
 
 const DEFAULT_VALUES = {
@@ -29,6 +30,7 @@ function formatDateTime(isoString) {
 }
 
 function CarWash() {
+  const { t } = useTranslation('carwash');
   const canCreate = usePermission('carwash.create');
   const canEdit = usePermission('carwash.edit');
   const canDelete = usePermission('carwash.delete');
@@ -104,49 +106,49 @@ function CarWash() {
     try {
       if (editing) {
         await carwashService.updateCarwashTransaction(editing.id, payload);
-        toast.success('Car wash transaction updated.');
+        toast.success(t('carwashUpdated'));
       } else {
         await carwashService.recordCarwashTransaction(payload);
-        toast.success('Car wash transaction recorded.');
+        toast.success(t('carwashRecorded'));
       }
       setModalOpen(false);
       refetch();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save car wash transaction.');
+      setError(err.response?.data?.message || t('failedToSaveTransaction'));
     }
   };
 
   const handleDelete = async () => {
     try {
       await carwashService.deleteCarwashTransaction(pendingDelete.id);
-      toast.success('Car wash transaction permanently deleted.');
+      toast.success(t('carwashDeleted'));
       refetch();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete car wash transaction.');
+      toast.error(err.response?.data?.message || t('failedToDeleteTransaction'));
     }
   };
 
   const columns = [
-    { key: 'created_at', label: 'Date', render: (row) => formatDateTime(row.created_at) },
-    { key: 'plate_number', label: 'Plate Number' },
-    { key: 'customer_name', label: 'Customer', render: (row) => `${row.customer_name} · ${row.phone}` },
-    { key: 'service_name', label: 'Service' },
-    { key: 'branch_name', label: 'Branch' },
-    { key: 'payment_method', label: 'Payment', render: (row) => PAYMENT_METHODS.find((m) => m.value === row.payment_method)?.label || row.payment_method },
-    { key: 'served_by', label: 'Served By', render: (row) => `${row.served_by_first_name} ${row.served_by_last_name}` },
-    { key: 'amount', label: 'Amount', render: (row) => formatCurrency(row.amount) },
+    { key: 'created_at', label: t('common:date'), render: (row) => formatDateTime(row.created_at) },
+    { key: 'plate_number', label: t('plateNumberColumn') },
+    { key: 'customer_name', label: t('common:customer'), render: (row) => `${row.customer_name} · ${row.phone}` },
+    { key: 'service_name', label: t('service') },
+    { key: 'branch_name', label: t('common:branch') },
+    { key: 'payment_method', label: t('paymentColumn'), render: (row) => { const m = PAYMENT_METHODS.find((pm) => pm.value === row.payment_method); return m ? t(m.key) : row.payment_method; } },
+    { key: 'served_by', label: t('servedByColumn'), render: (row) => `${row.served_by_first_name} ${row.served_by_last_name}` },
+    { key: 'amount', label: t('common:amount'), render: (row) => formatCurrency(row.amount) },
     ...(canEdit || canDelete ? [{
       key: 'actions',
       label: '',
       render: (row) => (
         <div className="table-actions">
           {canEdit && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit car wash transaction">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label={t('editTransaction')}>
               <FiEdit2 />
             </button>
           )}
           {canDelete && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete car wash transaction">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label={t('deleteTransaction')}>
               <FiTrash2 />
             </button>
           )}
@@ -159,32 +161,32 @@ function CarWash() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Car Wash</h1>
-          <p className="page-subtitle">Register vehicles, record services, and receive payment</p>
+          <h1 className="page-title">{t('title')}</h1>
+          <p className="page-subtitle">{t('subtitle')}</p>
         </div>
         {canCreate && (
           <div className="page-actions">
             <button type="button" className="btn btn-primary" onClick={openCreate}>
-              <FiPlus aria-hidden="true" /> New Service
+              <FiPlus aria-hidden="true" /> {t('newService')}
             </button>
           </div>
         )}
       </div>
 
       <div className="mb-5">
-        <KPICard icon={FiDroplet} label="Revenue (filtered results)" value={meta.totalAmount || 0} formatter={(v) => formatCurrency(v)} />
+        <KPICard icon={FiDroplet} label={t('revenueFilteredResults')} value={meta.totalAmount || 0} formatter={(v) => formatCurrency(v)} />
       </div>
 
       <div className="card">
         <div className="table-toolbar">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search by plate number, customer, phone..." />
+          <SearchInput value={search} onChange={setSearch} placeholder={t('searchPlaceholder')} />
           <div className="flex flex-wrap items-center gap-3">
             <select
               className="form-control"
               value={filters.serviceId || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, serviceId: e.target.value || undefined }))}
             >
-              <option value="">All Services</option>
+              <option value="">{t('allServices')}</option>
               {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <select
@@ -192,7 +194,7 @@ function CarWash() {
               value={filters.branchId || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, branchId: e.target.value || undefined }))}
             >
-              <option value="">All Branches</option>
+              <option value="">{t('common:allBranches')}</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
             <input
@@ -209,20 +211,20 @@ function CarWash() {
             />
           </div>
         </div>
-        <Table columns={columns} rows={items} loading={loading} emptyMessage="No car wash transactions recorded yet" />
+        <Table columns={columns} rows={items} loading={loading} emptyMessage={t('emptyList')} />
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>
 
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit Car Wash Transaction' : 'New Car Wash Service'}
+        title={editing ? t('modalTitleEdit') : t('modalTitleNew')}
         size="sm"
         footer={
           <>
-            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t('common:cancel')}</button>
             <button type="submit" form="carwash-form" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
-              {editing ? 'Save Changes' : 'Record & Receive Payment'}
+              {editing ? t('saveChanges') : t('recordAndReceivePayment')}
             </button>
           </>
         }
@@ -230,54 +232,54 @@ function CarWash() {
         {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
         <form id="carwash-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="plateNumber">Vehicle Plate Number</label>
-            <input id="plateNumber" className={`form-control ${errors.plateNumber ? 'form-control-error' : ''}`} {...register('plateNumber', { required: 'Plate number is required' })} />
+            <label className="form-label form-label-required" htmlFor="plateNumber">{t('plateNumberLabel')}</label>
+            <input id="plateNumber" className={`form-control ${errors.plateNumber ? 'form-control-error' : ''}`} {...register('plateNumber', { required: t('plateNumberRequired') })} />
             {errors.plateNumber && <span className="form-error">{errors.plateNumber.message}</span>}
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="customerName">Customer Name</label>
-              <input id="customerName" className={`form-control ${errors.customerName ? 'form-control-error' : ''}`} {...register('customerName', { required: 'Customer name is required' })} />
+              <label className="form-label form-label-required" htmlFor="customerName">{t('customerNameLabel')}</label>
+              <input id="customerName" className={`form-control ${errors.customerName ? 'form-control-error' : ''}`} {...register('customerName', { required: t('customerNameRequired') })} />
               {errors.customerName && <span className="form-error">{errors.customerName.message}</span>}
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="phone">Phone Number</label>
-              <input id="phone" className={`form-control ${errors.phone ? 'form-control-error' : ''}`} {...register('phone', { required: 'Phone number is required' })} />
+              <label className="form-label form-label-required" htmlFor="phone">{t('phoneNumberLabel')}</label>
+              <input id="phone" className={`form-control ${errors.phone ? 'form-control-error' : ''}`} {...register('phone', { required: t('phoneNumberRequired') })} />
               {errors.phone && <span className="form-error">{errors.phone.message}</span>}
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="serviceId">Service</label>
+            <label className="form-label form-label-required" htmlFor="serviceId">{t('service')}</label>
             <select
               id="serviceId"
               className={`form-control ${errors.serviceId ? 'form-control-error' : ''}`}
-              {...register('serviceId', { required: 'Service is required' })}
+              {...register('serviceId', { required: t('serviceRequired') })}
               onChange={handleServiceChange}
               value={selectedServiceId}
             >
-              <option value="">Select a service</option>
+              <option value="">{t('selectService')}</option>
               {services.map((s) => <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.price)})</option>)}
             </select>
             {errors.serviceId && <span className="form-error">{errors.serviceId.message}</span>}
           </div>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="branchId">Branch</label>
-            <select id="branchId" className={`form-control ${errors.branchId ? 'form-control-error' : ''}`} {...register('branchId', { required: 'Branch is required' })}>
-              <option value="">Select a branch</option>
+            <label className="form-label form-label-required" htmlFor="branchId">{t('common:branch')}</label>
+            <select id="branchId" className={`form-control ${errors.branchId ? 'form-control-error' : ''}`} {...register('branchId', { required: t('branchRequired') })}>
+              <option value="">{t('selectBranch')}</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
             {errors.branchId && <span className="form-error">{errors.branchId.message}</span>}
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="amount">Amount</label>
-              <input id="amount" type="number" min="0" step="0.01" className={`form-control ${errors.amount ? 'form-control-error' : ''}`} {...register('amount', { required: 'Amount is required', min: { value: 0.01, message: 'Amount must be greater than zero' } })} />
+              <label className="form-label form-label-required" htmlFor="amount">{t('common:amount')}</label>
+              <input id="amount" type="number" min="0" step="0.01" className={`form-control ${errors.amount ? 'form-control-error' : ''}`} {...register('amount', { required: t('amountRequired'), min: { value: 0.01, message: t('amountMustBeGreaterThanZero') } })} />
               {errors.amount && <span className="form-error">{errors.amount.message}</span>}
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="paymentMethod">Payment Method</label>
+              <label className="form-label form-label-required" htmlFor="paymentMethod">{t('common:paymentMethod')}</label>
               <select id="paymentMethod" className="form-control" {...register('paymentMethod')}>
-                {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{t(m.key)}</option>)}
               </select>
             </div>
           </div>
@@ -288,9 +290,9 @@ function CarWash() {
         open={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
-        title="Delete Car Wash Transaction?"
-        message="This action cannot be undone."
-        confirmLabel="Delete"
+        title={t('deleteTransactionTitle')}
+        message={t('common:thisActionCannotBeUndone')}
+        confirmLabel={t('common:delete')}
       />
     </div>
   );

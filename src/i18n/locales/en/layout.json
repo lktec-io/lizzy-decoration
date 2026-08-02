@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
+    "products": "Products",
+    "inventory": "Inventory",
+    "purchases": "Purchases",
+    "salesPos": "Sales (POS)",
+    "returns": "Returns",
+    "expenses": "Expenses",
+    "carwash": "Car Wash",
+    "reports": "Reports",
+    "settings": "Settings",
+    "logout": "Logout",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
+  },
+  "navbar": {
+    "branch": "Branch",
+    "allBranches": "All Branches",
+    "searchPlaceholder": "Search products, customers, sales...",
+    "globalSearch": "Global search",
+    "noMatchesYet": "No matches yet",
+    "searchCoversUsersOnly": "Search currently covers Users only.",
+    "notifications": "Notifications",
+    "markAllRead": "Mark All Read",
+    "deleteAll": "Delete All",
+    "noNewNotifications": "No new notifications",
+    "markAsRead": "Mark as read",
+    "deleteNotification": "Delete notification",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "user": "User",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "themePicker": {
+    "changeTheme": "Change theme",
+    "themePicker": "Theme picker",
+    "appearance": "Appearance",
+    "chooseYourTheme": "Choose your theme"
+  }
+}

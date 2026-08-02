@@ -1,14 +1,18 @@
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiUpload } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as authService from '../../services/authService';
 import '../../styles/pages/CompanySettings.css';
 
 function Profile() {
+  const { t } = useTranslation('profile');
   const { user, updateUser, logout } = useAuth();
+  const { language, setLanguage, languages } = useLanguage();
   const navigate = useNavigate();
   const toast = useToast();
   const fileInputRef = useRef(null);
@@ -35,9 +39,9 @@ function Profile() {
     try {
       const updated = await authService.updateProfile(values);
       updateUser(updated);
-      toast.success('Profile updated successfully.');
+      toast.success(t('profileUpdated'));
     } catch (err) {
-      setProfileError(err.response?.data?.message || 'Failed to update profile.');
+      setProfileError(err.response?.data?.message || t('failedToUpdateProfile'));
     }
   };
 
@@ -51,9 +55,9 @@ function Profile() {
       const updated = await authService.uploadProfileAvatar(file);
       setAvatarPath(updated.avatar_path);
       updateUser(updated);
-      toast.success('Avatar updated successfully.');
+      toast.success(t('avatarUpdated'));
     } catch (err) {
-      setProfileError(err.response?.data?.message || 'Failed to upload avatar.');
+      setProfileError(err.response?.data?.message || t('failedToUploadAvatar'));
     } finally {
       setUploadingAvatar(false);
       event.target.value = '';
@@ -64,14 +68,14 @@ function Profile() {
     setPasswordError('');
     try {
       await authService.changePassword({ currentPassword: values.currentPassword, newPassword: values.newPassword });
-      toast.success('Password changed. You will be signed out shortly.');
+      toast.success(t('passwordChanged'));
       passwordForm.reset();
       setTimeout(async () => {
         await logout();
         navigate('/login', { replace: true });
       }, 2000);
     } catch (err) {
-      setPasswordError(err.response?.data?.message || 'Failed to change password.');
+      setPasswordError(err.response?.data?.message || t('failedToChangePassword'));
     }
   };
 
@@ -79,8 +83,8 @@ function Profile() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">My Profile</h1>
-          <p className="page-subtitle">Update your personal information and password</p>
+          <h1 className="page-title">{t('title')}</h1>
+          <p className="page-subtitle">{t('subtitle')}</p>
         </div>
       </div>
 
@@ -105,54 +109,54 @@ function Profile() {
               disabled={uploadingAvatar}
               onClick={() => fileInputRef.current?.click()}
             >
-              <FiUpload aria-hidden="true" /> Upload Avatar
+              <FiUpload aria-hidden="true" /> {t('uploadAvatar')}
             </button>
-            <p className="form-help mt-2">JPG, PNG or WEBP, up to 2MB.</p>
+            <p className="form-help mt-2">{t('avatarHelp')}</p>
           </div>
         </div>
       </div>
 
       <form onSubmit={profileForm.handleSubmit(onSubmitProfile)} noValidate>
         <div className="card mb-5">
-          <div className="card-header"><span className="card-title">Personal Information</span></div>
+          <div className="card-header"><span className="card-title">{t('personalInformation')}</span></div>
           <div className="card-body">
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="firstName">First Name</label>
+                <label className="form-label form-label-required" htmlFor="firstName">{t('firstName')}</label>
                 <input
                   id="firstName"
                   className={`form-control ${profileForm.formState.errors.firstName ? 'form-control-error' : ''}`}
-                  {...profileForm.register('firstName', { required: 'First name is required' })}
+                  {...profileForm.register('firstName', { required: t('firstNameRequired') })}
                 />
                 {profileForm.formState.errors.firstName && <span className="form-error">{profileForm.formState.errors.firstName.message}</span>}
               </div>
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="lastName">Last Name</label>
+                <label className="form-label form-label-required" htmlFor="lastName">{t('lastName')}</label>
                 <input
                   id="lastName"
                   className={`form-control ${profileForm.formState.errors.lastName ? 'form-control-error' : ''}`}
-                  {...profileForm.register('lastName', { required: 'Last name is required' })}
+                  {...profileForm.register('lastName', { required: t('lastNameRequired') })}
                 />
                 {profileForm.formState.errors.lastName && <span className="form-error">{profileForm.formState.errors.lastName.message}</span>}
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="phone">Phone Number</label>
+                <label className="form-label form-label-required" htmlFor="phone">{t('phoneNumber')}</label>
                 <input
                   id="phone"
                   className={`form-control ${profileForm.formState.errors.phone ? 'form-control-error' : ''}`}
-                  {...profileForm.register('phone', { required: 'Phone number is required' })}
+                  {...profileForm.register('phone', { required: t('phoneRequired') })}
                 />
                 {profileForm.formState.errors.phone && <span className="form-error">{profileForm.formState.errors.phone.message}</span>}
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="gender">Gender</label>
+                <label className="form-label" htmlFor="gender">{t('gender')}</label>
                 <select id="gender" className="form-control" {...profileForm.register('gender')}>
-                  <option value="">Prefer not to say</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                  <option value="">{t('preferNotToSay')}</option>
+                  <option value="male">{t('male')}</option>
+                  <option value="female">{t('female')}</option>
+                  <option value="other">{t('other')}</option>
                 </select>
               </div>
             </div>
@@ -160,7 +164,7 @@ function Profile() {
         </div>
         <div className="form-actions">
           <button type="submit" className={`btn btn-primary ${profileForm.formState.isSubmitting ? 'btn-loading' : ''}`} disabled={profileForm.formState.isSubmitting}>
-            Save Profile
+            {t('saveProfile')}
           </button>
         </div>
       </form>
@@ -169,44 +173,44 @@ function Profile() {
 
       <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} noValidate className="mt-5">
         <div className="card mb-5">
-          <div className="card-header"><span className="card-title">Change Password</span></div>
+          <div className="card-header"><span className="card-title">{t('changePassword')}</span></div>
           <div className="card-body">
             <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="currentPassword">Current Password</label>
+              <label className="form-label form-label-required" htmlFor="currentPassword">{t('currentPassword')}</label>
               <input
                 id="currentPassword"
                 type="password"
                 className={`form-control ${passwordForm.formState.errors.currentPassword ? 'form-control-error' : ''}`}
-                {...passwordForm.register('currentPassword', { required: 'Current password is required' })}
+                {...passwordForm.register('currentPassword', { required: t('currentPasswordRequired') })}
               />
               {passwordForm.formState.errors.currentPassword && <span className="form-error">{passwordForm.formState.errors.currentPassword.message}</span>}
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="newPassword">New Password</label>
+                <label className="form-label form-label-required" htmlFor="newPassword">{t('newPassword')}</label>
                 <input
                   id="newPassword"
                   type="password"
                   className={`form-control ${passwordForm.formState.errors.newPassword ? 'form-control-error' : ''}`}
                   {...passwordForm.register('newPassword', {
-                    required: 'New password is required',
+                    required: t('newPasswordRequired'),
                     pattern: {
                       value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
-                      message: 'Must be at least 8 characters with an uppercase letter, lowercase letter, number and symbol',
+                      message: t('passwordPolicy'),
                     },
                   })}
                 />
                 {passwordForm.formState.errors.newPassword && <span className="form-error">{passwordForm.formState.errors.newPassword.message}</span>}
               </div>
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="confirmPassword">Confirm New Password</label>
+                <label className="form-label form-label-required" htmlFor="confirmPassword">{t('confirmNewPassword')}</label>
                 <input
                   id="confirmPassword"
                   type="password"
                   className={`form-control ${passwordForm.formState.errors.confirmPassword ? 'form-control-error' : ''}`}
                   {...passwordForm.register('confirmPassword', {
-                    required: 'Please confirm your new password',
-                    validate: (value) => value === newPassword || 'Passwords do not match',
+                    required: t('confirmPasswordRequired'),
+                    validate: (value) => value === newPassword || t('passwordsDoNotMatch'),
                   })}
                 />
                 {passwordForm.formState.errors.confirmPassword && <span className="form-error">{passwordForm.formState.errors.confirmPassword.message}</span>}
@@ -216,10 +220,31 @@ function Profile() {
         </div>
         <div className="form-actions">
           <button type="submit" className={`btn btn-primary ${passwordForm.formState.isSubmitting ? 'btn-loading' : ''}`} disabled={passwordForm.formState.isSubmitting}>
-            Change Password
+            {t('changePassword')}
           </button>
         </div>
       </form>
+
+      <div className="card mb-5 mt-5">
+        <div className="card-header"><span className="card-title">{t('preferences')}</span></div>
+        <div className="card-body">
+          <label className="form-label" htmlFor="languageSelect">{t('language')}</label>
+          <p className="form-help mb-3">{t('languageDescription')}</p>
+          <div className="flex gap-3" role="radiogroup" aria-label={t('language')}>
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                className={`btn ${language === lang.code ? 'btn-primary' : 'btn-secondary'}`}
+                aria-pressed={language === lang.code}
+                onClick={() => setLanguage(lang.code)}
+              >
+                <span aria-hidden="true">{lang.flag}</span> {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

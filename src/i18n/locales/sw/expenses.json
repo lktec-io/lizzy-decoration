@@ -1,0 +1,34 @@
+{
+  "title": "Matumizi",
+  "subtitle": "Fuatilia matumizi ya uendeshaji wa tawi",
+  "newExpense": "Matumizi Mapya",
+  "totalFilteredResults": "Jumla (matokeo yaliyochujwa)",
+  "searchPlaceholder": "Tafuta kwa maelezo...",
+  "allCategories": "Aina Zote",
+  "recordedByColumn": "Aliyerekodi",
+  "editExpense": "Hariri matumizi",
+  "deleteExpense": "Futa matumizi",
+  "emptyList": "Hakuna matumizi yaliyorekodiwa bado",
+
+  "modalTitleEdit": "Hariri Matumizi",
+  "modalTitleNew": "Matumizi Mapya",
+  "saveChanges": "Hifadhi Mabadiliko",
+  "recordExpense": "Rekodi Matumizi",
+
+  "selectCategory": "Chagua aina",
+  "categoryRequired": "Aina ya matumizi inahitajika",
+  "selectBranch": "Chagua tawi",
+  "branchRequired": "Tawi linahitajika",
+  "amountRequired": "Kiasi kinahitajika",
+  "amountMustBeGreaterThanZero": "Kiasi lazima kiwe zaidi ya sifuri",
+  "dateRequired": "Tarehe inahitajika",
+
+  "expenseUpdated": "Matumizi yamesasishwa.",
+  "expenseRecorded": "Matumizi yamerekodiwa.",
+  "failedToSaveExpense": "Imeshindwa kuhifadhi matumizi.",
+  "expenseDeleted": "Matumizi yamefutwa.",
+  "failedToDeleteExpense": "Imeshindwa kufuta matumizi.",
+
+  "deleteExpenseTitle": "Futa Matumizi",
+  "deleteExpenseConfirm": "Futa matumizi haya ya {{category}} ya {{amount}}? Kitendo hiki hakiwezi kutenduliwa."
+}

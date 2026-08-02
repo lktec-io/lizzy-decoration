@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiSearch } from 'react-icons/fi';
 import * as saleService from '../../services/saleService';
 import * as returnService from '../../services/returnService';
@@ -12,22 +13,23 @@ function formatDateTime(isoString) {
   return new Date(isoString).toLocaleString('en-TZ', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-const REASONS = [
-  { value: 'damaged', label: 'Damaged Product' },
-  { value: 'wrong_item', label: 'Wrong Product Issued' },
-  { value: 'changed_mind', label: 'Customer Changed Mind' },
-  { value: 'expired', label: 'Expired Product' },
-  { value: 'other', label: 'Other' },
+const REASON_VALUES = [
+  { value: 'damaged', key: 'reasonDamaged' },
+  { value: 'wrong_item', key: 'reasonWrongItem' },
+  { value: 'changed_mind', key: 'reasonChangedMind' },
+  { value: 'expired', key: 'reasonExpired' },
+  { value: 'other', key: 'reasonOther' },
 ];
 
-const REFUND_METHODS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'mpesa', label: 'M-Pesa' },
-  { value: 'airtel_money', label: 'Airtel Money' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
+const REFUND_METHOD_VALUES = [
+  { value: 'cash', key: 'common:cash' },
+  { value: 'mpesa', key: 'refundMethodMpesa' },
+  { value: 'airtel_money', key: 'refundMethodAirtelMoney' },
+  { value: 'bank_transfer', key: 'common:bankTransfer' },
 ];
 
 function ReturnForm() {
+  const { t } = useTranslation('returns');
   const navigate = useNavigate();
   const toast = useToast();
   const canApprove = usePermission('returns.approve');
@@ -107,7 +109,7 @@ function ReturnForm() {
       quantity,
     }));
     if (items.length === 0) {
-      setFormError('Select at least one item to return');
+      setFormError(t('selectAtLeastOneItem'));
       return;
     }
 
@@ -120,13 +122,13 @@ function ReturnForm() {
       // still lands on a pending request awaiting manager sign-off.
       if (canApprove) {
         await returnService.approveReturn(created.id);
-        toast.success('Return approved — inventory and reports updated.');
+        toast.success(t('returnApprovedWithUpdate'));
       } else {
-        toast.success('Return request submitted for approval.');
+        toast.success(t('returnSubmittedForApproval'));
       }
       navigate(`/returns/${created.id}`, { replace: true });
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Failed to create the return request.');
+      setFormError(err.response?.data?.message || t('failedToCreateReturn'));
     } finally {
       setSubmitting(false);
     }
@@ -136,8 +138,8 @@ function ReturnForm() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">New Return</h1>
-          <p className="page-subtitle">Locate the original sale, choose items to return, and set a reason and refund method</p>
+          <h1 className="page-title">{t('formTitle')}</h1>
+          <p className="page-subtitle">{t('formSubtitle')}</p>
         </div>
       </div>
 
@@ -145,24 +147,24 @@ function ReturnForm() {
 
       {!sale ? (
         <div className="card">
-          <div className="card-header"><span className="card-title">Locate Original Sale</span></div>
+          <div className="card-header"><span className="card-title">{t('locateSaleCardTitle')}</span></div>
           <div className="card-body">
             <div className="form-row">
               <div className="form-group" style={{ flex: 1 }}>
-                <label className="form-label" htmlFor="saleQuery">Receipt Number, Barcode, or Product Name</label>
+                <label className="form-label" htmlFor="saleQuery">{t('saleSearchLabel')}</label>
                 <input
                   id="saleQuery"
                   className="form-control"
                   value={saleQuery}
                   onChange={(e) => setSaleQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && findSale()}
-                  placeholder="e.g. SAL-2026-000001, a barcode, or a product name"
+                  placeholder={t('saleSearchPlaceholder')}
                   autoFocus
                 />
               </div>
               <div className="form-group" style={{ alignSelf: 'flex-end' }}>
                 <button type="button" className={`btn btn-primary ${searching ? 'btn-loading' : ''}`} onClick={findSale}>
-                  <FiSearch aria-hidden="true" /> Find Sale
+                  <FiSearch aria-hidden="true" /> {t('findSale')}
                 </button>
               </div>
             </div>
@@ -171,18 +173,18 @@ function ReturnForm() {
               <div className="table-wrapper">
                 <table className="table">
                   <thead>
-                    <tr><th>Sale #</th><th>Date</th><th>Customer</th><th>Branch</th><th>Amount</th><th /></tr>
+                    <tr><th>{t('saleNumberColumn')}</th><th>{t('common:date')}</th><th>{t('common:customer')}</th><th>{t('common:branch')}</th><th>{t('common:amount')}</th><th /></tr>
                   </thead>
                   <tbody>
                     {searchResults.map((row) => (
                       <tr key={row.id}>
                         <td>{row.sale_number}</td>
                         <td>{formatDateTime(row.created_at)}</td>
-                        <td>{row.customer_first_name ? `${row.customer_first_name} ${row.customer_last_name || ''}`.trim() : 'Walk-in'}</td>
+                        <td>{row.customer_first_name ? `${row.customer_first_name} ${row.customer_last_name || ''}`.trim() : t('walkIn')}</td>
                         <td>{row.branch_name}</td>
                         <td>{formatCurrency(row.total_amount)}</td>
                         <td>
-                          <button type="button" className="btn btn-secondary btn-sm" onClick={() => selectSale(row.id)}>Select</button>
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={() => selectSale(row.id)}>{t('common:select')}</button>
                         </td>
                       </tr>
                     ))}
@@ -191,7 +193,7 @@ function ReturnForm() {
               </div>
             )}
             {searchResults.length === 0 && saleQuery && !searching && (
-              <p className="text-sm text-secondary mt-3">Search for a sale number to begin.</p>
+              <p className="text-sm text-secondary mt-3">{t('searchForSaleHint')}</p>
             )}
           </div>
         </div>
@@ -200,12 +202,12 @@ function ReturnForm() {
           <div className="card mb-5">
             <div className="card-header">
               <span className="card-title">{sale.sale_number}</span>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSale(null)}>Change Sale</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSale(null)}>{t('changeSale')}</button>
             </div>
             <div className="table-wrapper">
               <table className="table">
                 <thead>
-                  <tr><th /><th>Product</th><th>Sold Qty</th><th>Current Stock</th><th>Return Qty</th><th>Unit Price</th></tr>
+                  <tr><th /><th>{t('common:product')}</th><th>{t('soldQtyColumn')}</th><th>{t('currentStockColumn')}</th><th>{t('returnQtyColumn')}</th><th>{t('common:unitPrice')}</th></tr>
                 </thead>
                 <tbody>
                   {sale.items.map((item) => (
@@ -215,7 +217,7 @@ function ReturnForm() {
                           type="checkbox"
                           checked={Boolean(selectedItems[item.id])}
                           onChange={() => toggleItem(item)}
-                          aria-label={`Return ${item.product_name}`}
+                          aria-label={t('returnItemAriaLabel', { product: item.product_name })}
                         />
                       </td>
                       <td>{item.product_name}<div className="text-xs text-secondary">{item.product_code}</div></td>
@@ -241,19 +243,19 @@ function ReturnForm() {
           </div>
 
           <div className="card mb-5">
-            <div className="card-header"><span className="card-title">Return Details</span></div>
+            <div className="card-header"><span className="card-title">{t('returnDetailsCardTitle')}</span></div>
             <div className="card-body">
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label form-label-required" htmlFor="reason">Reason</label>
+                  <label className="form-label form-label-required" htmlFor="reason">{t('reason')}</label>
                   <select id="reason" className="form-control" value={reason} onChange={(e) => setReason(e.target.value)}>
-                    {REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    {REASON_VALUES.map((r) => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label form-label-required" htmlFor="refundMethod">Refund Method</label>
+                  <label className="form-label form-label-required" htmlFor="refundMethod">{t('refundMethodLabel')}</label>
                   <select id="refundMethod" className="form-control" value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)}>
-                    {REFUND_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    {REFUND_METHOD_VALUES.map((m) => <option key={m.value} value={m.value}>{t(m.key)}</option>)}
                   </select>
                 </div>
               </div>
@@ -261,9 +263,9 @@ function ReturnForm() {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn btn-secondary" onClick={() => navigate('/returns')}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('/returns')}>{t('common:cancel')}</button>
             <button type="submit" className={`btn btn-primary ${submitting ? 'btn-loading' : ''}`} disabled={submitting}>
-              {canApprove ? 'Approve Return' : 'Submit Return Request'}
+              {canApprove ? t('approveReturn') : t('submitReturnRequest')}
             </button>
           </div>
         </form>

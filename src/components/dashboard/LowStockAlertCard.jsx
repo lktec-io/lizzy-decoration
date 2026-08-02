@@ -1,4 +1,5 @@
 import { FiAlertTriangle } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import EmptyState from '../common/EmptyState';
 import Skeleton from '../common/Skeleton';
 import { formatNumber } from '../../utils/formatCurrency';
@@ -16,17 +17,18 @@ function severityOf(product) {
   return 'caution';
 }
 
-const SEVERITY_LABEL = { critical: 'Out of Stock', warning: 'Critical Low', caution: 'Low Stock' };
+const SEVERITY_LABEL_KEY = { critical: 'outOfStock', warning: 'criticalLow', caution: 'lowStock' };
 
 function LowStockAlertCard({ products, loading }) {
+  const { t } = useTranslation('dashboard');
   return (
     <div className="card">
-      <div className="card-header"><span className="card-title">Low Stock Alerts</span></div>
+      <div className="card-header"><span className="card-title">{t('lowStockAlerts')}</span></div>
       <div className="card-body">
         {loading ? (
           <Skeleton height={220} />
         ) : products.length === 0 ? (
-          <EmptyState icon={FiAlertTriangle} title="No low-stock products right now" />
+          <EmptyState icon={FiAlertTriangle} title={t('noLowStockProducts')} />
         ) : (
           <ul className="low-stock-list">
             {products.map((product) => {
@@ -37,10 +39,10 @@ function LowStockAlertCard({ products, loading }) {
                   <div className="low-stock-alert-body">
                     <div className="low-stock-alert-name">{product.product_name}</div>
                     <div className="low-stock-alert-meta">
-                      {product.branch_name} &middot; {formatNumber(product.quantity)} / {formatNumber(product.min_stock)} min
+                      {product.branch_name} &middot; {formatNumber(product.quantity)} / {formatNumber(product.min_stock)} {t('min')}
                     </div>
                   </div>
-                  <span className="low-stock-alert-tag">{SEVERITY_LABEL[severity]}</span>
+                  <span className="low-stock-alert-tag">{t(SEVERITY_LABEL_KEY[severity])}</span>
                 </li>
               );
             })}

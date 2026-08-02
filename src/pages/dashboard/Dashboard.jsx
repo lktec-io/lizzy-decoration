@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FiDollarSign, FiTrendingUp, FiShoppingBag, FiAlertTriangle, FiDroplet } from 'react-icons/fi';
 import KPICard from '../../components/dashboard/KPICard';
 import ChartCard from '../../components/dashboard/ChartCard';
@@ -17,14 +18,16 @@ import { formatCurrency, formatNumber } from '../../utils/formatCurrency';
 import '../../styles/pages/Dashboard.css';
 
 // The 6 KPI cards for this sprint's sales-motion-focused dashboard. Each
-// accent is a distinct hue with no repeats.
+// accent is a distinct hue with no repeats. labelKey/subtitleKey resolve
+// through the `dashboard` i18n namespace at render time (translation keys
+// can't be evaluated in this module-level array).
 const KPI_DEFS = [
-  { key: 'todaySales', label: "Today's Sales", icon: FiDollarSign, formatter: formatCurrency, subtitle: 'Across all branches', accent: '#10B981' },
-  { key: 'monthlySales', label: 'Monthly Sales', icon: FiTrendingUp, formatter: formatCurrency, subtitle: 'This calendar month', accent: '#2F6BFF' },
-  { key: 'monthlyProfit', label: 'Monthly Profit', icon: FiTrendingUp, formatter: formatCurrency, subtitle: 'Net of cost this month', accent: '#8B5CF6' },
-  { key: 'todayOrders', label: "Today's Orders", icon: FiShoppingBag, formatter: formatNumber, subtitle: 'Completed sales today', accent: '#F59E0B' },
-  { key: 'lowStockCount', label: 'Low Stock Products', icon: FiAlertTriangle, formatter: formatNumber, subtitle: 'Need restocking', accent: '#EF4444' },
-  { key: 'carwashRevenue', label: "Today's Car Wash", icon: FiDroplet, formatter: formatCurrency, subtitle: 'Service revenue today', accent: '#06B6D4' },
+  { key: 'todaySales', labelKey: 'kpis.todaySales', icon: FiDollarSign, formatter: formatCurrency, subtitleKey: 'kpis.todaySalesSubtitle', accent: '#10B981' },
+  { key: 'monthlySales', labelKey: 'kpis.monthlySales', icon: FiTrendingUp, formatter: formatCurrency, subtitleKey: 'kpis.monthlySalesSubtitle', accent: '#2F6BFF' },
+  { key: 'monthlyProfit', labelKey: 'kpis.monthlyProfit', icon: FiTrendingUp, formatter: formatCurrency, subtitleKey: 'kpis.monthlyProfitSubtitle', accent: '#8B5CF6' },
+  { key: 'todayOrders', labelKey: 'kpis.todayOrders', icon: FiShoppingBag, formatter: formatNumber, subtitleKey: 'kpis.todayOrdersSubtitle', accent: '#F59E0B' },
+  { key: 'lowStockCount', labelKey: 'kpis.lowStockProducts', icon: FiAlertTriangle, formatter: formatNumber, subtitleKey: 'kpis.lowStockProductsSubtitle', accent: '#EF4444' },
+  { key: 'carwashRevenue', labelKey: 'kpis.todayCarwash', icon: FiDroplet, formatter: formatCurrency, subtitleKey: 'kpis.todayCarwashSubtitle', accent: '#06B6D4' },
 ];
 
 // Only the business-critical analytics for a sales system: how much came
@@ -69,6 +72,7 @@ function computeTodayTrend(salesTrend) {
 }
 
 function Dashboard() {
+  const { t } = useTranslation('dashboard');
   const chartColors = useChartTheme();
   const [kpis, setKpis] = useState(null);
   const [charts, setCharts] = useState({});
@@ -102,7 +106,7 @@ function Dashboard() {
         setTodayTrend(computeTodayTrend(chartResults[CHART_TYPES.length]));
         setLowStockProducts(lowStockResult.status === 'fulfilled' ? lowStockResult.value.items : []);
       } catch {
-        if (!cancelled) setError('Failed to load dashboard data.');
+        if (!cancelled) setError(t('failedToLoad'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -112,6 +116,7 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- data load is mount-only; t's reference is stable across language changes (i18next memoizes it per instance), and re-fetching dashboard data on a language switch would be wasteful and wrong
   }, []);
 
   const topProducts = charts['top-products'] || [];
@@ -126,14 +131,14 @@ function Dashboard() {
 
       <motion.div variants={STAGGER_CONTAINER} initial="hidden" animate="show">
         <motion.div className="kpi-grid" variants={KPI_CARD_STAGGER}>
-          {KPI_DEFS.map(({ key, label, icon, formatter, subtitle, accent }) => (
+          {KPI_DEFS.map(({ key, labelKey, icon, formatter, subtitleKey, accent }) => (
             <motion.div key={key} variants={KPI_CARD_ITEM}>
               <KPICard
                 icon={icon}
-                label={label}
+                label={t(labelKey)}
                 value={loading || !kpis ? 0 : kpis[key]}
                 formatter={formatter}
-                subtitle={subtitle}
+                subtitle={t(subtitleKey)}
                 accent={accent}
                 trend={key === 'todaySales' ? todayTrend : null}
               />
@@ -146,20 +151,20 @@ function Dashboard() {
         </motion.div>
 
         <motion.div className="dashboard-bottom-grid" variants={STAGGER_ITEM}>
-          <ChartCard title="Revenue vs Expenses" loading={loading} empty={revenueVsExpenses.length === 0} emptyMessage="No financial activity yet">
+          <ChartCard title={t('revenueVsExpenses')} loading={loading} empty={revenueVsExpenses.length === 0} emptyMessage={t('noFinancialActivity')}>
             <BarChart
               labels={revenueVsExpenses.map((d) => new Date(d.date).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short' }))}
               datasets={[
-                { label: 'Revenue', values: revenueVsExpenses.map((d) => d.revenue), color: chartColors.success },
-                { label: 'Expenses', values: revenueVsExpenses.map((d) => d.expenses), color: chartColors.danger },
-                { label: 'Profit', values: revenueVsExpenses.map((d) => d.profit), color: chartColors.info },
+                { label: t('revenue'), values: revenueVsExpenses.map((d) => d.revenue), color: chartColors.success },
+                { label: t('expenses'), values: revenueVsExpenses.map((d) => d.expenses), color: chartColors.danger },
+                { label: t('profit'), values: revenueVsExpenses.map((d) => d.profit), color: chartColors.info },
               ]}
               valueFormatter={formatCurrency}
               height={280}
             />
           </ChartCard>
 
-          <ChartCard title="Payment Status" loading={loading} empty={paymentStatus.length === 0} emptyMessage="No payments recorded yet">
+          <ChartCard title={t('paymentStatus')} loading={loading} empty={paymentStatus.length === 0} emptyMessage={t('noPaymentsRecorded')}>
             <DoughnutChart data={paymentStatus.map((p) => ({ label: p.name, value: Number(p.value) }))} valueFormatter={formatCurrency} />
           </ChartCard>
         </motion.div>

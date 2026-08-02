@@ -1,0 +1,34 @@
+{
+  "title": "Expenses",
+  "subtitle": "Track branch operating expenses",
+  "newExpense": "New Expense",
+  "totalFilteredResults": "Total (filtered results)",
+  "searchPlaceholder": "Search by description...",
+  "allCategories": "All Categories",
+  "recordedByColumn": "Recorded By",
+  "editExpense": "Edit expense",
+  "deleteExpense": "Delete expense",
+  "emptyList": "No expenses recorded yet",
+
+  "modalTitleEdit": "Edit Expense",
+  "modalTitleNew": "New Expense",
+  "saveChanges": "Save Changes",
+  "recordExpense": "Record Expense",
+
+  "selectCategory": "Select a category",
+  "categoryRequired": "Category is required",
+  "selectBranch": "Select a branch",
+  "branchRequired": "Branch is required",
+  "amountRequired": "Amount is required",
+  "amountMustBeGreaterThanZero": "Amount must be greater than zero",
+  "dateRequired": "Date is required",
+
+  "expenseUpdated": "Expense updated.",
+  "expenseRecorded": "Expense recorded.",
+  "failedToSaveExpense": "Failed to save expense.",
+  "expenseDeleted": "Expense deleted.",
+  "failedToDeleteExpense": "Failed to delete expense.",
+
+  "deleteExpenseTitle": "Delete Expense",
+  "deleteExpenseConfirm": "Delete this {{category}} expense of {{amount}}? This cannot be undone."
+}

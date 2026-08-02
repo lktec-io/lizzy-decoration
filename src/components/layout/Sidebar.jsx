@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   FiGrid, FiUserCheck, FiTruck,
   FiBox, FiArchive, FiShoppingCart, FiDollarSign, FiRotateCcw,
@@ -47,22 +48,26 @@ const NAV_LABEL_VARIANT = {
 // RequirePermission guards use — a role only sees the modules its seeded
 // permissions actually unlock. Dashboard has no gate: every role is seeded
 // with dashboard.view.
+// labelKey resolves through the `layout` i18n namespace at render time
+// (translation keys can't be evaluated in this module-level array, which
+// exists before any React/i18n context is available).
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: FiGrid, end: true },
-  { to: '/customers', label: 'Customers', icon: FiUserCheck, requiredPermission: 'customers.view' },
-  { to: '/suppliers', label: 'Suppliers', icon: FiTruck, requiredPermission: 'suppliers.view' },
-  { to: '/products', label: 'Products', icon: FiBox, requiredPermission: 'products.view' },
-  { to: '/inventory', label: 'Inventory', icon: FiArchive, requiredPermission: 'inventory.view' },
-  { to: '/purchases', label: 'Purchases', icon: FiShoppingCart, requiredPermission: 'purchases.view' },
-  { to: '/pos', label: 'Sales (POS)', icon: FiDollarSign, requiredPermission: 'sales.view' },
-  { to: '/returns', label: 'Returns', icon: FiRotateCcw, requiredPermission: 'returns.view' },
-  { to: '/expenses', label: 'Expenses', icon: FiDollarSign, requiredPermission: 'expenses.view' },
-  { to: '/carwash', label: 'Car Wash', icon: FiDroplet, requiredPermission: 'carwash.view' },
-  { to: '/reports', label: 'Reports', icon: FiBarChart2, requiredPermission: 'reports.view' },
-  { to: '/settings/company', label: 'Settings', icon: FiSettings, requiredPermission: ['company.manage', 'settings.view'] },
+  { to: '/', labelKey: 'nav.dashboard', icon: FiGrid, end: true },
+  { to: '/customers', labelKey: 'nav.customers', icon: FiUserCheck, requiredPermission: 'customers.view' },
+  { to: '/suppliers', labelKey: 'nav.suppliers', icon: FiTruck, requiredPermission: 'suppliers.view' },
+  { to: '/products', labelKey: 'nav.products', icon: FiBox, requiredPermission: 'products.view' },
+  { to: '/inventory', labelKey: 'nav.inventory', icon: FiArchive, requiredPermission: 'inventory.view' },
+  { to: '/purchases', labelKey: 'nav.purchases', icon: FiShoppingCart, requiredPermission: 'purchases.view' },
+  { to: '/pos', labelKey: 'nav.salesPos', icon: FiDollarSign, requiredPermission: 'sales.view' },
+  { to: '/returns', labelKey: 'nav.returns', icon: FiRotateCcw, requiredPermission: 'returns.view' },
+  { to: '/expenses', labelKey: 'nav.expenses', icon: FiDollarSign, requiredPermission: 'expenses.view' },
+  { to: '/carwash', labelKey: 'nav.carwash', icon: FiDroplet, requiredPermission: 'carwash.view' },
+  { to: '/reports', labelKey: 'nav.reports', icon: FiBarChart2, requiredPermission: 'reports.view' },
+  { to: '/settings/company', labelKey: 'nav.settings', icon: FiSettings, requiredPermission: ['company.manage', 'settings.view'] },
 ];
 
 function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
+  const { t } = useTranslation('layout');
   const { logout, hasPermission } = useAuth();
   const { company } = useCompany();
   const navigate = useNavigate();
@@ -135,7 +140,7 @@ function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
         initial={openKey === 0 ? false : 'hidden'}
         animate="visible"
       >
-        {visibleNavItems.map(({ to, label, icon: Icon, end }) => (
+        {visibleNavItems.map(({ to, labelKey, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -157,7 +162,7 @@ function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
                 </motion.span>
                 {!collapsed && (
                   <motion.span className="sidebar-link-label" variants={NAV_LABEL_VARIANT}>
-                    {label}
+                    {t(labelKey)}
                   </motion.span>
                 )}
               </>
@@ -169,13 +174,13 @@ function Sidebar({ collapsed, onToggle, onNavigate, isOpen }) {
       <div className="sidebar-footer">
         <button type="button" className="sidebar-link sidebar-logout" onClick={handleLogout}>
           <FiLogOut className="sidebar-link-icon" aria-hidden="true" />
-          {!collapsed && <span className="sidebar-link-label">Logout</span>}
+          {!collapsed && <span className="sidebar-link-label">{t('nav.logout')}</span>}
         </button>
         <button
           type="button"
           className="sidebar-collapse-toggle"
           onClick={onToggle}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
         >
           {collapsed ? <FiChevronsRight /> : <FiChevronsLeft />}
         </button>

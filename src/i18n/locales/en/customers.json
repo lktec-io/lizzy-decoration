@@ -1,0 +1,59 @@
+{
+  "title": "Customers",
+  "subtitle": "Manage customers and their purchase/return history",
+  "newCustomer": "New Customer",
+  "editCustomer": "Edit Customer",
+  "searchPlaceholder": "Search by name, phone, code...",
+  "emptyList": "No customers found",
+  "viewCustomerAria": "View customer",
+  "editCustomerAria": "Edit customer",
+  "deactivateCustomerAria": "Deactivate customer",
+  "activateCustomerAria": "Activate customer",
+  "deleteCustomerAria": "Delete customer",
+  "saveChanges": "Save Changes",
+  "createCustomer": "Create Customer",
+  "deleteCustomerTitle": "Delete Customer?",
+  "backToCustomers": "Back to Customers",
+  "totalOrders": "Total Orders",
+  "totalSpent": "Total Spent",
+  "totalReturns": "Total Returns",
+  "purchaseHistory": "Purchase History",
+  "returnHistory": "Return History",
+  "noPurchasesYet": "No purchases recorded yet",
+  "noReturnsYet": "No returns recorded yet",
+  "columns": {
+    "customer": "Customer",
+    "type": "Type",
+    "saleNumber": "Sale #",
+    "returnNumber": "Return #",
+    "reason": "Reason",
+    "refund": "Refund"
+  },
+  "toast": {
+    "customerUpdated": "Customer updated.",
+    "customerRegistered": "Customer registered.",
+    "failedToSaveCustomer": "Failed to save customer.",
+    "customerActivated": "Customer activated.",
+    "customerDeactivated": "Customer deactivated.",
+    "failedToUpdateStatus": "Failed to update customer status.",
+    "customerDeleted": "Customer permanently deleted.",
+    "failedToDeleteCustomer": "Failed to delete customer."
+  },
+  "customerType": {
+    "walk_in": "Walk-in",
+    "retail": "Retail",
+    "wholesale": "Wholesale",
+    "vip": "VIP",
+    "business": "Business"
+  },
+  "form": {
+    "fullName": "Full Name",
+    "fullNameRequired": "Customer name is required.",
+    "phoneNumber": "Phone Number",
+    "phoneRequired": "Phone number is required.",
+    "email": "Email",
+    "invalidEmail": "Invalid email.",
+    "address": "Address",
+    "notes": "Notes"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "notFound": {
+    "code": "404",
+    "title": "Ukurasa haukupatikana",
+    "message": "Ukurasa unaoutafuta haupo au umehamishwa.",
+    "backToDashboard": "Rudi kwenye Dashibodi"
+  },
+  "forbidden": {
+    "code": "403",
+    "title": "Ufikiaji Umekatazwa",
+    "message": "Huna ruhusa ya kuona ukurasa huu. Wasiliana na msimamizi wako iwapo unaamini hii ni kosa.",
+    "backToDashboard": "Rudi kwenye Dashibodi"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "title": "Car Wash",
+  "subtitle": "Register vehicles, record services, and receive payment",
+  "newService": "New Service",
+  "revenueFilteredResults": "Revenue (filtered results)",
+  "searchPlaceholder": "Search by plate number, customer, phone...",
+  "allServices": "All Services",
+  "plateNumberColumn": "Plate Number",
+  "service": "Service",
+  "paymentColumn": "Payment",
+  "servedByColumn": "Served By",
+  "editTransaction": "Edit car wash transaction",
+  "deleteTransaction": "Delete car wash transaction",
+  "emptyList": "No car wash transactions recorded yet",
+
+  "modalTitleEdit": "Edit Car Wash Transaction",
+  "modalTitleNew": "New Car Wash Service",
+  "saveChanges": "Save Changes",
+  "recordAndReceivePayment": "Record & Receive Payment",
+
+  "carwashUpdated": "Car wash transaction updated.",
+  "carwashRecorded": "Car wash transaction recorded.",
+  "failedToSaveTransaction": "Failed to save car wash transaction.",
+  "carwashDeleted": "Car wash transaction permanently deleted.",
+  "failedToDeleteTransaction": "Failed to delete car wash transaction.",
+  "deleteTransactionTitle": "Delete Car Wash Transaction?",
+
+  "plateNumberLabel": "Vehicle Plate Number",
+  "plateNumberRequired": "Plate number is required",
+  "customerNameLabel": "Customer Name",
+  "customerNameRequired": "Customer name is required",
+  "phoneNumberLabel": "Phone Number",
+  "phoneNumberRequired": "Phone number is required",
+  "selectService": "Select a service",
+  "serviceRequired": "Service is required",
+  "selectBranch": "Select a branch",
+  "branchRequired": "Branch is required",
+  "amountRequired": "Amount is required",
+  "amountMustBeGreaterThanZero": "Amount must be greater than zero",
+
+  "paymentMethodMpesa": "M-Pesa",
+  "paymentMethodAirtelMoney": "Airtel Money"
+}

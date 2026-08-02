@@ -1,0 +1,59 @@
+{
+  "title": "Wateja",
+  "subtitle": "Simamia wateja na historia yao ya ununuzi/marejesho",
+  "newCustomer": "Mteja Mpya",
+  "editCustomer": "Hariri Mteja",
+  "searchPlaceholder": "Tafuta kwa jina, simu, nambari...",
+  "emptyList": "Hakuna wateja waliopatikana",
+  "viewCustomerAria": "Tazama mteja",
+  "editCustomerAria": "Hariri mteja",
+  "deactivateCustomerAria": "Zima mteja",
+  "activateCustomerAria": "Washa mteja",
+  "deleteCustomerAria": "Futa mteja",
+  "saveChanges": "Hifadhi Mabadiliko",
+  "createCustomer": "Unda Mteja",
+  "deleteCustomerTitle": "Futa Mteja?",
+  "backToCustomers": "Rudi kwa Wateja",
+  "totalOrders": "Jumla ya Oda",
+  "totalSpent": "Jumla Iliyotumika",
+  "totalReturns": "Jumla ya Marejesho",
+  "purchaseHistory": "Historia ya Ununuzi",
+  "returnHistory": "Historia ya Marejesho",
+  "noPurchasesYet": "Hakuna ununuzi uliorekodiwa bado",
+  "noReturnsYet": "Hakuna marejesho yaliyorekodiwa bado",
+  "columns": {
+    "customer": "Mteja",
+    "type": "Aina",
+    "saleNumber": "Namba ya Mauzo",
+    "returnNumber": "Namba ya Marejesho",
+    "reason": "Sababu",
+    "refund": "Kiasi Kilichorejeshwa"
+  },
+  "toast": {
+    "customerUpdated": "Mteja amesasishwa.",
+    "customerRegistered": "Mteja amesajiliwa.",
+    "failedToSaveCustomer": "Imeshindwa kuhifadhi mteja.",
+    "customerActivated": "Mteja ameamilishwa.",
+    "customerDeactivated": "Mteja amezimwa.",
+    "failedToUpdateStatus": "Imeshindwa kusasisha hali ya mteja.",
+    "customerDeleted": "Mteja amefutwa kabisa.",
+    "failedToDeleteCustomer": "Imeshindwa kufuta mteja."
+  },
+  "customerType": {
+    "walk_in": "Mteja wa Kawaida",
+    "retail": "Rejareja",
+    "wholesale": "Jumla",
+    "vip": "VIP",
+    "business": "Biashara"
+  },
+  "form": {
+    "fullName": "Jina Kamili",
+    "fullNameRequired": "Jina la mteja linahitajika.",
+    "phoneNumber": "Namba ya Simu",
+    "phoneRequired": "Namba ya simu inahitajika.",
+    "email": "Barua Pepe",
+    "invalidEmail": "Barua pepe si sahihi.",
+    "address": "Anwani",
+    "notes": "Maelezo"
+  }
+}

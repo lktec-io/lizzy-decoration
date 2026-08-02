@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiUpload, FiEye, FiEyeOff } from 'react-icons/fi';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import { useToast } from '../../hooks/useToast';
@@ -10,8 +11,6 @@ import * as branchService from '../../services/branchService';
 import '../../styles/pages/CompanySettings.css';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-const PASSWORD_POLICY_MESSAGE =
-  'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number and a symbol.';
 
 // A single name field is friendlier for a cashier/store-keeper-facing admin
 // form; the users table still stores first_name/last_name separately, so
@@ -40,6 +39,7 @@ function extractErrorMessage(err, fallback) {
 }
 
 function UserForm() {
+  const { t } = useTranslation('users');
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -124,14 +124,14 @@ function UserForm() {
     try {
       if (isEdit) {
         await userService.updateUser(id, payload);
-        toast.success('User updated successfully.');
+        toast.success(t('userUpdated'));
       } else {
         const created = await userService.createUser({ ...payload, password: values.password, status: values.status });
-        toast.success('User created successfully.');
+        toast.success(t('userCreated'));
         navigate(`/settings/users/${created.id}/edit`, { replace: true });
       }
     } catch (err) {
-      setFormError(extractErrorMessage(err, 'Failed to save user.'));
+      setFormError(extractErrorMessage(err, t('failedToSaveUser')));
     }
   };
 
@@ -143,9 +143,9 @@ function UserForm() {
     try {
       const user = await userService.uploadUserAvatar(id, file);
       setAvatarPath(user.avatar_path);
-      toast.success('Avatar updated.');
+      toast.success(t('avatarUpdated'));
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Failed to upload avatar.');
+      setFormError(err.response?.data?.message || t('failedToUploadAvatar'));
     } finally {
       setUploadingAvatar(false);
       event.target.value = '';
@@ -155,17 +155,17 @@ function UserForm() {
   const handleResetPassword = async () => {
     setResetPasswordError('');
     if (!PASSWORD_REGEX.test(resetPasswordValue)) {
-      setResetPasswordError(PASSWORD_POLICY_MESSAGE);
+      setResetPasswordError(t('passwordPolicy'));
       return;
     }
 
     setResetPasswordSubmitting(true);
     try {
       await userService.resetUserPassword(id, resetPasswordValue);
-      toast.success('Password reset successfully.');
+      toast.success(t('passwordReset'));
       setResetPasswordValue('');
     } catch (err) {
-      setResetPasswordError(err.response?.data?.message || 'Failed to reset password.');
+      setResetPasswordError(err.response?.data?.message || t('failedToResetPassword'));
     } finally {
       setResetPasswordSubmitting(false);
     }
@@ -179,8 +179,8 @@ function UserForm() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">{isEdit ? 'Edit User' : 'New User'}</h1>
-          <p className="page-subtitle">{isEdit ? 'Update account details, role and branch access' : 'Create a new staff account'}</p>
+          <h1 className="page-title">{isEdit ? t('editUserTitle') : t('newUserTitle')}</h1>
+          <p className="page-subtitle">{isEdit ? t('editUserSubtitle') : t('newUserSubtitle')}</p>
         </div>
       </div>
 
@@ -190,7 +190,7 @@ function UserForm() {
         <div className="card mb-5">
           <div className="card-body flex items-center gap-4">
             <div className="avatar-preview">
-              {avatarPath ? <img src={avatarPath} alt="User avatar" loading="lazy" /> : <span className="company-logo-placeholder">No Photo</span>}
+              {avatarPath ? <img src={avatarPath} alt={t('userAvatarAlt')} loading="lazy" /> : <span className="company-logo-placeholder">{t('noPhoto')}</span>}
             </div>
             <div>
               <input
@@ -206,7 +206,7 @@ function UserForm() {
                 disabled={uploadingAvatar}
                 onClick={() => avatarInputRef.current?.click()}
               >
-                <FiUpload aria-hidden="true" /> Upload Photo
+                <FiUpload aria-hidden="true" /> {t('uploadPhoto')}
               </button>
             </div>
           </div>
@@ -215,17 +215,17 @@ function UserForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="card mb-5">
-          <div className="card-header"><span className="card-title">Personal Information</span></div>
+          <div className="card-header"><span className="card-title">{t('personalInformation')}</span></div>
           <div className="card-body">
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="fullName">Full Name</label>
-                <input id="fullName" className={`form-control ${errors.fullName ? 'form-control-error' : ''}`} {...register('fullName', { required: 'Full name is required' })} />
+                <label className="form-label form-label-required" htmlFor="fullName">{t('fullName')}</label>
+                <input id="fullName" className={`form-control ${errors.fullName ? 'form-control-error' : ''}`} {...register('fullName', { required: t('fullNameRequired') })} />
                 {errors.fullName && <span className="form-error">{errors.fullName.message}</span>}
               </div>
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="phone">Phone Number</label>
-                <input id="phone" className={`form-control ${errors.phone ? 'form-control-error' : ''}`} {...register('phone', { required: 'Phone number is required' })} />
+                <label className="form-label form-label-required" htmlFor="phone">{t('phoneNumber')}</label>
+                <input id="phone" className={`form-control ${errors.phone ? 'form-control-error' : ''}`} {...register('phone', { required: t('phoneRequired') })} />
                 {errors.phone && <span className="form-error">{errors.phone.message}</span>}
               </div>
             </div>
@@ -233,22 +233,22 @@ function UserForm() {
         </div>
 
         <div className="card mb-5">
-          <div className="card-header"><span className="card-title">Account</span></div>
+          <div className="card-header"><span className="card-title">{t('accountSection')}</span></div>
           <div className="card-body">
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="email">Email</label>
+                <label className="form-label form-label-required" htmlFor="email">{t('common:email')}</label>
                 <input
                   id="email"
                   type="email"
                   className={`form-control ${errors.email ? 'form-control-error' : ''}`}
-                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' } })}
+                  {...register('email', { required: t('emailRequired'), pattern: { value: /^\S+@\S+\.\S+$/, message: t('invalidEmail') } })}
                 />
                 {errors.email && <span className="form-error">{errors.email.message}</span>}
               </div>
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="username">Username</label>
-                <input id="username" className={`form-control ${errors.username ? 'form-control-error' : ''}`} {...register('username', { required: 'Username is required' })} />
+                <label className="form-label form-label-required" htmlFor="username">{t('username')}</label>
+                <input id="username" className={`form-control ${errors.username ? 'form-control-error' : ''}`} {...register('username', { required: t('usernameRequired') })} />
                 {errors.username && <span className="form-error">{errors.username.message}</span>}
               </div>
             </div>
@@ -256,42 +256,42 @@ function UserForm() {
             {!isEdit && (
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label form-label-required" htmlFor="password">Password</label>
+                  <label className="form-label form-label-required" htmlFor="password">{t('password')}</label>
                   <div className="form-password-field">
                     <input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       className={`form-control ${errors.password ? 'form-control-error' : ''}`}
-                      {...register('password', { required: 'Password is required', pattern: { value: PASSWORD_REGEX, message: PASSWORD_POLICY_MESSAGE } })}
+                      {...register('password', { required: t('passwordRequired'), pattern: { value: PASSWORD_REGEX, message: t('passwordPolicy') } })}
                     />
                     <button
                       type="button"
                       className="form-password-toggle"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('hidePassword') : t('showPassword')}
                     >
                       {showPassword ? <FiEyeOff /> : <FiEye />}
                     </button>
                   </div>
-                  {errors.password ? <span className="form-error">{errors.password.message}</span> : <span className="form-help">{PASSWORD_POLICY_MESSAGE}</span>}
+                  {errors.password ? <span className="form-error">{errors.password.message}</span> : <span className="form-help">{t('passwordPolicy')}</span>}
                 </div>
                 <div className="form-group">
-                  <label className="form-label form-label-required" htmlFor="confirmPassword">Confirm Password</label>
+                  <label className="form-label form-label-required" htmlFor="confirmPassword">{t('confirmPassword')}</label>
                   <div className="form-password-field">
                     <input
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       className={`form-control ${errors.confirmPassword ? 'form-control-error' : ''}`}
                       {...register('confirmPassword', {
-                        required: 'Please confirm the password',
-                        validate: (value) => value === watch('password') || 'Passwords do not match',
+                        required: t('confirmPasswordRequired'),
+                        validate: (value) => value === watch('password') || t('passwordsDoNotMatch'),
                       })}
                     />
                     <button
                       type="button"
                       className="form-password-toggle"
                       onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showConfirmPassword ? t('hidePassword') : t('showPassword')}
                     >
                       {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
                     </button>
@@ -304,24 +304,24 @@ function UserForm() {
         </div>
 
         <div className="card mb-5">
-          <div className="card-header"><span className="card-title">Role &amp; Branch Access</span></div>
+          <div className="card-header"><span className="card-title">{t('roleBranchSection')}</span></div>
           <div className="card-body">
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label form-label-required" htmlFor="roleId">Role</label>
-                <select id="roleId" className={`form-control ${errors.roleId ? 'form-control-error' : ''}`} {...register('roleId', { required: 'Role is required' })}>
-                  <option value="">Select a role</option>
+                <label className="form-label form-label-required" htmlFor="roleId">{t('role')}</label>
+                <select id="roleId" className={`form-control ${errors.roleId ? 'form-control-error' : ''}`} {...register('roleId', { required: t('roleRequired') })}>
+                  <option value="">{t('selectRole')}</option>
                   {roles.map((role) => (
                     <option key={role.id} value={role.id}>{role.name}</option>
                   ))}
                 </select>
                 {errors.roleId && <span className="form-error">{errors.roleId.message}</span>}
-                <span className="form-help">The role determines exactly what this user can see and do — there is no separate permission assignment step.</span>
+                <span className="form-help">{t('roleHelp')}</span>
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="branchId">Branch</label>
+                <label className="form-label" htmlFor="branchId">{t('common:branch')}</label>
                 <select id="branchId" className="form-control" {...register('branchId')}>
-                  <option value="">None (Super Admin / unassigned)</option>
+                  <option value="">{t('noBranchOption')}</option>
                   {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>{branch.name}</option>
                   ))}
@@ -330,10 +330,10 @@ function UserForm() {
             </div>
             {!isEdit && (
               <div className="form-group">
-                <label className="form-label" htmlFor="status">Status</label>
+                <label className="form-label" htmlFor="status">{t('common:status')}</label>
                 <select id="status" className="form-control" {...register('status')}>
-                  <option value="active">Active</option>
-                  <option value="suspended">Suspended</option>
+                  <option value="active">{t('common:active')}</option>
+                  <option value="suspended">{t('suspended')}</option>
                 </select>
               </div>
             )}
@@ -341,19 +341,19 @@ function UserForm() {
         </div>
 
         <div className="form-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('/settings/users')}>Cancel</button>
+          <button type="button" className="btn btn-secondary" onClick={() => navigate('/settings/users')}>{t('common:cancel')}</button>
           <button type="submit" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
-            {isEdit ? 'Save Changes' : 'Create User'}
+            {isEdit ? t('saveChanges') : t('createUser')}
           </button>
         </div>
       </form>
 
       {isEdit && (
         <div className="card mt-5">
-          <div className="card-header"><span className="card-title">Reset Password</span></div>
+          <div className="card-header"><span className="card-title">{t('resetPasswordSection')}</span></div>
           <div className="card-body">
             <div className="form-group">
-              <label className="form-label" htmlFor="resetPassword">New Password</label>
+              <label className="form-label" htmlFor="resetPassword">{t('newPassword')}</label>
               <div className="form-password-field">
                 <input
                   id="resetPassword"
@@ -366,12 +366,12 @@ function UserForm() {
                   type="button"
                   className="form-password-toggle"
                   onClick={() => setShowResetPassword((prev) => !prev)}
-                  aria-label={showResetPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showResetPassword ? t('hidePassword') : t('showPassword')}
                 >
                   {showResetPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
-              {resetPasswordError ? <span className="form-error">{resetPasswordError}</span> : <span className="form-help">{PASSWORD_POLICY_MESSAGE}</span>}
+              {resetPasswordError ? <span className="form-error">{resetPasswordError}</span> : <span className="form-help">{t('passwordPolicy')}</span>}
             </div>
             <button
               type="button"
@@ -379,7 +379,7 @@ function UserForm() {
               disabled={resetPasswordSubmitting}
               onClick={handleResetPassword}
             >
-              Reset Password
+              {t('resetPasswordSection')}
             </button>
           </div>
         </div>

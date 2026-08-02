@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   FiSearch, FiBell, FiChevronDown, FiCheck, FiCheckCircle, FiTrash2, FiUser, FiLogOut, FiInbox, FiSettings,
   FiInfo, FiAlertTriangle, FiAlertCircle,
@@ -154,6 +155,7 @@ function useGlobalSearch() {
 }
 
 function Navbar({ onMenuClick, isOpen }) {
+  const { t } = useTranslation('layout');
   const now = useClock();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -167,9 +169,9 @@ function Navbar({ onMenuClick, isOpen }) {
 
   const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const timeLabel = now.toLocaleTimeString('en-TZ', { hour: '2-digit', minute: '2-digit' });
-  const displayName = user ? `${user.first_name} ${user.last_name}` : 'User';
+  const displayName = user ? `${user.first_name} ${user.last_name}` : t('navbar.user');
   const initial = user ? user.first_name.charAt(0).toUpperCase() : 'U';
-  const branchLabel = user?.branch_name || 'All Branches';
+  const branchLabel = user?.branch_name || t('navbar.allBranches');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -223,7 +225,7 @@ function Navbar({ onMenuClick, isOpen }) {
         removed from the DOM after first render, so there's no mount/unmount
         race.
       */}
-      <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={isOpen ? 'Close menu' : 'Open menu'}>
+      <button type="button" className="navbar-menu-btn" onClick={onMenuClick} aria-label={isOpen ? t('navbar.closeMenu') : t('navbar.openMenu')}>
         <span className={`navbar-hamburger ${isOpen ? 'is-open' : ''}`}>
           <span className="navbar-hamburger-bar" />
           <span className="navbar-hamburger-bar" />
@@ -236,7 +238,7 @@ function Navbar({ onMenuClick, isOpen }) {
       )}
 
       <div className="navbar-branch">
-        <span className="navbar-branch-label">Branch</span>
+        <span className="navbar-branch-label">{t('navbar.branch')}</span>
         <span className="navbar-branch-value">{branchLabel}</span>
       </div>
 
@@ -245,8 +247,8 @@ function Navbar({ onMenuClick, isOpen }) {
         <input
           type="search"
           className="navbar-search-input"
-          placeholder="Search products, customers, sales..."
-          aria-label="Global search"
+          placeholder={t('navbar.searchPlaceholder')}
+          aria-label={t('navbar.globalSearch')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => setOpen(true)}
@@ -255,7 +257,7 @@ function Navbar({ onMenuClick, isOpen }) {
           {open && query.trim() && (
             <motion.div className="navbar-search-results glass-dropdown" {...DROPDOWN_MOTION}>
               {users.length === 0 ? (
-                <EmptyState icon={FiSearch} title="No matches yet" description="Search currently covers Users only." />
+                <EmptyState icon={FiSearch} title={t('navbar.noMatchesYet')} description={t('navbar.searchCoversUsersOnly')} />
               ) : (
                 users.map((result) => (
                   <button
@@ -285,7 +287,7 @@ function Navbar({ onMenuClick, isOpen }) {
         <ThemePicker />
 
         <div className="navbar-notifications" ref={notificationsRef}>
-          <button type="button" className="navbar-icon-btn" aria-label="Notifications" onClick={notifications.toggleOpen}>
+          <button type="button" className="navbar-icon-btn" aria-label={t('navbar.notifications')} onClick={notifications.toggleOpen}>
             {/* Ringing only every ~5s (not continuously) and only while there's
                 something unread to draw attention to — see the CSS keyframe
                 for the idle/ring split. */}
@@ -310,25 +312,25 @@ function Navbar({ onMenuClick, isOpen }) {
             {notifications.open && (
               <motion.div className="navbar-notification-panel glass-dropdown" {...DROPDOWN_MOTION}>
                 <div className="navbar-notification-header">
-                  <span>Notifications</span>
+                  <span>{t('navbar.notifications')}</span>
                   <div className="navbar-notification-header-actions">
                     {notifications.unreadCount > 0 && (
-                      <button type="button" className="btn btn-ghost btn-sm" aria-label="Mark all as read" onClick={notifications.markAllRead}>
-                        <FiCheckCircle aria-hidden="true" /> <span className="navbar-notification-action-label">Mark All Read</span>
+                      <button type="button" className="btn btn-ghost btn-sm" aria-label={t('navbar.markAllRead')} onClick={notifications.markAllRead}>
+                        <FiCheckCircle aria-hidden="true" /> <span className="navbar-notification-action-label">{t('navbar.markAllRead')}</span>
                       </button>
                     )}
                     {notifications.recent.length > 0 && (
-                      <button type="button" className="btn btn-ghost btn-sm navbar-notification-clear-all" aria-label="Delete all notifications" onClick={notifications.dismissAll}>
-                        <FiTrash2 aria-hidden="true" /> <span className="navbar-notification-action-label">Delete All</span>
+                      <button type="button" className="btn btn-ghost btn-sm navbar-notification-clear-all" aria-label={t('navbar.deleteAll')} onClick={notifications.dismissAll}>
+                        <FiTrash2 aria-hidden="true" /> <span className="navbar-notification-action-label">{t('navbar.deleteAll')}</span>
                       </button>
                     )}
                   </div>
                 </div>
                 <div className="navbar-notification-list">
                   {notifications.loading ? (
-                    <div className="navbar-notification-empty"><span className="spinner" aria-label="Loading" /></div>
+                    <div className="navbar-notification-empty"><span className="spinner" aria-label={t('common:loading')} /></div>
                   ) : notifications.recent.length === 0 ? (
-                    <EmptyState icon={FiInbox} title="No new notifications" />
+                    <EmptyState icon={FiInbox} title={t('navbar.noNewNotifications')} />
                   ) : (
                     <AnimatePresence initial={false}>
                       {notifications.recent.map((n) => {
@@ -360,7 +362,7 @@ function Navbar({ onMenuClick, isOpen }) {
                                   type="button"
                                   className="btn btn-ghost btn-icon navbar-notification-action"
                                   onClick={() => notifications.markRead(n.id)}
-                                  aria-label="Mark as read"
+                                  aria-label={t('navbar.markAsRead')}
                                 >
                                   <FiCheck />
                                 </button>
@@ -369,7 +371,7 @@ function Navbar({ onMenuClick, isOpen }) {
                                 type="button"
                                 className="btn btn-ghost btn-icon navbar-notification-action"
                                 onClick={() => notifications.dismiss(n.id)}
-                                aria-label="Delete notification"
+                                aria-label={t('navbar.deleteNotification')}
                               >
                                 <FiTrash2 />
                               </button>
@@ -415,18 +417,18 @@ function Navbar({ onMenuClick, isOpen }) {
                     className="navbar-user-panel-item"
                     onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}
                   >
-                    <FiUser aria-hidden="true" /> Profile
+                    <FiUser aria-hidden="true" /> {t('navbar.profile')}
                   </button>
                   <button
                     type="button"
                     className="navbar-user-panel-item"
                     onClick={() => { setUserMenuOpen(false); navigate('/settings/company'); }}
                   >
-                    <FiSettings aria-hidden="true" /> Settings
+                    <FiSettings aria-hidden="true" /> {t('navbar.settings')}
                   </button>
                   <div className="navbar-user-panel-divider" />
                   <button type="button" className="navbar-user-panel-item navbar-user-panel-item-danger" onClick={handleLogout}>
-                    <FiLogOut aria-hidden="true" /> Logout
+                    <FiLogOut aria-hidden="true" /> {t('navbar.logout')}
                   </button>
                 </div>
               </motion.div>

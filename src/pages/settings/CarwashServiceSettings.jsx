@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { FiPlus, FiEdit2, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
@@ -14,6 +15,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import '../../styles/pages/Notifications.css';
 
 function CarwashServiceSettings() {
+  const { t } = useTranslation('settings');
   const canManage = usePermission('settings.manage');
   const toast = useToast();
 
@@ -52,15 +54,15 @@ function CarwashServiceSettings() {
     try {
       if (editing) {
         await settingsService.updateCarwashService(editing.id, { ...payload, status: editing.status });
-        toast.success('Car wash package updated.');
+        toast.success(t('packageUpdated'));
       } else {
         await settingsService.createCarwashService(payload);
-        toast.success('Car wash package created.');
+        toast.success(t('packageCreated'));
       }
       setModalOpen(false);
       refetch();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save car wash package.');
+      setError(err.response?.data?.message || t('failedToSavePackage'));
     }
   };
 
@@ -69,34 +71,38 @@ function CarwashServiceSettings() {
     const nextStatus = service.status === 'active' ? 'inactive' : 'active';
     try {
       await settingsService.setCarwashServiceStatus(service.id, nextStatus);
-      toast.success(nextStatus === 'active' ? 'Package activated.' : 'Package deactivated.');
+      toast.success(nextStatus === 'active' ? t('packageActivated') : t('packageDeactivated'));
       refetch();
     } catch (err) {
-      setActionError(err.response?.data?.message || 'Failed to update package status.');
+      setActionError(err.response?.data?.message || t('failedToUpdatePackageStatus'));
     }
   };
 
   const columns = [
-    { key: 'name', label: 'Package Name' },
-    { key: 'price', label: 'Price', render: (row) => formatCurrency(row.price) },
+    { key: 'name', label: t('packageName') },
+    { key: 'price', label: t('common:price'), render: (row) => formatCurrency(row.price) },
     {
       key: 'status',
-      label: 'Status',
-      render: (row) => <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status}</span>,
+      label: t('common:status'),
+      render: (row) => (
+        <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>
+          {row.status === 'active' ? t('common:active') : t('common:inactive')}
+        </span>
+      ),
     },
     {
       key: 'actions',
       label: '',
       render: (row) => canManage && (
         <div className="table-actions">
-          <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit package">
+          <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label={t('editPackageAria')}>
             <FiEdit2 />
           </button>
           <button
             type="button"
             className="btn btn-ghost btn-icon"
             onClick={() => handleToggleStatus(row)}
-            aria-label={row.status === 'active' ? 'Deactivate package' : 'Activate package'}
+            aria-label={row.status === 'active' ? t('deactivatePackage') : t('activatePackage')}
           >
             {row.status === 'active' ? <FiToggleRight /> : <FiToggleLeft />}
           </button>
@@ -109,13 +115,13 @@ function CarwashServiceSettings() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Car Wash Packages</h1>
-          <p className="page-subtitle">Manage the wash services offered and their prices</p>
+          <h1 className="page-title">{t('carwashTitle')}</h1>
+          <p className="page-subtitle">{t('carwashSubtitle')}</p>
         </div>
         {canManage && (
           <div className="page-actions">
             <button type="button" className="btn btn-primary" onClick={openCreate}>
-              <FiPlus aria-hidden="true" /> New Package
+              <FiPlus aria-hidden="true" /> {t('newPackage')}
             </button>
           </div>
         )}
@@ -127,22 +133,22 @@ function CarwashServiceSettings() {
 
       <div className="card">
         <div className="table-toolbar">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search by name..." />
+          <SearchInput value={search} onChange={setSearch} placeholder={t('searchByName')} />
         </div>
-        <Table columns={columns} rows={items} loading={loading} emptyMessage="No car wash packages found" />
+        <Table columns={columns} rows={items} loading={loading} emptyMessage={t('noCarwashPackagesFound')} />
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>
 
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit Package' : 'New Package'}
+        title={editing ? t('editPackage') : t('newPackage')}
         size="sm"
         footer={
           <>
-            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t('common:cancel')}</button>
             <button type="submit" form="carwash-service-form" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
-              {editing ? 'Save Changes' : 'Create Package'}
+              {editing ? t('saveChanges') : t('createPackage')}
             </button>
           </>
         }
@@ -150,18 +156,18 @@ function CarwashServiceSettings() {
         {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
         <form id="carwash-service-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="name">Package Name</label>
-            <input id="name" className={`form-control ${errors.name ? 'form-control-error' : ''}`} {...register('name', { required: 'Package name is required' })} />
+            <label className="form-label form-label-required" htmlFor="name">{t('packageName')}</label>
+            <input id="name" className={`form-control ${errors.name ? 'form-control-error' : ''}`} {...register('name', { required: t('packageNameRequired') })} />
             {errors.name && <span className="form-error">{errors.name.message}</span>}
           </div>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="price">Price</label>
+            <label className="form-label form-label-required" htmlFor="price">{t('common:price')}</label>
             <input
               id="price"
               type="number"
               step="0.01"
               className={`form-control ${errors.price ? 'form-control-error' : ''}`}
-              {...register('price', { required: 'Price is required', min: { value: 0.01, message: 'Must be positive' } })}
+              {...register('price', { required: t('priceRequired'), min: { value: 0.01, message: t('priceMustBePositive') } })}
             />
             {errors.price && <span className="form-error">{errors.price.message}</span>}
           </div>

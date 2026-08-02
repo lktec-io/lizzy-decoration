@@ -1,0 +1,59 @@
+{
+  "title": "Wasambazaji",
+  "subtitle": "Simamia wasambazaji na historia yao ya ununuzi",
+  "newSupplier": "Msambazaji Mpya",
+  "editSupplier": "Hariri Msambazaji",
+  "searchPlaceholder": "Tafuta kwa jina, simu, barua pepe...",
+  "emptyList": "Hakuna wasambazaji waliopatikana",
+  "viewSupplierAria": "Tazama msambazaji",
+  "editSupplierAria": "Hariri msambazaji",
+  "deactivateSupplierAria": "Zima msambazaji",
+  "activateSupplierAria": "Washa msambazaji",
+  "deleteSupplierAria": "Futa msambazaji",
+  "saveChanges": "Hifadhi Mabadiliko",
+  "createSupplier": "Unda Msambazaji",
+  "deleteSupplierTitle": "Futa Msambazaji?",
+  "noPhoneOnFile": "Hakuna nambari ya simu iliyowekwa",
+  "tinLabel": "TIN: {{tin}}",
+  "backToSuppliers": "Rudi kwa Wasambazaji",
+  "recordPayment": "Rekodi Malipo",
+  "savePayment": "Hifadhi Malipo",
+  "totalPurchased": "Jumla Iliyonunuliwa",
+  "totalPaid": "Jumla Iliyolipwa",
+  "outstandingBalance": "Salio Linalodaiwa",
+  "outstandingBalanceLabel": "Salio linalodaiwa: {{amount}}",
+  "purchaseHistory": "Historia ya Ununuzi",
+  "noPurchasesYet": "Hakuna ununuzi uliorekodiwa bado",
+  "amountRequired": "Kiasi kinahitajika",
+  "mustBePositive": "Lazima kiwe kiasi chanya",
+  "columns": {
+    "supplierName": "Jina la Msambazaji",
+    "purchaseNumber": "Namba ya Ununuzi"
+  },
+  "paymentMethods": {
+    "mpesa": "M-Pesa",
+    "airtel_money": "Airtel Money"
+  },
+  "toast": {
+    "supplierUpdated": "Msambazaji amesasishwa.",
+    "supplierCreated": "Msambazaji ameundwa.",
+    "failedToSaveSupplier": "Imeshindwa kuhifadhi msambazaji.",
+    "supplierActivated": "Msambazaji ameamilishwa.",
+    "supplierDeactivated": "Msambazaji amezimwa.",
+    "failedToUpdateStatus": "Imeshindwa kusasisha hali ya msambazaji.",
+    "supplierDeleted": "Msambazaji amefutwa kabisa.",
+    "failedToDeleteSupplier": "Imeshindwa kufuta msambazaji.",
+    "paymentRecorded": "Malipo yamerekodiwa.",
+    "failedToRecordPayment": "Imeshindwa kurekodi malipo."
+  },
+  "form": {
+    "supplierName": "Jina la Msambazaji",
+    "supplierNameRequired": "Jina la msambazaji linahitajika.",
+    "phoneNumber": "Namba ya Simu",
+    "phoneRequired": "Namba ya simu inahitajika.",
+    "email": "Barua Pepe",
+    "invalidEmail": "Barua pepe si sahihi.",
+    "address": "Anwani",
+    "notes": "Maelezo"
+  }
+}

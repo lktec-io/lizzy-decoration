@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Modal from '../../components/common/Modal';
@@ -14,6 +15,7 @@ import '../../styles/pages/Notifications.css';
 // hand-edited through a UI — this page is role bookkeeping (name/description)
 // only, not a permission-assignment tool.
 function RoleList() {
+  const { t } = useTranslation('roles');
   const canCreate = usePermission('roles.create');
   const canEdit = usePermission('roles.edit');
   const canDelete = usePermission('roles.delete');
@@ -67,31 +69,31 @@ function RoleList() {
     try {
       if (editingRole) {
         await roleService.updateRole(editingRole.id, values);
-        toast.success('Role updated.');
+        toast.success(t('roleUpdated'));
       } else {
         await roleService.createRole(values);
-        toast.success('Role created.');
+        toast.success(t('roleCreated'));
       }
       setModalOpen(false);
       loadRoles();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save role.');
+      setError(err.response?.data?.message || t('failedToSaveRole'));
     }
   };
 
   const handleDelete = async () => {
     await roleService.deleteRole(pendingDelete.id);
-    toast.success('Role deleted.');
+    toast.success(t('roleDeleted'));
     loadRoles();
   };
 
   const columns = [
-    { key: 'name', label: 'Role Name' },
-    { key: 'description', label: 'Description', render: (row) => row.description || '—' },
+    { key: 'name', label: t('roleName') },
+    { key: 'description', label: t('common:description'), render: (row) => row.description || '—' },
     {
       key: 'is_system',
-      label: 'Type',
-      render: (row) => <span className={`badge ${row.is_system ? 'badge-info' : 'badge-neutral'}`}>{row.is_system ? 'System' : 'Custom'}</span>,
+      label: t('typeColumn'),
+      render: (row) => <span className={`badge ${row.is_system ? 'badge-info' : 'badge-neutral'}`}>{row.is_system ? t('typeSystem') : t('typeCustom')}</span>,
     },
     {
       key: 'actions',
@@ -99,12 +101,12 @@ function RoleList() {
       render: (row) => (
         <div className="table-actions">
           {canEdit && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit role">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label={t('editRoleAria')}>
               <FiEdit2 />
             </button>
           )}
           {canDelete && !row.is_system && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete role">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label={t('deleteRoleAria')}>
               <FiTrash2 />
             </button>
           )}
@@ -117,13 +119,13 @@ function RoleList() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Roles</h1>
-          <p className="page-subtitle">Manage roles and what each one can access</p>
+          <h1 className="page-title">{t('title')}</h1>
+          <p className="page-subtitle">{t('subtitle')}</p>
         </div>
         {canCreate && (
           <div className="page-actions">
             <button type="button" className="btn btn-primary" onClick={openCreate}>
-              <FiPlus aria-hidden="true" /> New Role
+              <FiPlus aria-hidden="true" /> {t('newRole')}
             </button>
           </div>
         )}
@@ -132,19 +134,19 @@ function RoleList() {
       <SettingsTabs />
 
       <div className="card">
-        <Table columns={columns} rows={roles} loading={loading} emptyMessage="No roles found" />
+        <Table columns={columns} rows={roles} loading={loading} emptyMessage={t('noRolesFound')} />
       </div>
 
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingRole ? 'Edit Role' : 'New Role'}
+        title={editingRole ? t('editRole') : t('newRole')}
         size="sm"
         footer={
           <>
-            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t('common:cancel')}</button>
             <button type="submit" form="role-form" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
-              {editingRole ? 'Save Changes' : 'Create Role'}
+              {editingRole ? t('saveChanges') : t('createRole')}
             </button>
           </>
         }
@@ -152,18 +154,18 @@ function RoleList() {
         {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
         <form id="role-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="name">Role Name</label>
+            <label className="form-label form-label-required" htmlFor="name">{t('roleName')}</label>
             <input
               id="name"
               className={`form-control ${errors.name ? 'form-control-error' : ''}`}
               disabled={editingRole?.is_system}
-              {...register('name', { required: 'Role name is required' })}
+              {...register('name', { required: t('roleNameRequired') })}
             />
             {errors.name && <span className="form-error">{errors.name.message}</span>}
-            {editingRole?.is_system && <span className="form-help">System role names cannot be changed.</span>}
+            {editingRole?.is_system && <span className="form-help">{t('systemRoleNameLocked')}</span>}
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="description">Description</label>
+            <label className="form-label" htmlFor="description">{t('common:description')}</label>
             <textarea id="description" className="form-control" {...register('description')} />
           </div>
         </form>
@@ -173,9 +175,9 @@ function RoleList() {
         open={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
-        title="Delete role"
-        message={pendingDelete ? `Delete the "${pendingDelete.name}" role? This is blocked if any users are still assigned to it.` : ''}
-        confirmLabel="Delete"
+        title={t('deleteRoleTitle')}
+        message={pendingDelete ? t('deleteRoleMessage', { name: pendingDelete.name }) : ''}
+        confirmLabel={t('common:delete')}
       />
     </div>
   );

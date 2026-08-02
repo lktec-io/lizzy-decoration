@@ -1,0 +1,43 @@
+{
+  "title": "Uoshaji Magari",
+  "subtitle": "Sajili magari, rekodi huduma, na pokea malipo",
+  "newService": "Huduma Mpya",
+  "revenueFilteredResults": "Mapato (matokeo yaliyochujwa)",
+  "searchPlaceholder": "Tafuta kwa namba ya gari, mteja, simu...",
+  "allServices": "Huduma Zote",
+  "plateNumberColumn": "Namba ya Gari",
+  "service": "Huduma",
+  "paymentColumn": "Malipo",
+  "servedByColumn": "Aliyehudumia",
+  "editTransaction": "Hariri muamala wa uoshaji gari",
+  "deleteTransaction": "Futa muamala wa uoshaji gari",
+  "emptyList": "Hakuna miamala ya uoshaji magari iliyorekodiwa bado",
+
+  "modalTitleEdit": "Hariri Muamala wa Uoshaji Gari",
+  "modalTitleNew": "Huduma Mpya ya Uoshaji Gari",
+  "saveChanges": "Hifadhi Mabadiliko",
+  "recordAndReceivePayment": "Rekodi na Pokea Malipo",
+
+  "carwashUpdated": "Muamala wa uoshaji gari umesasishwa.",
+  "carwashRecorded": "Muamala wa uoshaji gari umerekodiwa.",
+  "failedToSaveTransaction": "Imeshindwa kuhifadhi muamala wa uoshaji gari.",
+  "carwashDeleted": "Muamala wa uoshaji gari umefutwa kabisa.",
+  "failedToDeleteTransaction": "Imeshindwa kufuta muamala wa uoshaji gari.",
+  "deleteTransactionTitle": "Futa Muamala wa Uoshaji Gari?",
+
+  "plateNumberLabel": "Namba ya Gari",
+  "plateNumberRequired": "Namba ya gari inahitajika",
+  "customerNameLabel": "Jina la Mteja",
+  "customerNameRequired": "Jina la mteja linahitajika",
+  "phoneNumberLabel": "Namba ya Simu",
+  "phoneNumberRequired": "Namba ya simu inahitajika",
+  "selectService": "Chagua huduma",
+  "serviceRequired": "Huduma inahitajika",
+  "selectBranch": "Chagua tawi",
+  "branchRequired": "Tawi linahitajika",
+  "amountRequired": "Kiasi kinahitajika",
+  "amountMustBeGreaterThanZero": "Kiasi lazima kiwe zaidi ya sifuri",
+
+  "paymentMethodMpesa": "M-Pesa",
+  "paymentMethodAirtelMoney": "Airtel Money"
+}

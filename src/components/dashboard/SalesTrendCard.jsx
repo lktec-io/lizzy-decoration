@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FiTrendingUp } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import LineChart from '../charts/LineChart';
 import Skeleton from '../common/Skeleton';
 import EmptyState from '../common/EmptyState';
@@ -7,10 +8,10 @@ import * as dashboardService from '../../services/dashboardService';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const RANGES = [
-  { key: 'today', label: 'Today' },
-  { key: 'week', label: 'Week' },
-  { key: 'month', label: 'Month' },
-  { key: 'year', label: 'Year' },
+  { key: 'today', labelKey: 'ranges.today' },
+  { key: 'week', labelKey: 'ranges.week' },
+  { key: 'month', labelKey: 'ranges.month' },
+  { key: 'year', labelKey: 'ranges.year' },
 ];
 
 function formatLabel(dateStr, range) {
@@ -21,6 +22,7 @@ function formatLabel(dateStr, range) {
 }
 
 function SalesTrendCard() {
+  const { t } = useTranslation('dashboard');
   const [range, setRange] = useState('week');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,8 +47,8 @@ function SalesTrendCard() {
   return (
     <div className="card dashboard-trend-card">
       <div className="card-header">
-        <span className="card-title">Sales Trend</span>
-        <div className="dashboard-range-tabs" role="tablist" aria-label="Sales trend range">
+        <span className="card-title">{t('salesTrend')}</span>
+        <div className="dashboard-range-tabs" role="tablist" aria-label={t('salesTrendRangeLabel')}>
           {RANGES.map((r) => (
             <button
               key={r.key}
@@ -56,7 +58,7 @@ function SalesTrendCard() {
               className={`dashboard-range-tab ${range === r.key ? 'dashboard-range-tab-active' : ''}`}
               onClick={() => setRange(r.key)}
             >
-              {r.label}
+              {t(r.labelKey)}
             </button>
           ))}
         </div>
@@ -66,7 +68,7 @@ function SalesTrendCard() {
           <Skeleton height={280} />
         ) : data.length === 0 ? (
           <div className="flex items-center justify-center" style={{ height: 280 }}>
-            <EmptyState icon={FiTrendingUp} title="No sales recorded for this period" />
+            <EmptyState icon={FiTrendingUp} title={t('noSalesForPeriod')} />
           </div>
         ) : (
           <LineChart

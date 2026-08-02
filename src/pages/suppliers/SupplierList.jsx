@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { FiPlus, FiEdit2, FiEye, FiToggleLeft, FiToggleRight, FiTruck, FiTrash2 } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
@@ -18,6 +19,7 @@ import '../../styles/components/ViewToggle.css';
 const DEFAULT_VALUES = { name: '', phone: '', email: '', address: '', notes: '' };
 
 function SupplierList() {
+  const { t } = useTranslation('suppliers');
   const navigate = useNavigate();
   const canCreate = usePermission('suppliers.create');
   const canEdit = usePermission('suppliers.edit');
@@ -66,15 +68,15 @@ function SupplierList() {
     try {
       if (editing) {
         await supplierService.updateSupplier(editing.id, values);
-        toast.success('Supplier updated.');
+        toast.success(t('toast.supplierUpdated'));
       } else {
         await supplierService.createSupplier(values);
-        toast.success('Supplier created.');
+        toast.success(t('toast.supplierCreated'));
       }
       setModalOpen(false);
       refetch();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save supplier.');
+      setError(err.response?.data?.message || t('toast.failedToSaveSupplier'));
     }
   };
 
@@ -83,57 +85,57 @@ function SupplierList() {
     const nextStatus = supplier.status === 'active' ? 'inactive' : 'active';
     try {
       await supplierService.changeSupplierStatus(supplier.id, nextStatus);
-      toast.success(nextStatus === 'active' ? 'Supplier activated.' : 'Supplier deactivated.');
+      toast.success(nextStatus === 'active' ? t('toast.supplierActivated') : t('toast.supplierDeactivated'));
       refetch();
     } catch (err) {
-      setActionError(err.response?.data?.message || 'Failed to update supplier status.');
+      setActionError(err.response?.data?.message || t('toast.failedToUpdateStatus'));
     }
   };
 
   const handleDelete = async () => {
     try {
       await supplierService.deleteSupplier(pendingDelete.id);
-      toast.success('Supplier permanently deleted.');
+      toast.success(t('toast.supplierDeleted'));
       refetch();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete supplier.');
+      toast.error(err.response?.data?.message || t('toast.failedToDeleteSupplier'));
     }
   };
 
   const columns = [
-    { key: 'name', label: 'Supplier Name' },
-    { key: 'phone', label: 'Phone', render: (row) => row.phone || '—' },
-    { key: 'email', label: 'Email', render: (row) => row.email || '—' },
+    { key: 'name', label: t('columns.supplierName') },
+    { key: 'phone', label: t('common:phone'), render: (row) => row.phone || '—' },
+    { key: 'email', label: t('common:email'), render: (row) => row.email || '—' },
     {
       key: 'status',
-      label: 'Status',
-      render: (row) => <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status}</span>,
+      label: t('common:status'),
+      render: (row) => <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status === 'active' ? t('common:active') : t('common:inactive')}</span>,
     },
     {
       key: 'actions',
       label: '',
       render: (row) => (
         <div className="table-actions">
-          <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/suppliers/${row.id}`)} aria-label="View supplier">
+          <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/suppliers/${row.id}`)} aria-label={t('viewSupplierAria')}>
             <FiEye />
           </button>
           {canEdit && (
             <>
-              <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit supplier">
+              <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label={t('editSupplierAria')}>
                 <FiEdit2 />
               </button>
               <button
                 type="button"
                 className="btn btn-ghost btn-icon"
                 onClick={() => handleToggleStatus(row)}
-                aria-label={row.status === 'active' ? 'Deactivate supplier' : 'Activate supplier'}
+                aria-label={row.status === 'active' ? t('deactivateSupplierAria') : t('activateSupplierAria')}
               >
                 {row.status === 'active' ? <FiToggleRight /> : <FiToggleLeft />}
               </button>
             </>
           )}
           {canDelete && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete supplier">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label={t('deleteSupplierAria')}>
               <FiTrash2 />
             </button>
           )}
@@ -146,13 +148,13 @@ function SupplierList() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Suppliers</h1>
-          <p className="page-subtitle">Manage suppliers and their purchase history</p>
+          <h1 className="page-title">{t('title')}</h1>
+          <p className="page-subtitle">{t('subtitle')}</p>
         </div>
         {canCreate && (
           <div className="page-actions">
             <button type="button" className="btn btn-primary" onClick={openCreate}>
-              <FiPlus aria-hidden="true" /> New Supplier
+              <FiPlus aria-hidden="true" /> {t('newSupplier')}
             </button>
           </div>
         )}
@@ -162,12 +164,12 @@ function SupplierList() {
 
       <div className="card">
         <div className="table-toolbar">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search by name, phone, email..." />
+          <SearchInput value={search} onChange={setSearch} placeholder={t('searchPlaceholder')} />
           <ViewToggle view={view} onChange={setView} />
         </div>
 
         {view === 'list' ? (
-          <Table columns={columns} rows={items} loading={loading} emptyMessage="No suppliers found" />
+          <Table columns={columns} rows={items} loading={loading} emptyMessage={t('emptyList')} />
         ) : (
           <div className="management-grid">
             {items.map((row) => (
@@ -176,7 +178,7 @@ function SupplierList() {
                   <div className="management-grid-card-media">
                     <FiTruck aria-hidden="true" />
                   </div>
-                  <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status}</span>
+                  <span className={`badge ${row.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>{row.status === 'active' ? t('common:active') : t('common:inactive')}</span>
                 </div>
                 <div>
                   <div className="management-grid-card-title">{row.name}</div>
@@ -184,29 +186,29 @@ function SupplierList() {
                 </div>
                 <div className="management-grid-card-body">
                   <span>{row.phone || '—'}</span>
-                  <span>{row.tin_number ? `TIN: ${row.tin_number}` : ''}</span>
+                  <span>{row.tin_number ? t('tinLabel', { tin: row.tin_number }) : ''}</span>
                 </div>
                 <div className="management-grid-card-footer">
-                  <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/suppliers/${row.id}`)} aria-label="View supplier">
+                  <button type="button" className="btn btn-ghost btn-icon" onClick={() => navigate(`/suppliers/${row.id}`)} aria-label={t('viewSupplierAria')}>
                     <FiEye />
                   </button>
                   {canEdit && (
                     <div className="table-actions">
-                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit supplier">
+                      <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label={t('editSupplierAria')}>
                         <FiEdit2 />
                       </button>
                       <button
                         type="button"
                         className="btn btn-ghost btn-icon"
                         onClick={() => handleToggleStatus(row)}
-                        aria-label={row.status === 'active' ? 'Deactivate supplier' : 'Activate supplier'}
+                        aria-label={row.status === 'active' ? t('deactivateSupplierAria') : t('activateSupplierAria')}
                       >
                         {row.status === 'active' ? <FiToggleRight /> : <FiToggleLeft />}
                       </button>
                     </div>
                   )}
                   {canDelete && (
-                    <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label="Delete supplier">
+                    <button type="button" className="btn btn-ghost btn-icon" onClick={() => setPendingDelete(row)} aria-label={t('deleteSupplierAria')}>
                       <FiTrash2 />
                     </button>
                   )}
@@ -215,7 +217,7 @@ function SupplierList() {
             ))}
             {!loading && items.length === 0 && (
               <div className="text-sm text-secondary" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 'var(--space-8)' }}>
-                No suppliers found
+                {t('emptyList')}
               </div>
             )}
           </div>
@@ -227,13 +229,13 @@ function SupplierList() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit Supplier' : 'New Supplier'}
+        title={editing ? t('editSupplier') : t('newSupplier')}
         size="md"
         footer={
           <>
-            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t('common:cancel')}</button>
             <button type="submit" form="supplier-form" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
-              {editing ? 'Save Changes' : 'Create Supplier'}
+              {editing ? t('saveChanges') : t('createSupplier')}
             </button>
           </>
         }
@@ -248,9 +250,9 @@ function SupplierList() {
         open={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
-        title="Delete Supplier?"
-        message="This action cannot be undone."
-        confirmLabel="Delete"
+        title={t('deleteSupplierTitle')}
+        message={t('common:thisActionCannotBeUndone')}
+        confirmLabel={t('common:delete')}
       />
     </div>
   );

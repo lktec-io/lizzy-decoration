@@ -1,20 +1,22 @@
 import { motion } from 'framer-motion';
 import { FiPackage } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import EmptyState from '../common/EmptyState';
 import Skeleton from '../common/Skeleton';
 import { formatCurrency, formatNumber } from '../../utils/formatCurrency';
 
 function TopProductsCard({ products, loading }) {
+  const { t } = useTranslation('dashboard');
   const totalRevenue = products.reduce((sum, p) => sum + Number(p.revenue || 0), 0);
 
   return (
     <div className="card">
-      <div className="card-header"><span className="card-title">Top Selling Products</span></div>
+      <div className="card-header"><span className="card-title">{t('topSellingProducts')}</span></div>
       <div className="card-body">
         {loading ? (
           <Skeleton height={220} />
         ) : products.length === 0 ? (
-          <EmptyState icon={FiPackage} title="No sales recorded yet" />
+          <EmptyState icon={FiPackage} title={t('noSalesRecordedYet')} />
         ) : (
           <ul className="top-products-list">
             {products.map((product, index) => {
@@ -38,7 +40,7 @@ function TopProductsCard({ products, loading }) {
                       />
                     </div>
                     <div className="top-products-meta">
-                      <span>{formatNumber(product.quantity)} sold</span>
+                      <span>{formatNumber(product.quantity)} {t('sold')}</span>
                       <span>{percent.toFixed(1)}%</span>
                     </div>
                   </div>

@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "dashboard": "Dashibodi",
+    "customers": "Wateja",
+    "suppliers": "Wasambazaji",
+    "products": "Bidhaa",
+    "inventory": "Hesabu ya Bidhaa",
+    "purchases": "Manunuzi",
+    "salesPos": "Mauzo (POS)",
+    "returns": "Marejesho",
+    "expenses": "Matumizi",
+    "carwash": "Uoshaji Magari",
+    "reports": "Ripoti",
+    "settings": "Mipangilio",
+    "logout": "Ondoka",
+    "expandSidebar": "Panua Upau wa Pembeni",
+    "collapseSidebar": "Kunja Upau wa Pembeni"
+  },
+  "navbar": {
+    "branch": "Tawi",
+    "allBranches": "Matawi Yote",
+    "searchPlaceholder": "Tafuta bidhaa, wateja, mauzo...",
+    "globalSearch": "Tafuta kwa Ujumla",
+    "noMatchesYet": "Hakuna matokeo bado",
+    "searchCoversUsersOnly": "Kwa sasa utafutaji unahusu Watumiaji pekee.",
+    "notifications": "Arifa",
+    "markAllRead": "Weka Zote Kama Zilizosomwa",
+    "deleteAll": "Futa Zote",
+    "noNewNotifications": "Hakuna arifa mpya",
+    "markAsRead": "Weka kama imesomwa",
+    "deleteNotification": "Futa arifa",
+    "profile": "Wasifu",
+    "settings": "Mipangilio",
+    "logout": "Ondoka",
+    "user": "Mtumiaji",
+    "openMenu": "Fungua menyu",
+    "closeMenu": "Funga menyu"
+  },
+  "themePicker": {
+    "changeTheme": "Badilisha mandhari",
+    "themePicker": "Kichaguzi cha mandhari",
+    "appearance": "Muonekano",
+    "chooseYourTheme": "Chagua mandhari yako"
+  }
+}

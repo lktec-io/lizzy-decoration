@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FiPrinter, FiDownload, FiFileText, FiBarChart2, FiGrid, FiTrendingUp,
   FiDollarSign, FiPackage, FiBox, FiUsers, FiTruck, FiCreditCard, FiLayers,
@@ -84,79 +85,83 @@ const MONEY_KEYS = new Set([
   'totalPurchased', 'totalPaid', 'outstandingBalance', 'averageDailySales', 'averageInvoice',
 ]);
 
+// label/summary/title/labelHeader values below are `reports` namespace
+// translation keys, resolved via t() at render time — this module-level
+// config can't call hooks directly (same pattern as Sidebar.jsx's
+// NAV_ITEMS).
 const PURCHASE_STATUS_OPTIONS = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'received', label: 'Received' },
-  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'pending', labelKey: 'statusOptions.pending' },
+  { value: 'received', labelKey: 'statusOptions.received' },
+  { value: 'cancelled', labelKey: 'statusOptions.cancelled' },
 ];
 
 const RETURN_STATUS_OPTIONS = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'pending', labelKey: 'statusOptions.pending' },
+  { value: 'approved', labelKey: 'statusOptions.approved' },
+  { value: 'rejected', labelKey: 'statusOptions.rejected' },
 ];
 
 const REPORT_CONFIGS = {
   sales: {
-    label: 'Sales', filters: ['dateFrom', 'dateTo', 'branchId', 'cashierId', 'customerId', 'productId'],
-    summary: { totalSales: 'Total Sales', totalRevenue: 'Total Revenue', totalDiscount: 'Total Discount', averageSale: 'Average Sale' },
-    breakdowns: [{ key: 'byDay', title: 'By Day', labelHeader: 'Date' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
+    labelKey: 'types.sales', filters: ['dateFrom', 'dateTo', 'branchId', 'cashierId', 'customerId', 'productId'],
+    summary: { totalSales: 'summary.totalSales', totalRevenue: 'summary.totalRevenue', totalDiscount: 'summary.totalDiscount', averageSale: 'summary.averageSale' },
+    breakdowns: [{ key: 'byDay', titleKey: 'breakdowns.byDay', labelHeaderKey: 'labelHeaders.date' }, { key: 'byBranch', titleKey: 'breakdowns.byBranch', labelHeaderKey: 'labelHeaders.branch' }],
   },
   suppliers: {
-    label: 'Suppliers', filters: [],
-    breakdowns: [{ key: 'bySupplier', title: 'Supplier Balances', labelHeader: 'Supplier' }],
+    labelKey: 'types.suppliers', filters: [],
+    breakdowns: [{ key: 'bySupplier', titleKey: 'breakdowns.supplierBalances', labelHeaderKey: 'labelHeaders.supplier' }],
   },
   customers: {
-    label: 'Customers', filters: ['dateFrom', 'dateTo', 'branchId'],
-    breakdowns: [{ key: 'topCustomers', title: 'Top Customers', labelHeader: 'Customer' }],
+    labelKey: 'types.customers', filters: ['dateFrom', 'dateTo', 'branchId'],
+    breakdowns: [{ key: 'topCustomers', titleKey: 'breakdowns.topCustomers', labelHeaderKey: 'labelHeaders.customer' }],
   },
   inventory: {
-    label: 'Inventory', filters: ['branchId', 'categoryId'],
-    summary: { totalRecords: 'Total Records', totalValue: 'Total Value', lowStock: 'Low Stock', outOfStock: 'Out of Stock' },
-    breakdowns: [{ key: 'byCategory', title: 'By Category', labelHeader: 'Category' }],
+    labelKey: 'types.inventory', filters: ['branchId', 'categoryId'],
+    summary: { totalRecords: 'summary.totalRecords', totalValue: 'summary.totalValue', lowStock: 'summary.lowStock', outOfStock: 'summary.outOfStock' },
+    breakdowns: [{ key: 'byCategory', titleKey: 'breakdowns.byCategory', labelHeaderKey: 'labelHeaders.category' }],
   },
   products: {
-    label: 'Products', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
-    breakdowns: [{ key: 'topProducts', title: 'Top Products', labelHeader: 'Product' }],
+    labelKey: 'types.products', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
+    breakdowns: [{ key: 'topProducts', titleKey: 'breakdowns.topProducts', labelHeaderKey: 'labelHeaders.product' }],
   },
   purchases: {
-    label: 'Purchases', filters: ['dateFrom', 'dateTo', 'branchId', 'status', 'productId'],
+    labelKey: 'types.purchases', filters: ['dateFrom', 'dateTo', 'branchId', 'status', 'productId'],
     statusOptions: PURCHASE_STATUS_OPTIONS,
-    summary: { totalPurchases: 'Total Purchases', totalAmount: 'Total Amount' },
-    breakdowns: [{ key: 'bySupplier', title: 'By Supplier', labelHeader: 'Supplier' }],
+    summary: { totalPurchases: 'summary.totalPurchases', totalAmount: 'summary.totalAmount' },
+    breakdowns: [{ key: 'bySupplier', titleKey: 'breakdowns.bySupplier', labelHeaderKey: 'labelHeaders.supplier' }],
   },
   returns: {
-    label: 'Returns', filters: ['dateFrom', 'dateTo', 'branchId', 'status', 'customerId', 'productId'],
+    labelKey: 'types.returns', filters: ['dateFrom', 'dateTo', 'branchId', 'status', 'customerId', 'productId'],
     statusOptions: RETURN_STATUS_OPTIONS,
-    summary: { totalReturns: 'Total Returns', totalRefund: 'Total Refund' },
-    breakdowns: [{ key: 'byReason', title: 'By Reason', labelHeader: 'Reason' }],
+    summary: { totalReturns: 'summary.totalReturns', totalRefund: 'summary.totalRefund' },
+    breakdowns: [{ key: 'byReason', titleKey: 'breakdowns.byReason', labelHeaderKey: 'labelHeaders.reason' }],
   },
   expenses: {
-    label: 'Expenses', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
-    summary: { totalExpenses: 'Total Expenses', totalAmount: 'Total Amount' },
-    breakdowns: [{ key: 'byCategory', title: 'By Category', labelHeader: 'Category' }],
+    labelKey: 'types.expenses', filters: ['dateFrom', 'dateTo', 'branchId', 'categoryId'],
+    summary: { totalExpenses: 'summary.totalExpenses', totalAmount: 'summary.totalAmount' },
+    breakdowns: [{ key: 'byCategory', titleKey: 'breakdowns.byCategory', labelHeaderKey: 'labelHeaders.category' }],
   },
   carwash: {
-    label: 'Car Wash', filters: ['dateFrom', 'dateTo', 'branchId'],
-    summary: { totalTransactions: 'Total Transactions', totalRevenue: 'Total Revenue' },
-    breakdowns: [{ key: 'byService', title: 'Popular Services', labelHeader: 'Service' }],
+    labelKey: 'types.carwash', filters: ['dateFrom', 'dateTo', 'branchId'],
+    summary: { totalTransactions: 'summary.totalTransactions', totalRevenue: 'summary.totalRevenue' },
+    breakdowns: [{ key: 'byService', titleKey: 'breakdowns.popularServices', labelHeaderKey: 'labelHeaders.service' }],
   },
   profit: {
-    label: 'Profit', filters: ['dateFrom', 'dateTo', 'branchId'],
+    labelKey: 'types.profit', filters: ['dateFrom', 'dateTo', 'branchId'],
     summary: {
-      salesRevenue: 'Sales Revenue', carwashRevenue: 'Car Wash Revenue', totalRevenue: 'Total Revenue',
-      cogs: 'Cost of Goods Sold', grossProfit: 'Gross Profit', expenses: 'Expenses', netProfit: 'Net Profit',
+      salesRevenue: 'summary.salesRevenue', carwashRevenue: 'summary.carwashRevenue', totalRevenue: 'summary.totalRevenue',
+      cogs: 'summary.cogs', grossProfit: 'summary.grossProfit', expenses: 'summary.expenses', netProfit: 'summary.netProfit',
     },
-    breakdowns: [{ key: 'byDay', title: 'By Day', labelHeader: 'Date' }],
+    breakdowns: [{ key: 'byDay', titleKey: 'breakdowns.byDay', labelHeaderKey: 'labelHeaders.date' }],
   },
   branches: {
-    label: 'Branches', filters: ['dateFrom', 'dateTo'],
-    breakdowns: [{ key: 'byBranch', title: 'Branch Comparison', labelHeader: 'Branch' }],
+    labelKey: 'types.branches', filters: ['dateFrom', 'dateTo'],
+    breakdowns: [{ key: 'byBranch', titleKey: 'breakdowns.branchComparison', labelHeaderKey: 'labelHeaders.branch' }],
   },
   users: {
-    label: 'Users', filters: ['dateFrom', 'dateTo', 'branchId'],
-    summary: { totalUsers: 'Total Users', activeUsers: 'Active', suspendedUsers: 'Suspended', lockedUsers: 'Locked' },
-    breakdowns: [{ key: 'byRole', title: 'By Role', labelHeader: 'Role' }, { key: 'byBranch', title: 'By Branch', labelHeader: 'Branch' }],
+    labelKey: 'types.users', filters: ['dateFrom', 'dateTo', 'branchId'],
+    summary: { totalUsers: 'summary.totalUsers', activeUsers: 'summary.activeUsers', suspendedUsers: 'summary.suspendedUsers', lockedUsers: 'summary.lockedUsers' },
+    breakdowns: [{ key: 'byRole', titleKey: 'breakdowns.byRole', labelHeaderKey: 'labelHeaders.role' }, { key: 'byBranch', titleKey: 'breakdowns.byBranch', labelHeaderKey: 'labelHeaders.branch' }],
   },
   // Combined business-summary report — backend/services/report.service.js's
   // buildAllReport() flattens Sales/Products/Customers/Expenses/Car Wash/
@@ -165,18 +170,18 @@ const REPORT_CONFIGS = {
   // uses. `analysis` is the one field that isn't a breakdown table — it's
   // rendered separately, right below the summary cards.
   all: {
-    label: 'All Reports', filters: ['dateFrom', 'dateTo', 'branchId'],
+    labelKey: 'types.all', filters: ['dateFrom', 'dateTo', 'branchId'],
     summary: {
-      totalSales: 'Total Sales', totalRevenue: 'Total Revenue', totalExpenses: 'Total Expenses',
-      carwashRevenue: 'Car Wash Revenue', netProfit: 'Net Profit',
+      totalSales: 'summary.totalSales', totalRevenue: 'summary.totalRevenue', totalExpenses: 'summary.totalExpenses',
+      carwashRevenue: 'summary.carwashRevenue', netProfit: 'summary.netProfit',
     },
     breakdowns: [
-      { key: 'salesByDay', title: 'Sales By Day', labelHeader: 'Date' },
-      { key: 'salesByBranch', title: 'Sales By Branch', labelHeader: 'Branch' },
-      { key: 'topProducts', title: 'Top Products', labelHeader: 'Product' },
-      { key: 'topCustomers', title: 'Top Customers', labelHeader: 'Customer' },
-      { key: 'expensesByCategory', title: 'Expenses By Category', labelHeader: 'Category' },
-      { key: 'carwashByService', title: 'Car Wash By Service', labelHeader: 'Service' },
+      { key: 'salesByDay', titleKey: 'breakdowns.salesByDay', labelHeaderKey: 'labelHeaders.date' },
+      { key: 'salesByBranch', titleKey: 'breakdowns.salesByBranch', labelHeaderKey: 'labelHeaders.branch' },
+      { key: 'topProducts', titleKey: 'breakdowns.topProducts', labelHeaderKey: 'labelHeaders.product' },
+      { key: 'topCustomers', titleKey: 'breakdowns.topCustomers', labelHeaderKey: 'labelHeaders.customer' },
+      { key: 'expensesByCategory', titleKey: 'breakdowns.expensesByCategory', labelHeaderKey: 'labelHeaders.category' },
+      { key: 'carwashByService', titleKey: 'breakdowns.carwashByService', labelHeaderKey: 'labelHeaders.service' },
     ],
   },
 };
@@ -198,16 +203,6 @@ const REPORT_ICONS = {
   all: FiLayers,
 };
 
-const REPORT_DESCRIPTIONS = {
-  sales: 'Revenue, transactions, and daily trends.',
-  products: 'Best-selling products by quantity and revenue.',
-  inventory: 'Stock levels, value, and low-stock alerts.',
-  customers: 'Top customers by spend and order count.',
-  suppliers: 'Purchase totals and outstanding balances.',
-  expenses: 'Spending by category for the period.',
-  all: 'A combined business summary across every area.',
-};
-
 function humanize(key) {
   const result = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1');
   return result.charAt(0).toUpperCase() + result.slice(1);
@@ -219,12 +214,13 @@ function renderCell(key, value) {
 }
 
 function BreakdownTable({ title, labelHeader, rows, onExport, canExport }) {
+  const { t } = useTranslation('reports');
   if (!rows || rows.length === 0) {
     return (
       <div className="card mb-5">
         <div className="card-header"><span className="card-title">{title}</span></div>
         <div className="card-body">
-          <EmptyState icon={FiBarChart2} title="No data" description="No data for the selected filters." />
+          <EmptyState icon={FiBarChart2} title={t('noData')} description={t('noDataForFilters')} />
         </div>
       </div>
     );
@@ -261,6 +257,7 @@ function BreakdownTable({ title, labelHeader, rows, onExport, canExport }) {
 }
 
 function ReportsCenter() {
+  const { t } = useTranslation('reports');
   const canExport = usePermission('reports.export');
   const canViewUsers = usePermission('users.view');
   const { company } = useCompany();
@@ -314,7 +311,7 @@ function ReportsCenter() {
     reportService
       .getReport(reportType, params)
       .then(setReport)
-      .catch(() => setError('Failed to load report.'))
+      .catch(() => setError(t('failedToLoadReport')))
       .finally(() => setLoading(false));
   };
 
@@ -326,8 +323,11 @@ function ReportsCenter() {
 
   const summaryEntries = useMemo(() => {
     if (!report?.summary || !config.summary) return [];
-    return Object.entries(config.summary).map(([key, label]) => ({ key, label, value: report.summary[key] }));
-  }, [report, config]);
+    return Object.entries(config.summary).map(([key, labelKey]) => ({ key, label: t(labelKey), value: report.summary[key] }));
+    // t is a real dependency here (not omitted) — these labels must
+    // recompute immediately on a language switch, not just when the
+    // report data itself changes.
+  }, [report, config, t]);
 
   // Whichever day-based breakdown this report type has (sales/profit use
   // byDay, the combined "all" report uses salesByDay) becomes the trend
@@ -346,8 +346,9 @@ function ReportsCenter() {
       const rows = report?.[key];
       return Array.isArray(rows) && rows.length > 0 && rows.length <= 10 && typeof rows[0]?.value === 'number';
     });
-    return candidate ? { title: candidate.title, rows: report[candidate.key] } : null;
-  }, [config, report]);
+    return candidate ? { title: t(candidate.titleKey), rows: report[candidate.key] } : null;
+    // t is a real dependency — the chart title must update immediately on a language switch.
+  }, [config, report, t]);
 
   const buildExportParams = () => {
     const params = {};
@@ -360,9 +361,9 @@ function ReportsCenter() {
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      await reportService.exportReportPdf(reportType, buildExportParams(), config.label);
+      await reportService.exportReportPdf(reportType, buildExportParams(), t(config.labelKey));
     } catch {
-      setError('Failed to export PDF.');
+      setError(t('failedToExportPdf'));
     } finally {
       setExportingPdf(false);
     }
@@ -371,9 +372,9 @@ function ReportsCenter() {
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
-      await reportService.exportReportExcel(reportType, buildExportParams(), config.label);
+      await reportService.exportReportExcel(reportType, buildExportParams(), t(config.labelKey));
     } catch {
-      setError('Failed to export Excel.');
+      setError(t('failedToExportExcel'));
     } finally {
       setExportingExcel(false);
     }
@@ -382,9 +383,9 @@ function ReportsCenter() {
   const handleExportCsv = async () => {
     setExportingCsv(true);
     try {
-      await reportService.exportReportCsv(reportType, buildExportParams(), config.label);
+      await reportService.exportReportCsv(reportType, buildExportParams(), t(config.labelKey));
     } catch {
-      setError('Failed to export CSV.');
+      setError(t('failedToExportCsv'));
     } finally {
       setExportingCsv(false);
     }
@@ -398,13 +399,14 @@ function ReportsCenter() {
   // behavior for a report that was never opened.
   const quickExport = async (type, format) => {
     const cfg = REPORT_CONFIGS[type];
+    const label = t(cfg.labelKey);
     const params = type === reportType ? buildExportParams() : {};
     try {
-      if (format === 'pdf') await reportService.exportReportPdf(type, params, cfg.label);
-      else if (format === 'excel') await reportService.exportReportExcel(type, params, cfg.label);
-      else await reportService.exportReportCsv(type, params, cfg.label);
+      if (format === 'pdf') await reportService.exportReportPdf(type, params, label);
+      else if (format === 'excel') await reportService.exportReportExcel(type, params, label);
+      else await reportService.exportReportCsv(type, params, label);
     } catch {
-      setError(`Failed to export ${cfg.label}.`);
+      setError(t('failedToExport', { label }));
     }
   };
 
@@ -421,8 +423,8 @@ function ReportsCenter() {
 
       <div className="page-header">
         <div>
-          <h1 className="page-title">Reports Center</h1>
-          <p className="page-subtitle">Live reports generated directly from current data — no hardcoded values</p>
+          <h1 className="page-title">{t('pageTitle')}</h1>
+          <p className="page-subtitle">{t('pageSubtitle')}</p>
         </div>
         {canExport && (
           <div className="page-actions">
@@ -436,7 +438,7 @@ function ReportsCenter() {
               <FiDownload aria-hidden="true" /> CSV
             </button>
             <button type="button" className="btn btn-secondary" onClick={() => window.print()}>
-              <FiPrinter aria-hidden="true" /> Print
+              <FiPrinter aria-hidden="true" /> {t('common:print')}
             </button>
           </div>
         )}
@@ -447,36 +449,37 @@ function ReportsCenter() {
           const cfg = REPORT_CONFIGS[key];
           const Icon = REPORT_ICONS[key];
           const active = reportType === key;
+          const cfgLabel = t(cfg.labelKey);
           return (
             <div key={key} className={`card reports-type-card ${active ? 'reports-type-card-active' : ''}`}>
               <button type="button" className="reports-type-card-select" onClick={() => setReportType(key)}>
                 <span className="reports-type-card-icon"><Icon aria-hidden="true" /></span>
-                <span className="reports-type-card-title">{cfg.label}</span>
-                <span className="reports-type-card-desc">{REPORT_DESCRIPTIONS[key]}</span>
+                <span className="reports-type-card-title">{cfgLabel}</span>
+                <span className="reports-type-card-desc">{t(`descriptions.${key}`)}</span>
               </button>
               {cfg.filters.includes('dateFrom') && (
                 <select
                   className="form-control reports-type-card-date no-print"
-                  aria-label={`${cfg.label} date range`}
+                  aria-label={t('dateRangeFor', { label: cfgLabel })}
                   value={active ? datePreset : 'month'}
                   onChange={(e) => { setReportType(key); applyDatePreset(e.target.value); }}
                 >
-                  <option value="today">Today</option>
-                  <option value="week">This Week</option>
-                  <option value="month">This Month</option>
-                  <option value="lastMonth">Last Month</option>
-                  <option value="year">This Year</option>
+                  <option value="today">{t('today')}</option>
+                  <option value="week">{t('thisWeek')}</option>
+                  <option value="month">{t('thisMonth')}</option>
+                  <option value="lastMonth">{t('lastMonth')}</option>
+                  <option value="year">{t('thisYear')}</option>
                 </select>
               )}
               {canExport && (
                 <div className="reports-type-card-actions no-print">
-                  <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label={`Export ${cfg.label} as PDF`} onClick={() => quickExport(key, 'pdf')}>
+                  <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label={t('exportAsPdf', { label: cfgLabel })} onClick={() => quickExport(key, 'pdf')}>
                     <FiFileText aria-hidden="true" />
                   </button>
-                  <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label={`Export ${cfg.label} as Excel`} onClick={() => quickExport(key, 'excel')}>
+                  <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label={t('exportAsExcel', { label: cfgLabel })} onClick={() => quickExport(key, 'excel')}>
                     <FiGrid aria-hidden="true" />
                   </button>
-                  <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label={`Export ${cfg.label} as CSV`} onClick={() => quickExport(key, 'csv')}>
+                  <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label={t('exportAsCsv', { label: cfgLabel })} onClick={() => quickExport(key, 'csv')}>
                     <FiDownload aria-hidden="true" />
                   </button>
                 </div>
@@ -491,82 +494,82 @@ function ReportsCenter() {
         <div className="card-body reports-filter-bar">
           {config.filters.includes('dateFrom') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="datePreset">Quick Range</label>
+              <label className="form-label" htmlFor="datePreset">{t('quickRange')}</label>
               <select id="datePreset" className="form-control" value={datePreset} onChange={(e) => applyDatePreset(e.target.value)}>
-                <option value="today">Today</option>
-                <option value="yesterday">Yesterday</option>
-                <option value="last7">Last 7 Days</option>
-                <option value="last30">Last 30 Days</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="lastMonth">Last Month</option>
-                <option value="year">This Year</option>
-                <option value="custom">Custom</option>
+                <option value="today">{t('today')}</option>
+                <option value="yesterday">{t('yesterday')}</option>
+                <option value="last7">{t('last7Days')}</option>
+                <option value="last30">{t('last30Days')}</option>
+                <option value="week">{t('thisWeek')}</option>
+                <option value="month">{t('thisMonth')}</option>
+                <option value="lastMonth">{t('lastMonth')}</option>
+                <option value="year">{t('thisYear')}</option>
+                <option value="custom">{t('custom')}</option>
               </select>
             </div>
           )}
           {config.filters.includes('dateFrom') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="dateFrom">From</label>
+              <label className="form-label" htmlFor="dateFrom">{t('common:dateFrom')}</label>
               <input id="dateFrom" type="date" className="form-control" value={filters.dateFrom} onChange={(e) => { setDatePreset('custom'); setFilters((prev) => ({ ...prev, dateFrom: e.target.value })); }} />
             </div>
           )}
           {config.filters.includes('dateTo') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="dateTo">To</label>
+              <label className="form-label" htmlFor="dateTo">{t('common:dateTo')}</label>
               <input id="dateTo" type="date" className="form-control" value={filters.dateTo} onChange={(e) => { setDatePreset('custom'); setFilters((prev) => ({ ...prev, dateTo: e.target.value })); }} />
             </div>
           )}
           {config.filters.includes('branchId') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="branchId">Branch</label>
+              <label className="form-label" htmlFor="branchId">{t('common:branch')}</label>
               <select id="branchId" className="form-control" value={filters.branchId} onChange={(e) => setFilters((prev) => ({ ...prev, branchId: e.target.value }))}>
-                <option value="">All Branches</option>
+                <option value="">{t('common:allBranches')}</option>
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
           )}
           {config.filters.includes('cashierId') && canViewUsers && (
             <div className="form-group">
-              <label className="form-label" htmlFor="cashierId">Cashier</label>
+              <label className="form-label" htmlFor="cashierId">{t('cashier')}</label>
               <select id="cashierId" className="form-control" value={filters.cashierId} onChange={(e) => setFilters((prev) => ({ ...prev, cashierId: e.target.value }))}>
-                <option value="">All Cashiers</option>
+                <option value="">{t('allCashiers')}</option>
                 {cashiers.map((u) => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
               </select>
             </div>
           )}
           {config.filters.includes('categoryId') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="categoryId">Category</label>
+              <label className="form-label" htmlFor="categoryId">{t('category')}</label>
               <select id="categoryId" className="form-control" value={filters.categoryId} onChange={(e) => setFilters((prev) => ({ ...prev, categoryId: e.target.value }))}>
-                <option value="">All Categories</option>
+                <option value="">{t('allCategories')}</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
           )}
           {config.filters.includes('status') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="status">Status</label>
+              <label className="form-label" htmlFor="status">{t('common:status')}</label>
               <select id="status" className="form-control" value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}>
-                <option value="">All Statuses</option>
-                {config.statusOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                <option value="">{t('allStatuses')}</option>
+                {config.statusOptions.map((opt) => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
               </select>
             </div>
           )}
           {config.filters.includes('customerId') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="customerId">Customer</label>
+              <label className="form-label" htmlFor="customerId">{t('common:customer')}</label>
               <select id="customerId" className="form-control" value={filters.customerId} onChange={(e) => setFilters((prev) => ({ ...prev, customerId: e.target.value }))}>
-                <option value="">All Customers</option>
+                <option value="">{t('allCustomers')}</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>)}
               </select>
             </div>
           )}
           {config.filters.includes('productId') && (
             <div className="form-group">
-              <label className="form-label" htmlFor="productId">Product</label>
+              <label className="form-label" htmlFor="productId">{t('common:product')}</label>
               <select id="productId" className="form-control" value={filters.productId} onChange={(e) => setFilters((prev) => ({ ...prev, productId: e.target.value }))}>
-                <option value="">All Products</option>
+                <option value="">{t('allProducts')}</option>
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
@@ -602,7 +605,7 @@ function ReportsCenter() {
             <div className={`grid mb-5 ${trendRows.length > 0 && chartBreakdown ? 'grid-cols-2' : 'grid-cols-1'}`}>
               {trendRows.length > 0 && (
                 <div className="card">
-                  <div className="card-header"><span className="card-title">{reportType === 'profit' ? 'Daily Profit Trend' : 'Sales Trend'}</span></div>
+                  <div className="card-header"><span className="card-title">{reportType === 'profit' ? t('dailyProfitTrend') : t('salesTrend')}</span></div>
                   <div className="card-body">
                     <LineChart
                       labels={trendRows.map((r) => new Date(r.label).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short' }))}
@@ -630,16 +633,16 @@ function ReportsCenter() {
 
           {report?.financialSummary && (
             <div className="card mb-5">
-              <div className="card-header"><span className="card-title">Financial Summary</span></div>
+              <div className="card-header"><span className="card-title">{t('financialSummary')}</span></div>
               <div className="card-body">
                 <dl className="reports-financial-summary">
-                  <div><dt>Total Revenue</dt><dd>{formatCurrency(report.financialSummary.totalRevenue)}</dd></div>
-                  <div><dt>Average Daily Sales</dt><dd>{formatCurrency(report.financialSummary.averageDailySales)}</dd></div>
+                  <div><dt>{t('totalRevenue')}</dt><dd>{formatCurrency(report.financialSummary.totalRevenue)}</dd></div>
+                  <div><dt>{t('averageDailySales')}</dt><dd>{formatCurrency(report.financialSummary.averageDailySales)}</dd></div>
                   {report.financialSummary.averageInvoice != null && (
-                    <div><dt>Average Invoice</dt><dd>{formatCurrency(report.financialSummary.averageInvoice)}</dd></div>
+                    <div><dt>{t('averageInvoice')}</dt><dd>{formatCurrency(report.financialSummary.averageInvoice)}</dd></div>
                   )}
-                  <div><dt>Highest Sales Day</dt><dd>{report.financialSummary.highestSalesDay.date} — {formatCurrency(report.financialSummary.highestSalesDay.value)}</dd></div>
-                  <div><dt>Lowest Sales Day</dt><dd>{report.financialSummary.lowestSalesDay.date} — {formatCurrency(report.financialSummary.lowestSalesDay.value)}</dd></div>
+                  <div><dt>{t('highestSalesDay')}</dt><dd>{report.financialSummary.highestSalesDay.date} — {formatCurrency(report.financialSummary.highestSalesDay.value)}</dd></div>
+                  <div><dt>{t('lowestSalesDay')}</dt><dd>{report.financialSummary.lowestSalesDay.date} — {formatCurrency(report.financialSummary.lowestSalesDay.value)}</dd></div>
                 </dl>
               </div>
             </div>
@@ -647,7 +650,7 @@ function ReportsCenter() {
 
           {Array.isArray(report?.financialSummary?.monthlyTrend) && (
             <div className="card mb-5">
-              <div className="card-header"><span className="card-title">Monthly Trend</span></div>
+              <div className="card-header"><span className="card-title">{t('monthlyTrend')}</span></div>
               <div className="card-body">
                 <LineChart
                   labels={report.financialSummary.monthlyTrend.map((m) => m.month)}
@@ -658,9 +661,19 @@ function ReportsCenter() {
             </div>
           )}
 
+          {/* report.analysis/recommendations are dynamic sentences generated
+              server-side (backend/services/reportAnalysis.js) from live
+              business data — translating that generated text would require
+              either a `lang` param the API doesn't accept today or
+              duplicating the analysis-authoring logic client-side, both out
+              of scope for a frontend-only i18n rollout that must not change
+              APIs or business logic. Only this section's own chrome
+              (heading, icon) is localized; the analysis lines themselves
+              display in whatever language the backend generated them in
+              (currently always English). */}
           {Array.isArray(report?.analysis) && report.analysis.length > 0 && (
             <div className="card mb-5">
-              <div className="card-header"><span className="card-title">Business Analysis</span></div>
+              <div className="card-header"><span className="card-title">{t('businessAnalysis')}</span></div>
               <div className="card-body">
                 <ul className="reports-analysis-list">
                   {report.analysis.map((line) => <li key={line}>{line}</li>)}
@@ -671,7 +684,7 @@ function ReportsCenter() {
 
           {Array.isArray(report?.recommendations) && report.recommendations.length > 0 && (
             <div className="card mb-5">
-              <div className="card-header"><span className="card-title">Recommendations</span></div>
+              <div className="card-header"><span className="card-title">{t('recommendations')}</span></div>
               <div className="card-body">
                 <ul className="reports-recommendations-list">
                   {report.recommendations.map((line) => (
@@ -685,11 +698,11 @@ function ReportsCenter() {
           {config.breakdowns.map((breakdown) => (
             <BreakdownTable
               key={breakdown.key}
-              title={breakdown.title}
-              labelHeader={breakdown.labelHeader}
+              title={t(breakdown.titleKey)}
+              labelHeader={t(breakdown.labelHeaderKey)}
               rows={report?.[breakdown.key]}
               canExport={canExport}
-              onExport={(title, rows) => downloadCsv(`${config.label}-${title}-${filters.dateFrom}-${filters.dateTo}`, rows)}
+              onExport={(title, rows) => downloadCsv(`${t(config.labelKey)}-${title}-${filters.dateFrom}-${filters.dateTo}`, rows)}
             />
           ))}
         </div>

@@ -1,0 +1,56 @@
+{
+  "greeting": {
+    "morning": "Habari za Asubuhi",
+    "afternoon": "Habari za Mchana",
+    "evening": "Habari za Jioni"
+  },
+  "welcomeBack": "Karibu tena",
+  "heroSubtitle": "Haya ndiyo yanayoendelea katika biashara yako leo.",
+  "kpis": {
+    "todaySales": "Mauzo ya Leo",
+    "todaySalesSubtitle": "Katika matawi yote",
+    "monthlySales": "Mauzo ya Mwezi",
+    "monthlySalesSubtitle": "Mwezi huu wa kalenda",
+    "monthlyProfit": "Faida ya Mwezi",
+    "monthlyProfitSubtitle": "Baada ya gharama mwezi huu",
+    "todayOrders": "Oda za Leo",
+    "todayOrdersSubtitle": "Mauzo yaliyokamilika leo",
+    "lowStockProducts": "Bidhaa Zenye Hesabu Ndogo",
+    "lowStockProductsSubtitle": "Zinahitaji kuongezwa",
+    "todayCarwash": "Uoshaji Magari wa Leo",
+    "todayCarwashSubtitle": "Mapato ya huduma leo"
+  },
+  "revenueVsExpenses": "Mapato dhidi ya Matumizi",
+  "noFinancialActivity": "Hakuna shughuli za kifedha bado",
+  "revenue": "Mapato",
+  "expenses": "Matumizi",
+  "profit": "Faida",
+  "paymentStatus": "Hali ya Malipo",
+  "noPaymentsRecorded": "Hakuna malipo yaliyorekodiwa bado",
+  "topSellingProducts": "Bidhaa Zinazouzwa Zaidi",
+  "noSalesRecordedYet": "Hakuna mauzo yaliyorekodiwa bado",
+  "sold": "zimeuzwa",
+  "lowStockAlerts": "Tahadhari za Hesabu Ndogo",
+  "noLowStockProducts": "Hakuna bidhaa zenye hesabu ndogo kwa sasa",
+  "outOfStock": "Hazipo Stoo",
+  "criticalLow": "Hatari - Chini Sana",
+  "lowStock": "Hesabu Ndogo",
+  "min": "kiwango cha chini",
+  "salesTrend": "Mwenendo wa Mauzo",
+  "salesTrendRangeLabel": "Kipindi cha mwenendo wa mauzo",
+  "noSalesForPeriod": "Hakuna mauzo yaliyorekodiwa kwa kipindi hiki",
+  "ranges": {
+    "today": "Leo",
+    "week": "Wiki",
+    "month": "Mwezi",
+    "year": "Mwaka"
+  },
+  "quickActions": {
+    "newSale": "Mauzo Mapya",
+    "newCustomer": "Mteja Mpya",
+    "newExpense": "Gharama Mpya",
+    "newCarWash": "Uoshaji Gari Mpya",
+    "reports": "Ripoti"
+  },
+  "failedToLoad": "Imeshindwa kupakia data ya dashibodi."
+}

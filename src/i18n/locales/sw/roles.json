@@ -1,0 +1,23 @@
+{
+  "title": "Majukumu",
+  "subtitle": "Simamia majukumu na kile ambacho kila moja linaweza kufikia",
+  "newRole": "Jukumu Jipya",
+  "roleName": "Jina la Jukumu",
+  "typeColumn": "Aina",
+  "typeSystem": "Mfumo",
+  "typeCustom": "Maalum",
+  "editRoleAria": "Hariri jukumu",
+  "deleteRoleAria": "Futa jukumu",
+  "noRolesFound": "Hakuna majukumu yaliyopatikana",
+  "editRole": "Hariri Jukumu",
+  "saveChanges": "Hifadhi Mabadiliko",
+  "createRole": "Unda Jukumu",
+  "roleNameRequired": "Jina la jukumu linahitajika",
+  "systemRoleNameLocked": "Majina ya majukumu ya mfumo hayawezi kubadilishwa.",
+  "roleUpdated": "Jukumu limesasishwa.",
+  "roleCreated": "Jukumu limeundwa.",
+  "roleDeleted": "Jukumu limefutwa.",
+  "failedToSaveRole": "Imeshindwa kuhifadhi jukumu.",
+  "deleteRoleTitle": "Futa jukumu",
+  "deleteRoleMessage": "Futa jukumu la \"{{name}}\"? Hatua hii itazuiwa iwapo bado kuna watumiaji waliopangiwa jukumu hili."
+}

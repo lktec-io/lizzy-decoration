@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiMapPin } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import '../../styles/components/DashboardHero.css';
 
@@ -15,19 +16,20 @@ function useLiveClock() {
   return now;
 }
 
-function getGreeting(hour) {
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
+function getGreetingKey(hour) {
+  if (hour < 12) return 'greeting.morning';
+  if (hour < 17) return 'greeting.afternoon';
+  return 'greeting.evening';
 }
 
 function DashboardHero() {
+  const { t } = useTranslation('dashboard');
   const { user } = useAuth();
   const now = useLiveClock();
 
   const firstName = user?.first_name || 'there';
-  const branchLabel = user?.branch_name || 'All Branches';
-  const greeting = getGreeting(now.getHours());
+  const branchLabel = user?.branch_name || t('common:allBranches');
+  const greeting = t(getGreetingKey(now.getHours()));
   const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'short', day: 'numeric', month: 'short' });
   const timeLabel = now.toLocaleTimeString('en-TZ', { hour: '2-digit', minute: '2-digit' });
 
@@ -42,8 +44,8 @@ function DashboardHero() {
 
       <motion.div className="dashboard-hero-greeting-block" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <span className="dashboard-hero-eyebrow">{greeting}</span>
-        <h1 className="dashboard-hero-title">Welcome back, <span className="dashboard-hero-name">{firstName}</span></h1>
-        <p className="dashboard-hero-subtitle">Here&apos;s what&apos;s happening across your business today.</p>
+        <h1 className="dashboard-hero-title">{t('welcomeBack')}, <span className="dashboard-hero-name">{firstName}</span></h1>
+        <p className="dashboard-hero-subtitle">{t('heroSubtitle')}</p>
       </motion.div>
 
       <div className="dashboard-hero-meta">

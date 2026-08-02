@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { FiPlus, FiEdit2, FiTrash2, FiDollarSign } from 'react-icons/fi';
 import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
@@ -23,6 +24,7 @@ function formatDate(dateString) {
 }
 
 function ExpenseList() {
+  const { t } = useTranslation('expenses');
   const canCreate = usePermission('expenses.create');
   const canEdit = usePermission('expenses.edit');
   const canDelete = usePermission('expenses.delete');
@@ -84,15 +86,15 @@ function ExpenseList() {
     try {
       if (editing) {
         await expenseService.updateExpense(editing.id, payload);
-        toast.success('Expense updated.');
+        toast.success(t('expenseUpdated'));
       } else {
         await expenseService.createExpense(payload);
-        toast.success('Expense recorded.');
+        toast.success(t('expenseRecorded'));
       }
       setModalOpen(false);
       refetch();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save expense.');
+      setError(err.response?.data?.message || t('failedToSaveExpense'));
     }
   };
 
@@ -100,32 +102,32 @@ function ExpenseList() {
     setActionError('');
     try {
       await expenseService.deleteExpense(deleting.id);
-      toast.success('Expense deleted.');
+      toast.success(t('expenseDeleted'));
       refetch();
     } catch (err) {
-      setActionError(err.response?.data?.message || 'Failed to delete expense.');
+      setActionError(err.response?.data?.message || t('failedToDeleteExpense'));
     }
   };
 
   const columns = [
-    { key: 'expense_date', label: 'Date', render: (row) => formatDate(row.expense_date) },
-    { key: 'category_name', label: 'Category' },
-    { key: 'description', label: 'Description', render: (row) => row.description || '—' },
-    { key: 'branch_name', label: 'Branch' },
-    { key: 'paid_by', label: 'Recorded By', render: (row) => (row.paid_by_first_name ? `${row.paid_by_first_name} ${row.paid_by_last_name}` : '—') },
-    { key: 'amount', label: 'Amount', render: (row) => formatCurrency(row.amount) },
+    { key: 'expense_date', label: t('common:date'), render: (row) => formatDate(row.expense_date) },
+    { key: 'category_name', label: t('common:category') },
+    { key: 'description', label: t('common:description'), render: (row) => row.description || '—' },
+    { key: 'branch_name', label: t('common:branch') },
+    { key: 'paid_by', label: t('recordedByColumn'), render: (row) => (row.paid_by_first_name ? `${row.paid_by_first_name} ${row.paid_by_last_name}` : '—') },
+    { key: 'amount', label: t('common:amount'), render: (row) => formatCurrency(row.amount) },
     {
       key: 'actions',
       label: '',
       render: (row) => (
         <div className="table-actions">
           {canEdit && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label="Edit expense">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => openEdit(row)} aria-label={t('editExpense')}>
               <FiEdit2 />
             </button>
           )}
           {canDelete && (
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setDeleting(row)} aria-label="Delete expense">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setDeleting(row)} aria-label={t('deleteExpense')}>
               <FiTrash2 />
             </button>
           )}
@@ -138,34 +140,34 @@ function ExpenseList() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Expenses</h1>
-          <p className="page-subtitle">Track branch operating expenses</p>
+          <h1 className="page-title">{t('title')}</h1>
+          <p className="page-subtitle">{t('subtitle')}</p>
         </div>
         {canCreate && (
           <div className="page-actions">
             <button type="button" className="btn btn-primary" onClick={openCreate}>
-              <FiPlus aria-hidden="true" /> New Expense
+              <FiPlus aria-hidden="true" /> {t('newExpense')}
             </button>
           </div>
         )}
       </div>
 
       <div className="mb-5">
-        <KPICard icon={FiDollarSign} label="Total (filtered results)" value={meta.totalAmount || 0} formatter={(v) => formatCurrency(v)} />
+        <KPICard icon={FiDollarSign} label={t('totalFilteredResults')} value={meta.totalAmount || 0} formatter={(v) => formatCurrency(v)} />
       </div>
 
       {actionError && <div className="alert alert-danger mb-4" role="alert">{actionError}</div>}
 
       <div className="card">
         <div className="table-toolbar">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search by description..." />
+          <SearchInput value={search} onChange={setSearch} placeholder={t('searchPlaceholder')} />
           <div className="flex flex-wrap items-center gap-3">
             <select
               className="form-control"
               value={filters.categoryId || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, categoryId: e.target.value || undefined }))}
             >
-              <option value="">All Categories</option>
+              <option value="">{t('allCategories')}</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <select
@@ -173,7 +175,7 @@ function ExpenseList() {
               value={filters.branchId || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, branchId: e.target.value || undefined }))}
             >
-              <option value="">All Branches</option>
+              <option value="">{t('common:allBranches')}</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
             <input
@@ -190,20 +192,20 @@ function ExpenseList() {
             />
           </div>
         </div>
-        <Table columns={columns} rows={items} loading={loading} emptyMessage="No expenses recorded yet" />
+        <Table columns={columns} rows={items} loading={loading} emptyMessage={t('emptyList')} />
         <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPageChange={setPage} />
       </div>
 
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit Expense' : 'New Expense'}
+        title={editing ? t('modalTitleEdit') : t('modalTitleNew')}
         size="sm"
         footer={
           <>
-            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t('common:cancel')}</button>
             <button type="submit" form="expense-form" className={`btn btn-primary ${isSubmitting ? 'btn-loading' : ''}`} disabled={isSubmitting}>
-              {editing ? 'Save Changes' : 'Record Expense'}
+              {editing ? t('saveChanges') : t('recordExpense')}
             </button>
           </>
         }
@@ -211,35 +213,35 @@ function ExpenseList() {
         {error && <div className="alert alert-danger mb-4" role="alert">{error}</div>}
         <form id="expense-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="expenseCategoryId">Category</label>
-            <select id="expenseCategoryId" className={`form-control ${errors.expenseCategoryId ? 'form-control-error' : ''}`} {...register('expenseCategoryId', { required: 'Category is required' })}>
-              <option value="">Select a category</option>
+            <label className="form-label form-label-required" htmlFor="expenseCategoryId">{t('common:category')}</label>
+            <select id="expenseCategoryId" className={`form-control ${errors.expenseCategoryId ? 'form-control-error' : ''}`} {...register('expenseCategoryId', { required: t('categoryRequired') })}>
+              <option value="">{t('selectCategory')}</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             {errors.expenseCategoryId && <span className="form-error">{errors.expenseCategoryId.message}</span>}
           </div>
           <div className="form-group">
-            <label className="form-label form-label-required" htmlFor="branchId">Branch</label>
-            <select id="branchId" className={`form-control ${errors.branchId ? 'form-control-error' : ''}`} {...register('branchId', { required: 'Branch is required' })}>
-              <option value="">Select a branch</option>
+            <label className="form-label form-label-required" htmlFor="branchId">{t('common:branch')}</label>
+            <select id="branchId" className={`form-control ${errors.branchId ? 'form-control-error' : ''}`} {...register('branchId', { required: t('branchRequired') })}>
+              <option value="">{t('selectBranch')}</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
             {errors.branchId && <span className="form-error">{errors.branchId.message}</span>}
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="amount">Amount</label>
-              <input id="amount" type="number" min="0" step="0.01" className={`form-control ${errors.amount ? 'form-control-error' : ''}`} {...register('amount', { required: 'Amount is required', min: { value: 0.01, message: 'Amount must be greater than zero' } })} />
+              <label className="form-label form-label-required" htmlFor="amount">{t('common:amount')}</label>
+              <input id="amount" type="number" min="0" step="0.01" className={`form-control ${errors.amount ? 'form-control-error' : ''}`} {...register('amount', { required: t('amountRequired'), min: { value: 0.01, message: t('amountMustBeGreaterThanZero') } })} />
               {errors.amount && <span className="form-error">{errors.amount.message}</span>}
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required" htmlFor="expenseDate">Date</label>
-              <input id="expenseDate" type="date" className={`form-control ${errors.expenseDate ? 'form-control-error' : ''}`} {...register('expenseDate', { required: 'Date is required' })} />
+              <label className="form-label form-label-required" htmlFor="expenseDate">{t('common:date')}</label>
+              <input id="expenseDate" type="date" className={`form-control ${errors.expenseDate ? 'form-control-error' : ''}`} {...register('expenseDate', { required: t('dateRequired') })} />
               {errors.expenseDate && <span className="form-error">{errors.expenseDate.message}</span>}
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="description">Description</label>
+            <label className="form-label" htmlFor="description">{t('common:description')}</label>
             <input id="description" className="form-control" {...register('description')} />
           </div>
         </form>
@@ -249,9 +251,9 @@ function ExpenseList() {
         open={Boolean(deleting)}
         onClose={() => setDeleting(null)}
         onConfirm={handleDelete}
-        title="Delete Expense"
-        message={deleting ? `Delete this ${deleting.category_name} expense of ${formatCurrency(deleting.amount)}? This cannot be undone.` : ''}
-        confirmLabel="Delete"
+        title={t('deleteExpenseTitle')}
+        message={deleting ? t('deleteExpenseConfirm', { category: deleting.category_name, amount: formatCurrency(deleting.amount) }) : ''}
+        confirmLabel={t('common:delete')}
         variant="danger"
       />
     </div>

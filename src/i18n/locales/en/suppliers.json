@@ -1,0 +1,59 @@
+{
+  "title": "Suppliers",
+  "subtitle": "Manage suppliers and their purchase history",
+  "newSupplier": "New Supplier",
+  "editSupplier": "Edit Supplier",
+  "searchPlaceholder": "Search by name, phone, email...",
+  "emptyList": "No suppliers found",
+  "viewSupplierAria": "View supplier",
+  "editSupplierAria": "Edit supplier",
+  "deactivateSupplierAria": "Deactivate supplier",
+  "activateSupplierAria": "Activate supplier",
+  "deleteSupplierAria": "Delete supplier",
+  "saveChanges": "Save Changes",
+  "createSupplier": "Create Supplier",
+  "deleteSupplierTitle": "Delete Supplier?",
+  "noPhoneOnFile": "No phone on file",
+  "tinLabel": "TIN: {{tin}}",
+  "backToSuppliers": "Back to Suppliers",
+  "recordPayment": "Record Payment",
+  "savePayment": "Save Payment",
+  "totalPurchased": "Total Purchased",
+  "totalPaid": "Total Paid",
+  "outstandingBalance": "Outstanding Balance",
+  "outstandingBalanceLabel": "Outstanding balance: {{amount}}",
+  "purchaseHistory": "Purchase History",
+  "noPurchasesYet": "No purchases recorded yet",
+  "amountRequired": "Amount is required",
+  "mustBePositive": "Must be positive",
+  "columns": {
+    "supplierName": "Supplier Name",
+    "purchaseNumber": "Purchase #"
+  },
+  "paymentMethods": {
+    "mpesa": "M-Pesa",
+    "airtel_money": "Airtel Money"
+  },
+  "toast": {
+    "supplierUpdated": "Supplier updated.",
+    "supplierCreated": "Supplier created.",
+    "failedToSaveSupplier": "Failed to save supplier.",
+    "supplierActivated": "Supplier activated.",
+    "supplierDeactivated": "Supplier deactivated.",
+    "failedToUpdateStatus": "Failed to update supplier status.",
+    "supplierDeleted": "Supplier permanently deleted.",
+    "failedToDeleteSupplier": "Failed to delete supplier.",
+    "paymentRecorded": "Payment recorded.",
+    "failedToRecordPayment": "Failed to record payment."
+  },
+  "form": {
+    "supplierName": "Supplier Name",
+    "supplierNameRequired": "Supplier name is required.",
+    "phoneNumber": "Phone Number",
+    "phoneRequired": "Phone number is required.",
+    "email": "Email",
+    "invalidEmail": "Invalid email.",
+    "address": "Address",
+    "notes": "Notes"
+  }
+}

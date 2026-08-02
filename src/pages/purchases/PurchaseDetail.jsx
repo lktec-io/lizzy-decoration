@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiArrowLeft } from 'react-icons/fi';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import * as purchaseService from '../../services/purchaseService';
@@ -10,6 +11,7 @@ function formatDateTime(isoString) {
 }
 
 function PurchaseDetail() {
+  const { t } = useTranslation('purchases');
   const { id } = useParams();
   const navigate = useNavigate();
   const [purchase, setPurchase] = useState(null);
@@ -27,7 +29,7 @@ function PurchaseDetail() {
       <div className="page-header">
         <div>
           <button type="button" className="btn btn-ghost btn-sm mb-2" onClick={() => navigate('/purchases')}>
-            <FiArrowLeft aria-hidden="true" /> Back to Purchases
+            <FiArrowLeft aria-hidden="true" /> {t('backToPurchases')}
           </button>
           <h1 className="page-title">{purchase.purchase_number}</h1>
           <p className="page-subtitle">
@@ -37,15 +39,15 @@ function PurchaseDetail() {
       </div>
 
       <div className="card">
-        <div className="card-header"><span className="card-title">Items</span></div>
+        <div className="card-header"><span className="card-title">{t('itemsCardTitle')}</span></div>
         <div className="table-wrapper">
           <table className="table">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-                <th>Buying Price</th>
-                <th>Line Total</th>
+                <th>{t('common:product')}</th>
+                <th>{t('common:quantity')}</th>
+                <th>{t('buyingPrice')}</th>
+                <th>{t('lineTotal')}</th>
               </tr>
             </thead>
             <tbody>
@@ -61,7 +63,7 @@ function PurchaseDetail() {
           </table>
         </div>
         <div className="card-footer flex justify-end">
-          <span className="text-lg font-semibold">Total: {formatCurrency(purchase.total_amount)}</span>
+          <span className="text-lg font-semibold">{t('totalWithAmount', { amount: formatCurrency(purchase.total_amount) })}</span>
         </div>
       </div>
     </div>

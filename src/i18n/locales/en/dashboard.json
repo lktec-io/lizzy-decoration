@@ -1,0 +1,56 @@
+{
+  "greeting": {
+    "morning": "Good Morning",
+    "afternoon": "Good Afternoon",
+    "evening": "Good Evening"
+  },
+  "welcomeBack": "Welcome back",
+  "heroSubtitle": "Here's what's happening across your business today.",
+  "kpis": {
+    "todaySales": "Today's Sales",
+    "todaySalesSubtitle": "Across all branches",
+    "monthlySales": "Monthly Sales",
+    "monthlySalesSubtitle": "This calendar month",
+    "monthlyProfit": "Monthly Profit",
+    "monthlyProfitSubtitle": "Net of cost this month",
+    "todayOrders": "Today's Orders",
+    "todayOrdersSubtitle": "Completed sales today",
+    "lowStockProducts": "Low Stock Products",
+    "lowStockProductsSubtitle": "Need restocking",
+    "todayCarwash": "Today's Car Wash",
+    "todayCarwashSubtitle": "Service revenue today"
+  },
+  "revenueVsExpenses": "Revenue vs Expenses",
+  "noFinancialActivity": "No financial activity yet",
+  "revenue": "Revenue",
+  "expenses": "Expenses",
+  "profit": "Profit",
+  "paymentStatus": "Payment Status",
+  "noPaymentsRecorded": "No payments recorded yet",
+  "topSellingProducts": "Top Selling Products",
+  "noSalesRecordedYet": "No sales recorded yet",
+  "sold": "sold",
+  "lowStockAlerts": "Low Stock Alerts",
+  "noLowStockProducts": "No low-stock products right now",
+  "outOfStock": "Out of Stock",
+  "criticalLow": "Critical Low",
+  "lowStock": "Low Stock",
+  "min": "min",
+  "salesTrend": "Sales Trend",
+  "salesTrendRangeLabel": "Sales trend range",
+  "noSalesForPeriod": "No sales recorded for this period",
+  "ranges": {
+    "today": "Today",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year"
+  },
+  "quickActions": {
+    "newSale": "New Sale",
+    "newCustomer": "New Customer",
+    "newExpense": "New Expense",
+    "newCarWash": "New Car Wash",
+    "reports": "Reports"
+  },
+  "failedToLoad": "Failed to load dashboard data."
+}

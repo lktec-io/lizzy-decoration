@@ -1,0 +1,23 @@
+{
+  "title": "Roles",
+  "subtitle": "Manage roles and what each one can access",
+  "newRole": "New Role",
+  "roleName": "Role Name",
+  "typeColumn": "Type",
+  "typeSystem": "System",
+  "typeCustom": "Custom",
+  "editRoleAria": "Edit role",
+  "deleteRoleAria": "Delete role",
+  "noRolesFound": "No roles found",
+  "editRole": "Edit Role",
+  "saveChanges": "Save Changes",
+  "createRole": "Create Role",
+  "roleNameRequired": "Role name is required",
+  "systemRoleNameLocked": "System role names cannot be changed.",
+  "roleUpdated": "Role updated.",
+  "roleCreated": "Role created.",
+  "roleDeleted": "Role deleted.",
+  "failedToSaveRole": "Failed to save role.",
+  "deleteRoleTitle": "Delete role",
+  "deleteRoleMessage": "Delete the \"{{name}}\" role? This is blocked if any users are still assigned to it."
+}

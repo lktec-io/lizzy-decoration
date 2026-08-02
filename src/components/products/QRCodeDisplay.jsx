@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { FiDownload, FiPrinter, FiRefreshCw } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import * as qrCodeService from '../../services/qrCodeService';
 import * as labelService from '../../services/labelService';
 import '../../styles/components/QRCodeDisplay.css';
 
 function QRCodeDisplay({ productId, productName }) {
+  const { t } = useTranslation('products');
   const [qr, setQr] = useState(null);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
@@ -15,9 +17,10 @@ function QRCodeDisplay({ productId, productName }) {
     let cancelled = false;
     qrCodeService.getProductQr(productId)
       .then((data) => { if (!cancelled) setQr(data); })
-      .catch(() => { if (!cancelled) setError('Failed to load QR code.'); })
+      .catch(() => { if (!cancelled) setError(t('failedToLoadQrCode')); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t's reference is stable enough here; this only needs to refetch when productId changes, not on language switch
   }, [productId]);
 
   const handleRegenerate = async () => {
@@ -27,7 +30,7 @@ function QRCodeDisplay({ productId, productName }) {
       const data = await qrCodeService.regenerateProductQr(productId);
       setQr(data);
     } catch {
-      setError('Failed to regenerate QR code.');
+      setError(t('failedToRegenerateQrCode'));
     } finally {
       setRegenerating(false);
     }
@@ -39,7 +42,7 @@ function QRCodeDisplay({ productId, productName }) {
     try {
       await labelService.printSingleLabel(productId, { size: 'medium' });
     } catch {
-      setError('Failed to generate label PDF.');
+      setError(t('failedToGenerateLabelPdf'));
     } finally {
       setPrinting(false);
     }
@@ -48,7 +51,7 @@ function QRCodeDisplay({ productId, productName }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-6">
-        <span className="spinner" aria-label="Loading" />
+        <span className="spinner" aria-label={t('common:loading')} />
       </div>
     );
   }
@@ -64,10 +67,10 @@ function QRCodeDisplay({ productId, productName }) {
         )}
         <div className="flex flex-col gap-2">
           <a href={qr?.qr_path} download className="btn btn-secondary btn-sm">
-            <FiDownload aria-hidden="true" /> Download QR
+            <FiDownload aria-hidden="true" /> {t('downloadQr')}
           </a>
           <button type="button" className={`btn btn-secondary btn-sm ${printing ? 'btn-loading' : ''}`} onClick={handlePrint} disabled={printing}>
-            <FiPrinter aria-hidden="true" /> Print Label
+            <FiPrinter aria-hidden="true" /> {t('printLabel')}
           </button>
           <button
             type="button"
@@ -75,7 +78,7 @@ function QRCodeDisplay({ productId, productName }) {
             onClick={handleRegenerate}
             disabled={regenerating}
           >
-            <FiRefreshCw aria-hidden="true" /> Regenerate
+            <FiRefreshCw aria-hidden="true" /> {t('regenerate')}
           </button>
         </div>
       </div>

@@ -414,7 +414,7 @@ function ReportsCenter() {
     <div className="reports-page">
       <div className="reports-print-header">
         {company?.logo_path ? (
-          <img src={company.logo_path} alt={company.company_name || 'Company logo'} className="reports-print-logo" />
+          <img src={company.logo_path} alt={company.company_name || t('companyLogo')} className="reports-print-logo" />
         ) : (
           <span className="reports-print-mark">{company?.company_name || 'JOZZY'}</span>
         )}

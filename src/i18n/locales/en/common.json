@@ -96,5 +96,10 @@
   "list": "List",
   "grid": "Grid",
   "listView": "List view",
-  "gridView": "Grid view"
+  "gridView": "Grid view",
+  "dismissNotification": "Dismiss notification",
+  "unread": "Unread",
+  "startingCamera": "Starting camera",
+  "other": "Other",
+  "value": "Value"
 }

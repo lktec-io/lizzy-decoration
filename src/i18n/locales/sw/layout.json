@@ -34,7 +34,10 @@
     "logout": "Ondoka",
     "user": "Mtumiaji",
     "openMenu": "Fungua menyu",
-    "closeMenu": "Funga menyu"
+    "closeMenu": "Funga menyu",
+    "language": "Lugha",
+    "languageMenu": "Menyu ya lugha",
+    "selectLanguage": "Chagua {{language}}"
   },
   "themePicker": {
     "changeTheme": "Badilisha mandhari",

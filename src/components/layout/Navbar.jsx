@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useCompany } from '../../hooks/useCompany';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as searchService from '../../services/searchService';
 import * as notificationService from '../../services/notificationService';
 import { ROUTES } from '../../constants/routes';
@@ -160,11 +161,14 @@ function Navbar({ onMenuClick, isOpen }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { company } = useCompany();
+  const { language, setLanguage, languages } = useLanguage();
   const { query, setQuery, results, open, setOpen } = useGlobalSearch();
   const searchRef = useRef(null);
   const notifications = useNotifications();
   const notificationsRef = useRef(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [prevUserMenuOpen, setPrevUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
 
   const dateLabel = now.toLocaleDateString('en-TZ', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
@@ -189,6 +193,19 @@ function Navbar({ onMenuClick, isOpen }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- notifications.setOpen is stable across renders (useState setter)
   }, [setOpen]);
+
+  // The language submenu is nested inside the user panel, not a second
+  // floating layer — closing the panel (any of the ways that already
+  // happens: outside click, picking Profile/Settings/Logout/a language)
+  // should always collapse the submenu too, so it doesn't reopen
+  // already-expanded next time. Derived during render (same pattern
+  // MainLayout.jsx/Sidebar.jsx use for prop-driven state resets) rather
+  // than a useEffect, since this project's lint config treats
+  // setState-in-effect as an error for what's a synchronous derivation.
+  if (userMenuOpen !== prevUserMenuOpen) {
+    setPrevUserMenuOpen(userMenuOpen);
+    if (!userMenuOpen) setLangMenuOpen(false);
+  }
 
   // Toggles a class on <html> instead of tracking scroll position in state —
   // the navbar's elevated-glass shadow (layout.css) reads that class
@@ -351,7 +368,7 @@ function Navbar({ onMenuClick, isOpen }) {
                             <div className="navbar-notification-body">
                               <span className="navbar-notification-title-row">
                                 <span className="navbar-notification-title">{n.title}</span>
-                                {!n.read_at && <span className="navbar-notification-unread-dot" aria-label="Unread" />}
+                                {!n.read_at && <span className="navbar-notification-unread-dot" aria-label={t('common:unread')} />}
                               </span>
                               <span className="navbar-notification-message">{n.message}</span>
                               <span className="navbar-notification-time">{formatNotificationTime(n.created_at)}</span>
@@ -426,6 +443,51 @@ function Navbar({ onMenuClick, isOpen }) {
                   >
                     <FiSettings aria-hidden="true" /> {t('navbar.settings')}
                   </button>
+
+                  {/* Convenience shortcut only — the full switcher with its
+                      own description lives on Settings > Language
+                      (Profile.jsx); this reuses the exact same useLanguage()
+                      hook and i18n instance, so a change here and a change
+                      there are the same action, never two sources of truth. */}
+                  <button
+                    type="button"
+                    className="navbar-user-panel-item"
+                    onClick={() => setLangMenuOpen((prev) => !prev)}
+                    aria-expanded={langMenuOpen}
+                    aria-controls="navbar-language-submenu"
+                  >
+                    <span aria-hidden="true">🌐</span> {t('navbar.language')}
+                    <FiChevronDown className={`navbar-lang-caret ${langMenuOpen ? 'navbar-lang-caret-open' : ''}`} aria-hidden="true" />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {langMenuOpen && (
+                      <motion.div
+                        id="navbar-language-submenu"
+                        className="navbar-lang-submenu"
+                        role="group"
+                        aria-label={t('navbar.languageMenu')}
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                      >
+                        {languages.map((lang) => (
+                          <button
+                            key={lang.code}
+                            type="button"
+                            className={`navbar-lang-option ${language === lang.code ? 'navbar-lang-option-active' : ''}`}
+                            aria-pressed={language === lang.code}
+                            aria-label={t('navbar.selectLanguage', { language: lang.label })}
+                            onClick={() => { setLanguage(lang.code); setUserMenuOpen(false); }}
+                          >
+                            <span aria-hidden="true">{lang.flag}</span> {lang.label}
+                            {language === lang.code && <FiCheck className="navbar-lang-check" aria-hidden="true" />}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <div className="navbar-user-panel-divider" />
                   <button type="button" className="navbar-user-panel-item navbar-user-panel-item-danger" onClick={handleLogout}>
                     <FiLogOut aria-hidden="true" /> {t('navbar.logout')}

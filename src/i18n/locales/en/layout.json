@@ -34,7 +34,10 @@
     "logout": "Logout",
     "user": "User",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "language": "Language",
+    "languageMenu": "Language menu",
+    "selectLanguage": "Select {{language}}"
   },
   "themePicker": {
     "changeTheme": "Change theme",

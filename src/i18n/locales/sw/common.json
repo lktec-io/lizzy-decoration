@@ -96,5 +96,10 @@
   "list": "Orodha",
   "grid": "Gridi",
   "listView": "Mwonekano wa orodha",
-  "gridView": "Mwonekano wa gridi"
+  "gridView": "Mwonekano wa gridi",
+  "dismissNotification": "Ondoa arifa",
+  "unread": "Haijasomwa",
+  "startingCamera": "Inaanzisha kamera",
+  "other": "Nyingine",
+  "value": "Thamani"
 }

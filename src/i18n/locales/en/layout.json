@@ -44,5 +44,13 @@
     "themePicker": "Theme picker",
     "appearance": "Appearance",
     "chooseYourTheme": "Choose your theme"
+  },
+  "bottomNav": {
+    "label": "Primary",
+    "home": "Home",
+    "sales": "Sales",
+    "stock": "Stock",
+    "reports": "Reports",
+    "profile": "Profile"
   }
 }

@@ -44,5 +44,13 @@
     "themePicker": "Kichaguzi cha mandhari",
     "appearance": "Muonekano",
     "chooseYourTheme": "Chagua mandhari yako"
+  },
+  "bottomNav": {
+    "label": "Menyu Kuu",
+    "home": "Nyumbani",
+    "sales": "Mauzo",
+    "stock": "Hisa",
+    "reports": "Ripoti",
+    "profile": "Wasifu"
   }
 }

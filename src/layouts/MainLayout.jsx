@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from '../components/layout/Sidebar';
 import Navbar from '../components/layout/Navbar';
+import BottomNav from '../components/layout/BottomNav';
 import PageTransition from '../components/common/PageTransition';
 
 // Mobile-drawer-only entrance/exit — a CSS !important safety net in
@@ -100,6 +101,8 @@ function MainLayout() {
       <main className="app-main">
         <PageTransition />
       </main>
+
+      <BottomNav />
     </div>
   );
 }

@@ -265,6 +265,7 @@ function POS() {
           quantity: line.quantity,
           discountAmount: Number(line.discountAmount) || 0,
         })),
+        paymentMethod,
       });
       clearCart();
       setHeldSalesCount((prev) => prev + 1);
@@ -285,6 +286,10 @@ function POS() {
     setCart(held.cart_data.items);
     setCustomerId(held.cart_data.customerId ? String(held.cart_data.customerId) : '');
     setBranchId(String(held.branch_id));
+    if (held.cart_data.paymentMethod) {
+      setPaymentMethod(held.cart_data.paymentMethod);
+      setMobileMoneyOpen(false);
+    }
     idempotencyKeyRef.current = crypto.randomUUID();
     setHeldSalesCount((prev) => Math.max(0, prev - 1));
     heldSaleService.deleteHeldSale(held.id).catch(() => {});

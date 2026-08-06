@@ -58,6 +58,7 @@ export async function holdSale(data, actorId, user) {
     customerId: data.customerId || null,
     customerName: data.customerName || null,
     cartDiscountAmount,
+    paymentMethod: data.paymentMethod || null,
     notes: data.notes || null,
   };
 

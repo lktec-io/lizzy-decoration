@@ -10,6 +10,7 @@ import * as customerRepository from '../repositories/customer.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as permissionRepository from '../repositories/permission.repository.js';
 import * as notificationRepository from '../repositories/notification.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 
 // Cashiers (sales.create only) may discount up to this fraction of a line
@@ -246,6 +247,11 @@ export async function checkout(data, actorId, user) {
       description: `Sale "${saleNumber}" completed (${preparedItems.length} item${preparedItems.length === 1 ? '' : 's'}, ${formatCurrency(totalAmount)})`,
       referenceType: 'sale',
       referenceId: saleId,
+    });
+    await recordAudit({
+      user, branchId,
+      action: 'Sale Completed', module: 'Sales', recordId: saleId,
+      description: `Sale "${saleNumber}" completed (${preparedItems.length} item${preparedItems.length === 1 ? '' : 's'}, ${formatCurrency(totalAmount)})`,
     });
 
     await notificationRepository.notifyBranchManagement(branchId, {

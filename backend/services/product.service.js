@@ -7,6 +7,7 @@ import * as productRepository from '../repositories/product.repository.js';
 import * as categoryRepository from '../repositories/category.repository.js';
 import * as brandRepository from '../repositories/brand.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { generateCode } from '../repositories/sequence.repository.js';
 import { resolveUploadedFileUrl, deleteUploadedFile } from '../middlewares/upload.js';
 import { getAccessibleBranchIds } from '../utils/branchScope.js';
@@ -105,6 +106,10 @@ export async function createProduct(data, actorId) {
     referenceType: 'product',
     referenceId: product.id,
   });
+  await recordAudit({
+    userId: actorId, action: 'Product Created', module: 'Products', recordId: product.id,
+    description: `Product "${product.name}" (${product.code}) created`,
+  });
   return product;
 }
 
@@ -122,6 +127,8 @@ export async function updateProduct(id, data, actorId) {
 
   assertPriceSanity(data);
 
+  const priceChanged = Number(existing.selling_price) !== Number(data.sellingPrice);
+
   const product = await productRepository.update(id, { ...data, userId: actorId });
   await activityLogRepository.create({
     userId: actorId,
@@ -130,6 +137,17 @@ export async function updateProduct(id, data, actorId) {
     referenceType: 'product',
     referenceId: id,
   });
+  await recordAudit({
+    userId: actorId, action: 'Product Updated', module: 'Products', recordId: id,
+    description: `Product "${product.name}" (${product.code}) updated`,
+  });
+  if (priceChanged) {
+    await recordAudit({
+      userId: actorId, action: 'Price Changed', module: 'Products', recordId: id,
+      description: `Selling price for "${product.name}" (${product.code}) changed from ${existing.selling_price} to ${data.sellingPrice}`,
+      oldValue: { sellingPrice: existing.selling_price }, newValue: { sellingPrice: data.sellingPrice },
+    });
+  }
   return product;
 }
 
@@ -206,6 +224,10 @@ export async function deleteProduct(id, actorId) {
       : `Product "${existing.name}" (${existing.code}) permanently deleted`,
     referenceType: 'product',
     referenceId: id,
+  });
+  await recordAudit({
+    userId: actorId, action: 'Product Deleted', module: 'Products', recordId: id,
+    description: `Product "${existing.name}" (${existing.code}) permanently deleted`,
   });
   return { archived: false };
 }

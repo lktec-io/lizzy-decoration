@@ -5,6 +5,7 @@ import * as expenseCategoryRepository from '../repositories/expenseCategory.repo
 import * as branchRepository from '../repositories/branch.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as notificationRepository from '../repositories/notification.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 
 async function assertBranchAccess(user, branchId) {
@@ -64,6 +65,11 @@ export async function createExpense(data, actorId, user) {
     referenceType: 'expense',
     referenceId: expense.id,
   });
+  await recordAudit({
+    userId: actorId, branchId,
+    action: 'Expense Added', module: 'Expenses', recordId: expense.id,
+    description: `Expense of ${category.name} (${data.amount}) recorded at "${branch.name}"`,
+  });
 
   await notificationRepository.notifyBranchManagement(branchId, {
     type: 'info',
@@ -106,6 +112,11 @@ export async function updateExpense(id, data, actorId, user) {
     referenceType: 'expense',
     referenceId: id,
   });
+  await recordAudit({
+    userId: actorId, branchId,
+    action: 'Expense Updated', module: 'Expenses', recordId: id,
+    description: `Expense "${expense.id}" updated`,
+  });
 
   return expense;
 }
@@ -123,5 +134,10 @@ export async function deleteExpense(id, actorId, user) {
     description: `Expense of ${existing.category_name} (${existing.amount}) deleted`,
     referenceType: 'expense',
     referenceId: id,
+  });
+  await recordAudit({
+    userId: actorId, branchId: existing.branch_id,
+    action: 'Expense Deleted', module: 'Expenses', recordId: id,
+    description: `Expense of ${existing.category_name} (${existing.amount}) deleted`,
   });
 }

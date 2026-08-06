@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import { ApiError } from '../utils/apiError.js';
 import * as companyRepository from '../repositories/company.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { resolveUploadedFileUrl, deleteUploadedFile } from '../middlewares/upload.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,11 +51,16 @@ export async function upsertProfile(data, userId) {
     userId,
   };
 
-  if (!existing) {
-    return companyRepository.insert({ ...payload, logoPath: null });
-  }
+  const result = existing
+    ? await companyRepository.update(existing.id, payload)
+    : await companyRepository.insert({ ...payload, logoPath: null });
 
-  return companyRepository.update(existing.id, payload);
+  await recordAudit({
+    userId, action: 'Company Settings Updated', module: 'System', recordId: result.id,
+    description: `Company profile "${payload.companyName}" ${existing ? 'updated' : 'created'}`,
+  });
+
+  return result;
 }
 
 export async function updateLogo(file, userId) {
@@ -85,6 +91,10 @@ export async function updateLogo(file, userId) {
     description: 'Company logo updated',
     referenceType: 'company_settings',
     referenceId: existing.id,
+  });
+  await recordAudit({
+    userId, action: 'Company Settings Updated', module: 'System', recordId: existing.id,
+    description: 'Company logo updated',
   });
 
   return updated;

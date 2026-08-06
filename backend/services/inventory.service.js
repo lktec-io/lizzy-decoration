@@ -4,6 +4,7 @@ import * as inventoryRepository from '../repositories/inventory.repository.js';
 import * as productRepository from '../repositories/product.repository.js';
 import * as branchRepository from '../repositories/branch.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import { recordAudit } from './auditLog.service.js';
 
 export async function listInventory(query, user) {
   const page = Number(query.page) || 1;
@@ -86,6 +87,12 @@ export async function createAdjustment(data, user) {
     description: `Stock adjustment for "${product.name}": ${previousStock} → ${newStock} (${data.reason})`,
     referenceType: 'inventory_adjustment',
     referenceId: movementId,
+  });
+  await recordAudit({
+    userId: user.id, branchId: data.branchId,
+    action: data.quantityChange >= 0 ? 'Stock Added' : 'Stock Reduced',
+    module: 'Inventory', recordId: movementId,
+    description: `Stock adjustment for "${product.name}": ${previousStock} -> ${newStock} (${data.reason})`,
   });
 
   return { previousStock, newStock };

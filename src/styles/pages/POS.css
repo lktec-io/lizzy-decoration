@@ -459,3 +459,81 @@
 .pos-receipt-modal-actions .btn {
   flex: 1 1 auto;
 }
+
+/* Held Sales drawer (a Modal — see HeldSalesDrawer.jsx) — one row per hold,
+   same padding/border-radius/border language as .pos-cart-line so it reads
+   as the same product rather than a bespoke list style. */
+.held-sales-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.held-sales-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.held-sales-list-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.held-sales-list-number {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.held-sales-list-customer {
+  font-size: var(--font-size-sm);
+}
+
+.held-sales-list-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.held-sales-list-side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.held-sales-list-total {
+  font-weight: var(--font-weight-semibold);
+}
+
+.held-sales-list-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pos-held-sales-btn {
+  position: relative;
+}
+
+.pos-held-sales-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  color: var(--color-white, #fff);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

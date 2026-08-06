@@ -4,6 +4,7 @@ import * as saleService from '../services/sale.service.js';
 import * as receiptService from '../services/receipt.service.js';
 import * as companyService from '../services/company.service.js';
 import * as systemSettingsService from '../services/systemSettings.service.js';
+import { recordAudit } from '../services/auditLog.service.js';
 
 export const list = asyncHandler(async (req, res) => {
   const { items, meta } = await saleService.listSales(req.query, req.user);
@@ -27,6 +28,13 @@ export const receipt = asyncHandler(async (req, res) => {
     systemSettingsService.getSettings(),
   ]);
   const pdf = await receiptService.buildReceiptPdf(sale, company, req.query.size, receiptQrVerificationEnabled);
+
+  await recordAudit({
+    user: req.user, branchId: sale.branch_id,
+    action: 'Receipt Printed', module: 'Sales', recordId: sale.id,
+    description: `Receipt printed for sale "${sale.sale_number}"`,
+    ipAddress: req.ip, userAgent: req.headers['user-agent'],
+  });
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `inline; filename="${sale.sale_number}.pdf"`);

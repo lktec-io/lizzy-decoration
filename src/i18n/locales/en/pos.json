@@ -78,5 +78,19 @@
   "paymentsCardTitle": "Payments",
   "colMethod": "Method",
   "change": "Change",
-  "balanceDue": "Balance Due"
+  "balanceDue": "Balance Due",
+
+  "holdSale": "Hold Sale",
+  "saleHeldAs": "Sale held as {{number}}",
+  "failedToHoldSale": "Failed to hold sale.",
+  "heldSalesTitle": "Held Sales",
+  "noHeldSales": "No held sales",
+  "noHeldSalesDescription": "Sales you hold will appear here until resumed or deleted.",
+  "itemsCount_one": "{{count}} item",
+  "itemsCount_other": "{{count}} items",
+  "resume": "Resume",
+  "deleteHoldAria": "Delete {{number}}",
+  "deleteHoldConfirmTitle": "Delete held sale",
+  "deleteHoldConfirmMessage": "Delete {{number}}? This only removes the held cart — nothing else is affected.",
+  "failedToLoadHeldSales": "Failed to load held sales."
 }

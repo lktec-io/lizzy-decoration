@@ -78,5 +78,19 @@
   "paymentsCardTitle": "Malipo",
   "colMethod": "Njia",
   "change": "Chenji",
-  "balanceDue": "Salio Linalodaiwa"
+  "balanceDue": "Salio Linalodaiwa",
+
+  "holdSale": "Simamisha Mauzo",
+  "saleHeldAs": "Mauzo yamesimamishwa kama {{number}}",
+  "failedToHoldSale": "Imeshindwa kusimamisha mauzo.",
+  "heldSalesTitle": "Mauzo Yaliyosimamishwa",
+  "noHeldSales": "Hakuna mauzo yaliyosimamishwa",
+  "noHeldSalesDescription": "Mauzo utakayosimamisha yataonekana hapa mpaka yaendelezwe au kufutwa.",
+  "itemsCount_one": "bidhaa {{count}}",
+  "itemsCount_other": "bidhaa {{count}}",
+  "resume": "Endeleza",
+  "deleteHoldAria": "Futa {{number}}",
+  "deleteHoldConfirmTitle": "Futa mauzo yaliyosimamishwa",
+  "deleteHoldConfirmMessage": "Futa {{number}}? Hatua hii inaondoa tu kikapu kilichosimamishwa — hakuna kingine kinachoathiriwa.",
+  "failedToLoadHeldSales": "Imeshindwa kupakia mauzo yaliyosimamishwa."
 }

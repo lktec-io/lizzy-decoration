@@ -46,6 +46,7 @@ const ReportsCenter = lazy(() => import('../pages/reports/ReportsCenter'));
 const SystemSettings = lazy(() => import('../pages/settings/SystemSettings'));
 const ExpenseCategorySettings = lazy(() => import('../pages/settings/ExpenseCategorySettings'));
 const CarwashServiceSettings = lazy(() => import('../pages/settings/CarwashServiceSettings'));
+const AuditTrail = lazy(() => import('../pages/settings/AuditTrail'));
 const Profile = lazy(() => import('../pages/profile/Profile'));
 const NotFound404 = lazy(() => import('../pages/errors/NotFound404'));
 const Forbidden403 = lazy(() => import('../pages/errors/Forbidden403'));
@@ -93,6 +94,7 @@ function AppRouter() {
               <Route path="/settings/expense-categories" element={<RequirePermission permission="settings.manage"><ExpenseCategorySettings /></RequirePermission>} />
               <Route path="/settings/carwash-services" element={<RequirePermission permission="settings.manage"><CarwashServiceSettings /></RequirePermission>} />
               <Route path="/settings/system" element={<RequirePermission permission="settings.view"><SystemSettings /></RequirePermission>} />
+              <Route path="/settings/audit-trail" element={<RequirePermission permission="audit.view"><AuditTrail /></RequirePermission>} />
               <Route path="/profile" element={<Profile />} />
 
               {/* Bookmark-safety redirects — these pages moved under Settings. */}

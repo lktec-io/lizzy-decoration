@@ -8,6 +8,7 @@ import * as branchRepository from '../repositories/branch.repository.js';
 import * as productRepository from '../repositories/product.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as notificationRepository from '../repositories/notification.repository.js';
+import { recordAudit } from './auditLog.service.js';
 
 async function assertBranchAccess(user, branchId) {
   const branchIds = await getAccessibleBranchIds(user);
@@ -174,6 +175,11 @@ export async function approveTransfer(id, actorId, user) {
       description: `Transfer "${transfer.transfer_number}" approved: stock moved from "${transfer.source_branch_name}" to "${transfer.destination_branch_name}"`,
       referenceType: 'stock_transfer_request',
       referenceId: id,
+    });
+    await recordAudit({
+      userId: actorId, branchId: transfer.destination_branch_id,
+      action: 'Stock Transfer', module: 'Inventory', recordId: id,
+      description: `Transfer "${transfer.transfer_number}" approved: stock moved from "${transfer.source_branch_name}" to "${transfer.destination_branch_name}"`,
     });
 
     await notificationRepository.notifyBranchManagement(transfer.destination_branch_id, {

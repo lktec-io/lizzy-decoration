@@ -9,6 +9,7 @@ import * as branchRepository from '../repositories/branch.repository.js';
 import * as productRepository from '../repositories/product.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as notificationRepository from '../repositories/notification.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 
 export async function listPurchases(query, user) {
@@ -103,6 +104,11 @@ export async function createPurchase(data, actorId) {
       message: `Purchase "${purchaseNumber}" (${formatCurrency(totalAmount)}) received from "${supplier.name}" at "${branch.name}"`,
       referenceType: 'purchase_order',
       referenceId: orderId,
+    });
+    await recordAudit({
+      userId: actorId, branchId: data.branchId,
+      action: 'Purchase Created', module: 'Purchases', recordId: orderId,
+      description: `Purchase "${purchaseNumber}" (${formatCurrency(totalAmount)}) received from "${supplier.name}"`,
     });
 
     return purchaseRepository.findById(orderId);

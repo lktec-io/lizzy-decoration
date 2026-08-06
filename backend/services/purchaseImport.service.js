@@ -10,6 +10,7 @@ import * as inventoryRepository from '../repositories/inventory.repository.js';
 import * as branchRepository from '../repositories/branch.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as notificationRepository from '../repositories/notification.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 
 const TEMPLATE_COLUMNS = [
@@ -428,6 +429,11 @@ export async function commitImport(rawRows, { branchId }, actorId) {
         description: `Purchase "${purchaseNumber}" imported from Excel (${succeededItems.length} item${succeededItems.length === 1 ? '' : 's'}) from "${supplier.name}"`,
         referenceType: 'purchase_order',
         referenceId: orderId,
+      });
+      await recordAudit({
+        userId: actorId, branchId,
+        action: 'Purchase Imported from Excel', module: 'Purchases', recordId: orderId,
+        description: `Purchase "${purchaseNumber}" imported from Excel (${succeededItems.length} item${succeededItems.length === 1 ? '' : 's'}) from "${supplier.name}"`,
       });
 
       await notificationRepository.notifyBranchManagement(branchId, {

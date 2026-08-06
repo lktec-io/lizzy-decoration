@@ -48,7 +48,7 @@ export const refresh = asyncHandler(async (req, res) => {
 
 export const logout = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
-  await authService.logout({ refreshToken });
+  await authService.logout({ refreshToken, ipAddress: req.ip, userAgent: req.headers['user-agent'] });
   clearRefreshCookie(res);
   return success(res, { message: 'Logged out' });
 });
@@ -101,6 +101,8 @@ export const changePassword = asyncHandler(async (req, res) => {
   await authService.changeOwnPassword(req.user.id, {
     currentPassword: req.body.currentPassword,
     newPassword: req.body.newPassword,
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
   });
   clearRefreshCookie(res);
   return success(res, { message: 'Password changed. Please log in again.' });

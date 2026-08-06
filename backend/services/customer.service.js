@@ -2,6 +2,7 @@ import { ApiError } from '../utils/apiError.js';
 import { generateCode } from '../repositories/sequence.repository.js';
 import * as customerRepository from '../repositories/customer.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import { recordAudit } from './auditLog.service.js';
 
 export async function listCustomers(query) {
   const page = Number(query.page) || 1;
@@ -73,6 +74,10 @@ export async function createCustomer(data, actorId) {
     referenceType: 'customer',
     referenceId: customer.id,
   });
+  await recordAudit({
+    userId: actorId, action: 'Customer Created', module: 'Customers', recordId: customer.id,
+    description: `Customer "${customerCode}" (${customer.first_name} ${customer.last_name}) created`,
+  });
 
   return customer;
 }
@@ -94,6 +99,10 @@ export async function updateCustomer(id, data, actorId) {
     description: `Customer "${customer.customer_code}" updated`,
     referenceType: 'customer',
     referenceId: id,
+  });
+  await recordAudit({
+    userId: actorId, action: 'Customer Updated', module: 'Customers', recordId: id,
+    description: `Customer "${customer.customer_code}" updated`,
   });
 
   return customer;
@@ -135,5 +144,9 @@ export async function deleteCustomer(id, actorId) {
     description: `Customer "${existing.customer_code}" (${existing.first_name} ${existing.last_name}) permanently deleted`,
     referenceType: 'customer',
     referenceId: id,
+  });
+  await recordAudit({
+    userId: actorId, action: 'Customer Deleted', module: 'Customers', recordId: id,
+    description: `Customer "${existing.customer_code}" (${existing.first_name} ${existing.last_name}) permanently deleted`,
   });
 }

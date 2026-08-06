@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiTrash2, FiCamera, FiPlus, FiMinus, FiClock, FiShoppingCart, FiUserPlus, FiPercent, FiPrinter, FiDownload, FiCheckCircle } from 'react-icons/fi';
+import { FiTrash2, FiCamera, FiPlus, FiMinus, FiClock, FiShoppingCart, FiUserPlus, FiPercent, FiPrinter, FiDownload, FiCheckCircle, FiPauseCircle, FiArchive } from 'react-icons/fi';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SearchInput from '../../components/common/SearchInput';
 import QRScanner from '../../components/common/QRScanner';
 import EmptyState from '../../components/common/EmptyState';
+import HeldSalesDrawer from '../../components/pos/HeldSalesDrawer';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -15,6 +16,7 @@ import * as productService from '../../services/productService';
 import * as branchService from '../../services/branchService';
 import * as customerService from '../../services/customerService';
 import * as saleService from '../../services/saleService';
+import * as heldSaleService from '../../services/heldSaleService';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { splitFullName } from '../../utils/splitFullName';
 import '../../styles/pages/POS.css';
@@ -38,6 +40,12 @@ function POS() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const canOverride = usePermission('sales.manage');
+  // Same permission checkout itself requires (sales.create) — Store Keeper
+  // has sales.view only (seeders/004_fix_role_permissions.sql), so gating
+  // Hold/Held Sales visibility on this one existing permission keeps them
+  // out without inventing a new permission code, matching the backend's
+  // heldSale.routes.js gate exactly.
+  const canHoldSales = usePermission('sales.create');
   const toast = useToast();
 
   const searchInputRef = useRef(null);
@@ -81,7 +89,11 @@ function POS() {
   const [quickCustomerError, setQuickCustomerError] = useState('');
   const [savingQuickCustomer, setSavingQuickCustomer] = useState(false);
 
-  const anyModalOpen = scannerOpen || quickCustomerOpen || clearCartConfirmOpen || Boolean(lastSale);
+  const [heldSalesOpen, setHeldSalesOpen] = useState(false);
+  const [heldSalesCount, setHeldSalesCount] = useState(0);
+  const [isHoldingSale, setIsHoldingSale] = useState(false);
+
+  const anyModalOpen = scannerOpen || quickCustomerOpen || clearCartConfirmOpen || Boolean(lastSale) || heldSalesOpen;
 
   useEffect(() => {
     if (!user?.branch_id) {
@@ -219,6 +231,63 @@ function POS() {
     setPaymentMethod('cash');
     setMobileMoneyOpen(false);
     idempotencyKeyRef.current = crypto.randomUUID();
+  };
+
+  // Badge count only — the drawer itself re-fetches its own list when
+  // opened. Skipped entirely for a role without sales.create (Store
+  // Keeper), since the held-sales endpoints 403 for them anyway.
+  useEffect(() => {
+    if (!branchId || !canHoldSales) return;
+    heldSaleService.listHeldSales(branchId).then((rows) => setHeldSalesCount(rows.length)).catch(() => {});
+  }, [branchId, canHoldSales]);
+
+  // Holds the cart as-is (a server-persisted snapshot — see
+  // heldSale.service.js) and clears it from view, exactly like starting a
+  // fresh sale. Never touches stock, never creates a sale/receipt — only
+  // Checkout does that. customerName is resolved here (not sent as an id
+  // lookup on the backend) since the frontend already has the full
+  // customers list in memory.
+  const handleHoldSale = async () => {
+    if (cart.length === 0 || !branchId || isHoldingSale) return;
+    setIsHoldingSale(true);
+    try {
+      const selectedCustomer = customerId ? customers.find((c) => String(c.id) === String(customerId)) : null;
+      const held = await heldSaleService.holdSale({
+        branchId: Number(branchId),
+        customerId: customerId ? Number(customerId) : undefined,
+        customerName: selectedCustomer ? `${selectedCustomer.first_name} ${selectedCustomer.last_name}` : undefined,
+        items: cart.map((line) => ({
+          productId: line.productId,
+          name: line.name,
+          code: line.code,
+          unitPrice: line.unitPrice,
+          availableQuantity: line.availableQuantity,
+          quantity: line.quantity,
+          discountAmount: Number(line.discountAmount) || 0,
+        })),
+      });
+      clearCart();
+      setHeldSalesCount((prev) => prev + 1);
+      toast.success(t('saleHeldAs', { number: held.hold_number }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || t('failedToHoldSale'));
+    } finally {
+      setIsHoldingSale(false);
+    }
+  };
+
+  // Restores the exact cart the hold snapshot captured, then removes the
+  // hold server-side (once resumed, it's no longer "held" — it's back to
+  // being a live, in-progress cart, exactly like any other). Only ever
+  // touches client cart state plus the held_sales row itself — never
+  // inventory/sales/reports, which stay untouched until real Checkout.
+  const handleResumeHeldSale = (held) => {
+    setCart(held.cart_data.items);
+    setCustomerId(held.cart_data.customerId ? String(held.cart_data.customerId) : '');
+    setBranchId(String(held.branch_id));
+    idempotencyKeyRef.current = crypto.randomUUID();
+    setHeldSalesCount((prev) => Math.max(0, prev - 1));
+    heldSaleService.deleteHeldSale(held.id).catch(() => {});
   };
 
   const subtotal = useMemo(() => cart.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0), [cart]);
@@ -519,6 +588,12 @@ function POS() {
             <button type="button" className="btn btn-ghost" onClick={() => navigate('/pos/sales')}>
               <FiClock aria-hidden="true" /> {t('saleHistory')}
             </button>
+            {canHoldSales && (
+              <button type="button" className="btn btn-ghost pos-held-sales-btn" onClick={() => setHeldSalesOpen(true)}>
+                <FiArchive aria-hidden="true" /> {t('heldSalesTitle')}
+                {heldSalesCount > 0 && <span className="pos-held-sales-badge">{heldSalesCount}</span>}
+              </button>
+            )}
           </div>
         </div>
 
@@ -558,7 +633,19 @@ function POS() {
         <div className="pos-cart-header">
           <span className="card-title">{t('cartTitleWithCount', { count: cart.length })}</span>
           {cart.length > 0 && (
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setClearCartConfirmOpen(true)}>{t('clearCart')}</button>
+            <div className="flex items-center gap-2">
+              {canHoldSales && (
+                <button
+                  type="button"
+                  className={`btn btn-ghost btn-sm ${isHoldingSale ? 'btn-loading' : ''}`}
+                  onClick={handleHoldSale}
+                  disabled={isHoldingSale}
+                >
+                  <FiPauseCircle aria-hidden="true" /> {t('holdSale')}
+                </button>
+              )}
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setClearCartConfirmOpen(true)}>{t('clearCart')}</button>
+            </div>
           )}
         </div>
 
@@ -802,6 +889,16 @@ function POS() {
           />
         </div>
       </Modal>
+
+      {canHoldSales && (
+        <HeldSalesDrawer
+          open={heldSalesOpen}
+          onClose={() => setHeldSalesOpen(false)}
+          branchId={branchId}
+          onResume={handleResumeHeldSale}
+          onListChange={setHeldSalesCount}
+        />
+      )}
 
       <Modal open={Boolean(lastSale)} onClose={dismissReceipt} title={t('saleCompleted')} size="sm">
         {lastSale && (

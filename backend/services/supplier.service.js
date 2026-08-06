@@ -1,6 +1,7 @@
 import { ApiError } from '../utils/apiError.js';
 import * as supplierRepository from '../repositories/supplier.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import { recordAudit } from './auditLog.service.js';
 
 export async function listSuppliers(query) {
   const page = Number(query.page) || 1;
@@ -41,6 +42,10 @@ export async function createSupplier(data, actorId) {
     referenceType: 'supplier',
     referenceId: supplier.id,
   });
+  await recordAudit({
+    userId: actorId, action: 'Supplier Created', module: 'Suppliers', recordId: supplier.id,
+    description: `Supplier "${supplier.name}" created`,
+  });
   return supplier;
 }
 
@@ -55,6 +60,10 @@ export async function updateSupplier(id, data, actorId) {
     description: `Supplier "${supplier.name}" updated`,
     referenceType: 'supplier',
     referenceId: id,
+  });
+  await recordAudit({
+    userId: actorId, action: 'Supplier Updated', module: 'Suppliers', recordId: id,
+    description: `Supplier "${supplier.name}" updated`,
   });
   return supplier;
 }
@@ -93,5 +102,9 @@ export async function deleteSupplier(id, actorId) {
     description: `Supplier "${existing.name}" permanently deleted`,
     referenceType: 'supplier',
     referenceId: id,
+  });
+  await recordAudit({
+    userId: actorId, action: 'Supplier Deleted', module: 'Suppliers', recordId: id,
+    description: `Supplier "${existing.name}" permanently deleted`,
   });
 }

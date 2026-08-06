@@ -2,6 +2,7 @@ import { ApiError } from '../utils/apiError.js';
 import * as userRepository from '../repositories/user.repository.js';
 import * as roleRepository from '../repositories/role.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { hashPassword } from './auth.service.js';
 import { resolveUploadedFileUrl } from '../middlewares/upload.js';
 
@@ -77,6 +78,11 @@ export async function createUser(data, actorId) {
     referenceType: 'user',
     referenceId: user.id,
   });
+  await recordAudit({
+    userId: actorId, branchId: data.branchId || null,
+    action: 'User Created', module: 'Users', recordId: user.id,
+    description: `User "${user.first_name} ${user.last_name}" created with role "${role.name}"`,
+  });
 
   return getUser(user.id);
 }
@@ -113,6 +119,19 @@ export async function updateUser(id, data, actorId) {
     referenceType: 'user',
     referenceId: id,
   });
+  await recordAudit({
+    userId: actorId, branchId: data.branchId || null,
+    action: 'User Updated', module: 'Users', recordId: id,
+    description: `User "${data.firstName} ${data.lastName}" updated`,
+  });
+  if (existing.role_id !== data.roleId) {
+    await recordAudit({
+      userId: actorId, branchId: data.branchId || null,
+      action: 'Role Changed', module: 'Users', recordId: id,
+      description: `Role for "${data.firstName} ${data.lastName}" changed from "${existing.role_name}" to "${role.name}"`,
+      oldValue: { roleId: existing.role_id, roleName: existing.role_name }, newValue: { roleId: data.roleId, roleName: role.name },
+    });
+  }
 
   return getUser(id);
 }
@@ -167,6 +186,11 @@ export async function deleteUser(id, actorId) {
     description: `User "${existing.first_name} ${existing.last_name}" deleted`,
     referenceType: 'user',
     referenceId: id,
+  });
+  await recordAudit({
+    userId: actorId, branchId: existing.branch_id,
+    action: 'User Deleted', module: 'Users', recordId: id,
+    description: `User "${existing.first_name} ${existing.last_name}" deleted`,
   });
 }
 

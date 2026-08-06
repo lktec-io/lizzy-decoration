@@ -22,6 +22,7 @@ import * as passwordResetRepository from '../repositories/passwordReset.reposito
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as permissionRepository from '../repositories/permission.repository.js';
 import { sendMail, passwordResetEmail } from './email.service.js';
+import { recordAudit } from './auditLog.service.js';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -85,20 +86,48 @@ async function issueTokensForUser(user, { rememberMe, ipAddress, userAgent, devi
 export async function login({ identifier, password, rememberMe, ipAddress, userAgent, deviceLabel }) {
   const user = await userRepository.findByEmailOrUsername(identifier);
   if (!user) {
+    await recordAudit({
+      userName: identifier,
+      action: 'Login Failed',
+      module: 'Authentication',
+      description: `Failed login attempt for unknown identifier "${identifier}"`,
+      ipAddress, userAgent, status: 'failed',
+    });
     throw new ApiError(401, 'Invalid credentials');
   }
 
   if (user.status !== 'active') {
+    await recordAudit({
+      userId: user.id, userName: `${user.first_name} ${user.last_name}`, roleName: user.role_name,
+      branchId: user.branch_id, branchName: user.branch_name,
+      action: 'Login Failed', module: 'Authentication',
+      description: 'Login attempt on an inactive account',
+      ipAddress, userAgent, status: 'failed',
+    });
     throw new ApiError(403, 'This account is not active. Contact your administrator.');
   }
 
   if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    await recordAudit({
+      userId: user.id, userName: `${user.first_name} ${user.last_name}`, roleName: user.role_name,
+      branchId: user.branch_id, branchName: user.branch_name,
+      action: 'Login Failed', module: 'Authentication',
+      description: 'Login attempt on a temporarily locked account',
+      ipAddress, userAgent, status: 'failed',
+    });
     throw new ApiError(403, 'This account is temporarily locked due to repeated failed login attempts. Try again later.');
   }
 
   const passwordMatches = await bcrypt.compare(password, user.password_hash);
   if (!passwordMatches) {
     await userRepository.incrementFailedAttemptsAndMaybeLock(user.id, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES);
+    await recordAudit({
+      userId: user.id, userName: `${user.first_name} ${user.last_name}`, roleName: user.role_name,
+      branchId: user.branch_id, branchName: user.branch_name,
+      action: 'Login Failed', module: 'Authentication',
+      description: 'Incorrect password',
+      ipAddress, userAgent, status: 'failed',
+    });
     throw new ApiError(401, 'Invalid credentials');
   }
 
@@ -110,6 +139,13 @@ export async function login({ identifier, password, rememberMe, ipAddress, userA
     description: `${user.first_name} ${user.last_name} logged in`,
     referenceType: 'auth.login',
     referenceId: user.id,
+  });
+  await recordAudit({
+    userId: user.id, userName: `${user.first_name} ${user.last_name}`, roleName: user.role_name,
+    branchId: user.branch_id, branchName: user.branch_name,
+    action: 'Login Success', module: 'Authentication',
+    description: `${user.first_name} ${user.last_name} logged in`,
+    ipAddress, userAgent, status: 'success',
   });
 
   const userWithPermissions = await withPermissions(user);
@@ -169,13 +205,24 @@ export async function refresh({ refreshToken }) {
   return { accessToken, refreshToken: newRefreshToken, user: userWithPermissions };
 }
 
-export async function logout({ refreshToken }) {
+export async function logout({ refreshToken, ipAddress, userAgent }) {
   if (!refreshToken) return;
 
   try {
     const payload = verifyRefreshToken(refreshToken);
     await sessionRepository.revoke(payload.sid);
     await refreshTokenRepository.revokeAllForSession(payload.sid);
+
+    const user = await userRepository.findById(payload.sub);
+    if (user) {
+      await recordAudit({
+        userId: user.id, userName: `${user.first_name} ${user.last_name}`, roleName: user.role_name,
+        branchId: user.branch_id, branchName: user.branch_name,
+        action: 'Logout', module: 'Authentication',
+        description: `${user.first_name} ${user.last_name} logged out`,
+        ipAddress, userAgent, status: 'success',
+      });
+    }
   } catch {
     // Token already invalid/expired — nothing to revoke, treat logout as a no-op success.
   }
@@ -253,7 +300,7 @@ export async function updateOwnProfile(userId, data) {
 // you know the old one. Revokes every session afterward — the same
 // force-relogin behavior resetPassword() already uses — so a stolen access
 // token can't outlive a password change.
-export async function changeOwnPassword(userId, { currentPassword, newPassword }) {
+export async function changeOwnPassword(userId, { currentPassword, newPassword, ipAddress, userAgent }) {
   const user = await userRepository.findById(userId);
   if (!user) throw new ApiError(404, 'User not found');
 
@@ -265,4 +312,12 @@ export async function changeOwnPassword(userId, { currentPassword, newPassword }
 
   await sessionRepository.revokeAllForUser(userId);
   await refreshTokenRepository.revokeAllForUser(userId);
+
+  await recordAudit({
+    userId: user.id, userName: `${user.first_name} ${user.last_name}`, roleName: user.role_name,
+    branchId: user.branch_id, branchName: user.branch_name,
+    action: 'Password Changed', module: 'Authentication',
+    description: `${user.first_name} ${user.last_name} changed their own password`,
+    ipAddress, userAgent, status: 'success',
+  });
 }

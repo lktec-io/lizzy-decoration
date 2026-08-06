@@ -7,6 +7,7 @@ import * as saleRepository from '../repositories/sale.repository.js';
 import * as inventoryRepository from '../repositories/inventory.repository.js';
 import * as activityLogRepository from '../repositories/activityLog.repository.js';
 import * as notificationRepository from '../repositories/notification.repository.js';
+import { recordAudit } from './auditLog.service.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 
 async function assertBranchAccess(user, branchId) {
@@ -99,6 +100,11 @@ export async function createReturn(data, actorId, user) {
       referenceType: 'return',
       referenceId: returnId,
     });
+    await recordAudit({
+      user, branchId: sale.branch_id,
+      action: 'Return Requested', module: 'Returns', recordId: returnId,
+      description: `Return "${returnNumber}" requested against sale "${sale.sale_number}"`,
+    });
 
     return returnRepository.findById(returnId);
   } catch (err) {
@@ -161,6 +167,11 @@ export async function approveReturn(id, actorId, user) {
       description: `Return "${returnRecord.return_number}" approved: stock restored, refund of ${formatCurrency(returnRecord.refund_amount)} issued`,
       referenceType: 'return',
       referenceId: id,
+    });
+    await recordAudit({
+      user, branchId: returnRecord.branch_id,
+      action: 'Return Approved', module: 'Returns', recordId: id,
+      description: `Return "${returnRecord.return_number}" approved: stock restored, refund of ${formatCurrency(returnRecord.refund_amount)} issued`,
     });
 
     await notificationRepository.notifyBranchManagement(returnRecord.branch_id, {

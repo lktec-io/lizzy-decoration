@@ -5,6 +5,7 @@
   "saleHistory": "Sale History",
   "selectBranchPrompt": "Select a branch to view sellable products.",
   "noSellableProducts": "No sellable products found.",
+  "failedToLoadProducts": "Failed to load products for this branch.",
   "inStock": "{{count}} in stock",
   "inCartSuffix": "{{count}} in cart",
 

@@ -5,6 +5,7 @@
   "saleHistory": "Historia ya Mauzo",
   "selectBranchPrompt": "Chagua tawi ili kuona bidhaa zinazouzwa.",
   "noSellableProducts": "Hakuna bidhaa za kuuza zilizopatikana.",
+  "failedToLoadProducts": "Imeshindwa kupakia bidhaa za tawi hili.",
   "inStock": "{{count}} zipo stoo",
   "inCartSuffix": "{{count}} kwenye kikapu",
 

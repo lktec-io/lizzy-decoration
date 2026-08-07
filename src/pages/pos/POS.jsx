@@ -63,6 +63,7 @@ function POS() {
   const debouncedSearch = useDebounce(search, 300);
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const [cart, setCart] = useState([]);
@@ -102,14 +103,29 @@ function POS() {
     customerService.listActiveCustomers().then(setCustomers);
   }, [user]);
 
+  // Was previously a bare `.then(setProducts)` with no `.catch()` — a
+  // rejected request (e.g. a 403 because the authenticated user isn't
+  // actually authorized for this branchId) silently left `products` at its
+  // prior value, rendering as the exact same "No sellable products found"
+  // empty state as a genuinely-empty catalog. That made a real
+  // authorization/network failure indistinguishable from "this branch has
+  // no stock," which is exactly the ambiguity that made this bug so hard
+  // to diagnose. Now surfaced explicitly instead of swallowed.
   const loadProducts = useCallback(() => {
     if (!branchId) return;
     setProductsLoading(true);
+    setProductsError('');
     productService
       .listSellableProducts({ branchId, search: debouncedSearch || undefined })
-      .then(setProducts)
+      .then((rows) => {
+        setProducts(rows);
+      })
+      .catch((err) => {
+        setProducts([]);
+        setProductsError(err.response?.data?.message || t('failedToLoadProducts'));
+      })
       .finally(() => setProductsLoading(false));
-  }, [branchId, debouncedSearch]);
+  }, [branchId, debouncedSearch, t]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetching the product grid on branch/search change is standard data-fetching, not derived state
@@ -606,6 +622,8 @@ function POS() {
           <div className="pos-scan-empty">{t('selectBranchPrompt')}</div>
         ) : productsLoading ? (
           <div className="flex items-center justify-center p-6"><span className="spinner" aria-label={t('common:loading')} /></div>
+        ) : productsError ? (
+          <div className="alert alert-danger m-4" role="alert">{productsError}</div>
         ) : (
           <div className="pos-product-grid">
             {products.map((product, index) => {

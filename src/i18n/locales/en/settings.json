@@ -7,6 +7,32 @@
   "tabCarwashPackages": "Car Wash Packages",
   "tabTaxEmail": "Tax & Email",
   "tabAuditTrail": "Audit Trail",
+  "tabSystemMaintenance": "System Maintenance",
+
+  "systemMaintenance": {
+    "title": "System Maintenance",
+    "subtitle": "Production data reset and system-level maintenance tools",
+    "productionResetTitle": "Production Reset",
+    "warning": "This action permanently removes all operational business data and cannot be undone.",
+    "keptTitle": "Always kept",
+    "keptCompany": "Company settings & logo",
+    "keptBranches": "Branches",
+    "keptRolesPermissions": "Roles & permissions",
+    "keptSuperAdmin": "Super Administrator account(s)",
+    "keptSettings": "Theme, language, and system settings",
+    "removedTitle": "Permanently removed",
+    "removedSales": "Sales, purchases, returns, held sales, transfers",
+    "removedProducts": "Products, inventory, categories' items, QR/labels",
+    "removedCustomersSuppliers": "Customers and suppliers",
+    "removedUsers": "All users except Super Administrator",
+    "removedNotifications": "Notifications",
+    "includeActivityLogs": "Also clear the dashboard Activity Log timeline (optional)",
+    "typeToConfirm": "Type {{word}} to confirm",
+    "runReset": "Run Production Reset",
+    "resetComplete": "Production Reset completed successfully.",
+    "resetSummary": "{{users}} user(s) deactivated, {{files}} generated file(s) removed. The system is ready for real business data.",
+    "failed": "Production Reset failed. No data was changed."
+  },
 
   "auditTrail": {
     "title": "Audit Trail",

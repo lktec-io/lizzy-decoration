@@ -24,6 +24,7 @@ import notificationRoutes from './notification.routes.js';
 import settingsRoutes from './settings.routes.js';
 import auditLogRoutes from './auditLog.routes.js';
 import heldSaleRoutes from './heldSale.routes.js';
+import systemMaintenanceRoutes from './systemMaintenance.routes.js';
 
 const router = Router();
 
@@ -58,5 +59,6 @@ router.use('/notifications', notificationRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/audit-logs', auditLogRoutes);
 router.use('/held-sales', heldSaleRoutes);
+router.use('/system-maintenance', systemMaintenanceRoutes);
 
 export default router;

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiBriefcase, FiMapPin, FiUsers, FiShield, FiTag, FiDroplet, FiPercent, FiClock } from 'react-icons/fi';
+import { FiBriefcase, FiMapPin, FiUsers, FiShield, FiTag, FiDroplet, FiPercent, FiClock, FiTool } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 
 // labelKey resolves through the `settings` i18n namespace at render time
@@ -23,6 +23,7 @@ const TABS = [
   { to: '/settings/carwash-services', labelKey: 'tabCarwashPackages', icon: FiDroplet },
   { to: '/settings/system', labelKey: 'tabTaxEmail', icon: FiPercent },
   { to: '/settings/audit-trail', labelKey: 'tabAuditTrail', icon: FiClock, requiredPermission: 'audit.view' },
+  { to: '/settings/system-maintenance', labelKey: 'tabSystemMaintenance', icon: FiTool, requiredPermission: 'system.reset' },
 ];
 
 function SettingsTabs() {

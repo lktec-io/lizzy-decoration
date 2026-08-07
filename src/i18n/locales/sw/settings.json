@@ -7,6 +7,32 @@
   "tabCarwashPackages": "Vifurushi vya Uoshaji Magari",
   "tabTaxEmail": "Kodi na Barua Pepe",
   "tabAuditTrail": "Kumbukumbu za Mfumo",
+  "tabSystemMaintenance": "Matengenezo ya Mfumo",
+
+  "systemMaintenance": {
+    "title": "Matengenezo ya Mfumo",
+    "subtitle": "Kurejesha data ya uzalishaji na zana za matengenezo ya kiwango cha mfumo",
+    "productionResetTitle": "Kurejesha Data ya Uzalishaji",
+    "warning": "Hatua hii inaondoa kabisa data zote za kibiashara zinazoendeshwa na haiwezi kutenduliwa.",
+    "keptTitle": "Zinazobaki daima",
+    "keptCompany": "Mipangilio ya kampuni na nembo",
+    "keptBranches": "Matawi",
+    "keptRolesPermissions": "Majukumu na ruhusa",
+    "keptSuperAdmin": "Akaunti za Msimamizi Mkuu",
+    "keptSettings": "Mandhari, lugha, na mipangilio ya mfumo",
+    "removedTitle": "Zinazoondolewa kabisa",
+    "removedSales": "Mauzo, manunuzi, marejesho, mauzo yaliyosimamishwa, uhamisho",
+    "removedProducts": "Bidhaa, hesabu ya bidhaa, misimbo ya QR/lebo",
+    "removedCustomersSuppliers": "Wateja na wasambazaji",
+    "removedUsers": "Watumiaji wote isipokuwa Msimamizi Mkuu",
+    "removedNotifications": "Arifa",
+    "includeActivityLogs": "Futa pia kumbukumbu za shughuli za dashibodi (hiari)",
+    "typeToConfirm": "Andika {{word}} ili kuthibitisha",
+    "runReset": "Endesha Kurejesha Data",
+    "resetComplete": "Kurejesha data ya uzalishaji kumekamilika kwa mafanikio.",
+    "resetSummary": "Watumiaji {{users}} wamezimwa, faili {{files}} zilizotengenezwa zimeondolewa. Mfumo uko tayari kwa data halisi ya biashara.",
+    "failed": "Kurejesha data ya uzalishaji kumeshindwa. Hakuna data iliyobadilishwa."
+  },
 
   "auditTrail": {
     "title": "Kumbukumbu za Mfumo",

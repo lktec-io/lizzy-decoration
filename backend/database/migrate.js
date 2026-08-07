@@ -69,6 +69,7 @@ const ALREADY_APPLIED_CODES = new Set([
   'ER_DUP_FIELDNAME', // 1060 — ADD COLUMN where the column already exists
   'ER_DUP_KEYNAME', // 1061 — ADD KEY/INDEX where the index already exists
   'ER_DUP_ENTRY', // 1062 — INSERT hitting a UNIQUE constraint (seeders use INSERT IGNORE, kept as a safety net)
+  'ER_FK_DUP_NAME', // 1826 — ADD CONSTRAINT ... FOREIGN KEY where that constraint name already exists (migration 002's deferred branches/roles/permissions FKs)
 ]);
 
 // Splits on a semicolon immediately followed by a newline. A leading
